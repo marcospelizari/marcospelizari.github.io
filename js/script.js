@@ -5,26 +5,33 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadingSpinner = document.getElementById('loadingSpinner');
     const loadingText = document.getElementById('loadingText');
 
-    // Function to load a topic
-    const loadTopic = async (url, link) => {
-        // Show loading state
+    // Determine the base path for GitHub Pages
+    const basePath = window.location.pathname.includes('study-notes') 
+        ? '/study-notes/' 
+        : '/';
+    const dataPath = `${basePath}data/`;
+
+    // Function to load a section
+    const loadSection = async (sectionName, link) => {
+        // Remove .json extension if present to avoid duplication
+        const cleanSectionName = sectionName.replace('.json', '');
+        const fullUrl = `${dataPath}${cleanSectionName}.json`;
+        console.log(`Fetching: ${fullUrl}`); // Debug log
+
         loadingSpinner.style.display = 'block';
         loadingText.style.display = 'block';
 
-        // Update active link
         navLinks.forEach(l => l.classList.remove('active'));
         if (link) link.classList.add('active');
 
         try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+            const response = await fetch(fullUrl);
+            if (!response.ok) throw new Error(`Falha ao carregar ${fullUrl}: ${response.status} ${response.statusText}`);
             const data = await response.json();
 
-            // Hide loading state
             loadingSpinner.style.display = 'none';
             loadingText.style.display = 'none';
 
-            // Render content with accordion for subsections
             contentDiv.innerHTML = `
                 <div class="card-body">
                     <h2 class="card-title text-white border-bottom border-primary pb-2">${data.title}</h2>
@@ -40,7 +47,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div id="collapse-${index}" class="accordion-collapse collapse" data-bs-parent="#topicAccordion">
                                     <div class="accordion-body bg-dark text-white">
                                         ${subsection.examples.map(example => {
-                                            // Split explanation at <br>
                                             const responses = example.explanation.split('<br>');
                                             return `
                                                 <div class="example mb-3 p-3 rounded">
@@ -63,10 +69,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } catch (error) {
-            console.error('Error loading topic:', error);
+            console.error('Erro ao carregar a seção:', error);
             loadingSpinner.style.display = 'none';
             loadingText.style.display = 'none';
-            contentDiv.innerHTML = '<div class="card-body"><p class="text-danger">Erro ao carregar o tópico. Verifique o console.</p></div>';
+            contentDiv.innerHTML = `<div class="card-body"><p class="text-danger">Erro ao carregar o tópico: ${error.message}. Verifique o console.</p></div>`;
         }
     };
 
@@ -75,16 +81,14 @@ document.addEventListener('DOMContentLoaded', () => {
         link.addEventListener('click', async (event) => {
             event.preventDefault();
             const section = link.getAttribute('data-section');
-            const url = `data/${section}`;
-            loadTopic(url, link);
+            loadSection(section, link);
         });
     });
 
     // Automatically load "Fundamentos de Java" on page load
     const fundamentosLink = document.querySelector('.nav-link[data-section="fundamentos-java.json"]');
     if (fundamentosLink) {
-        const url = 'data/fundamentos-java.json';
-        loadTopic(url, fundamentosLink);
+        loadSection('fundamentos-java.json', fundamentosLink);
     }
 });
 
