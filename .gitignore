@@ -1,0 +1,15 @@
+# Ignore the SoftSkill.txt file
+SoftSkill.txt
+
+# Common web development ignores
+node_modules/          # Dependency folder (if you add npm packages later)
+dist/                 # Build output (if you add a build step)
+*.log                 # Log files
+.DS_Store             # macOS system file
+.vscode/              # VS Code settings (e.g., launch.json, settings.json)
+*.code-workspace      # VS Code workspace files
+
+# Ignore temporary files
+*.tmp
+*.temp
+*.bak

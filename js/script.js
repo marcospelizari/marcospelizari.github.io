@@ -1,101 +1,104 @@
-const contentDiv = document.getElementById('content');
+// js/script.js
+document.addEventListener('DOMContentLoaded', () => {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentDiv = document.getElementById('content');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const loadingText = document.getElementById('loadingText');
 
-// Função para renderizar uma seção
-function renderSection(sectionData) {
-    let sectionHTML = `
-        <div class="section">
-            <h2>${sectionData.title}</h2>
-            ${sectionData.description ? `<p>${sectionData.description}</p>` : ''}
-    `;
-    sectionData.subsections.forEach(subsection => {
-        sectionHTML += `
-            ${subsection.subtitle ? `<h3>${subsection.subtitle}</h3>` : ''}
-            ${subsection.description ? `<p>${subsection.description}</p>` : ''}
-        `;
-        if (subsection.examples && subsection.examples.length > 0) {
-            subsection.examples.forEach(example => {
-                const explanation = example.explanation || 'Resposta Ideal (Júnior): Não disponível<br>Resposta Simples: Não disponível';
-                const [idealResponse, simpleResponse] = explanation.includes('<br>')
-                    ? explanation.split('<br>')
-                    : [explanation, 'Não disponível'];
+    // Function to load a topic
+    const loadTopic = async (url, link) => {
+        // Show loading state
+        loadingSpinner.style.display = 'block';
+        loadingText.style.display = 'block';
 
-                const idealText = (idealResponse || 'Não disponível').replace('Resposta Ideal (Júnior): ', '');
-                const simpleText = (simpleResponse || 'Não disponível').replace('Resposta Simples: ', '');
+        // Update active link
+        navLinks.forEach(l => l.classList.remove('active'));
+        if (link) link.classList.add('active');
 
-                sectionHTML += `
-                    <div class="example">
-                        <p><strong>${example.title}</strong></p>
-                        ${example.code ? `<pre><code>${example.code}</code></pre>` : ''}
-                        <p class="response ideal-response"><strong>Resposta Ideal (Júnior):</strong> ${idealText}</p>
-                        <p class="response simple-response"><strong>Resposta Simples:</strong> ${simpleText}</p>
-                        ${example.starAnalysis ? `<p class="star-analysis"><strong>Análise STAR:</strong> ${example.starAnalysis}</p>` : ''}
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`Failed to fetch ${url}`);
+            const data = await response.json();
+
+            // Hide loading state
+            loadingSpinner.style.display = 'none';
+            loadingText.style.display = 'none';
+
+            // Render content with accordion for subsections
+            contentDiv.innerHTML = `
+                <div class="card-body">
+                    <h2 class="card-title text-white border-bottom border-primary pb-2">${data.title}</h2>
+                    <p class="card-text text-white">${data.description}</p>
+                    <div class="accordion" id="topicAccordion">
+                        ${data.subsections.map((subsection, index) => `
+                            <div class="accordion-item bg-dark border-0 section">
+                                <h3 class="accordion-header">
+                                    <button class="accordion-button collapsed bg-dark text-white" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-${index}" aria-expanded="false" aria-controls="collapse-${index}">
+                                        ${subsection.subtitle}
+                                    </button>
+                                </h3>
+                                <div id="collapse-${index}" class="accordion-collapse collapse" data-bs-parent="#topicAccordion">
+                                    <div class="accordion-body bg-dark text-white">
+                                        ${subsection.examples.map(example => {
+                                            // Split explanation at <br>
+                                            const responses = example.explanation.split('<br>');
+                                            return `
+                                                <div class="example mb-3 p-3 rounded">
+                                                    ${responses.map(response => {
+                                                        const isIdeal = response.includes('Resposta Ideal');
+                                                        const isSimple = response.includes('Resposta Simples');
+                                                        return `
+                                                            <p class="text-light mb-2 ${isIdeal ? 'ideal-response' : isSimple ? 'simple-response' : ''}">${response}</p>
+                                                        `;
+                                                    }).join('')}
+                                                    ${example.code ? `<pre class="bg-secondary text-light p-3 rounded">${example.code}</pre>` : ''}
+                                                </div>
+                                            `;
+                                        }).join('')}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
-                `;
-            });
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error loading topic:', error);
+            loadingSpinner.style.display = 'none';
+            loadingText.style.display = 'none';
+            contentDiv.innerHTML = '<div class="card-body"><p class="text-danger">Erro ao carregar o tópico. Verifique o console.</p></div>';
         }
-        if (subsection.listItems && subsection.listItems.length > 0) {
-            sectionHTML += `<ul>`;
-            subsection.listItems.forEach(item => {
-                sectionHTML += `<li>${item}</li>`;
-            });
-            sectionHTML += `</ul>`;
-        }
-        if (subsection.image) {
-            sectionHTML += `<img src="${subsection.image}" alt="${subsection.imageAlt}">`;
-        }
-    });
-    sectionHTML += `</div>`;
-    contentDiv.innerHTML = sectionHTML;
-}
+    };
 
-// Função para carregar uma seção dinamicamente
-async function loadSection(sectionName) {
-    try {
-        const response = await fetch(`./data/${sectionName}.json`);
-        if (!response.ok) throw new Error(`Falha ao carregar ${sectionName}.json`);
-        const sectionData = await response.json();
-        renderSection(sectionData);
-    } catch (error) {
-        console.error('Erro ao carregar a seção:', error);
-        contentDiv.innerHTML = `<p style="color: red;">Erro ao carregar o conteúdo: ${error.message}. Verifique o console para mais detalhes.</p>`;
-    }
-}
-
-// Adicionar evento de clique para os links da barra lateral
-document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const sectionName = link.getAttribute('data-section');
-
-        // Remover a classe active de todos os links
-        document.querySelectorAll('.nav-link').forEach(l => {
-            l.classList.remove('active');
+    // Add click event listeners to nav links
+    navLinks.forEach(link => {
+        link.addEventListener('click', async (event) => {
+            event.preventDefault();
+            const section = link.getAttribute('data-section');
+            const url = `data/${section}`;
+            loadTopic(url, link);
         });
-
-        // Marcar o link clicado como ativo
-        link.classList.add('active');
-
-        // Carregar a seção correspondente
-        loadSection(sectionName);
-
-        // Rolar para o topo da página
-        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
+
+    // Automatically load "Fundamentos de Java" on page load
+    const fundamentosLink = document.querySelector('.nav-link[data-section="fundamentos-java.json"]');
+    if (fundamentosLink) {
+        const url = 'data/fundamentos-java.json';
+        loadTopic(url, fundamentosLink);
+    }
 });
 
-// Carregar a primeira seção por padrão (Fundamentos Java)
-loadSection('fundamentos-java');
-document.querySelector(`.nav-link[data-section="fundamentos-java"]`).classList.add('active');
-
-window.onscroll = function() {scrollFunction()};
-function scrollFunction() {
-    if (document.body.scrollTop > 20 || document.documentElement.scrollTop > 20) {
-        document.getElementById("topBtn").style.display = "block";
-    } else {
-        document.getElementById("topBtn").style.display = "none";
-    }
-}
+// Back-to-top button functionality
 function topFunction() {
-    document.body.scrollTop = 0;
-    document.documentElement.scrollTop = 0;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+// Show/hide back-to-top button based on scroll
+window.onscroll = function () {
+    const topBtn = document.getElementById('topBtn');
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+        topBtn.style.display = 'block';
+    } else {
+        topBtn.style.display = 'none';
+    }
+};

@@ -4,34 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Resumo para Vagas Júnior: Fundamentos e Mais</title>
-    <link rel="stylesheet" href="./css/styles.css">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <div class="container">
-        <nav id="sidebar">
-            <ul>
-                <li><a href="./data/fundamentos-java.json" data-section="fundamentos-java" class="nav-link">Fundamentos Java</a></li>
-                <li><a href="./data/controle-versao.json" data-section="controle-versao" class="nav-link">Controle de Versão(Git)</a></li>
-                <li><a href="./data/orientacao-objetos.json" data-section="orientacao-objetos" class="nav-link">Orientação a Objetos</a></li>
-                <li><a href="./data/banco-dados.json" data-section="banco-dados" class="nav-link">Banco de Dados</a></li>
-                <li><a href="./data/testes.json" data-section="testes" class="nav-link">Testes</a></li>
-                <li><a href="./data/spring-boot.json" data-section="spring-boot" class="nav-link">Spring Boot</a></li>
-                <li><a href="./data/api-webservices.json" data-section="api-webservices" class="nav-link">APIs and Web Services (REST/GraphQL)</a></li>
-                <li><a href="./data/arquitetura-sistema.json" data-section="arquitetura-sistema" class="nav-link">Arquitetura de Sistema</a></li>
-                <li><a href="./data/performance-otimizacao.json" data-section="performance-otimizacao" class="nav-link">Performance e Otimização</a></li>
-                <li><a href="./data/docker-devops.json" data-section="docker-devops" class="nav-link">Contêineres e DevOps Básico (Docker, CI/CD)</a></li>
-            </ul>
-        </nav>
-        <main>
-            <h1>Resumo para Vagas Júnior: Fundamentos e Mais</h1>
-            <div id="content">
-                <p>Carregando conteúdo... Se isso não carregar, verifique o console do navegador para erros.</p>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Estudo Java Backend</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-section="fundamentos-java.json">Fundamentos de Java</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="controle-versao.json">Controle de Versão (Git)</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="orientacao-objetos.json">Orientação a Objetos</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="banco-dados.json">Banco de Dados</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="testes.json">Testes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="spring-boot.json">Spring Boot</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="api-webservices.json">APIs e Web Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="arquitetura-sistema.json">Arquitetura de Sistema</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="performance-otimizacao.json">Performance e Otimização</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-section="docker-devops.json">Contêineres e DevOps</a>
+                    </li>
+                </ul>
             </div>
-        </main>
-    </div>
+        </div>
+    </nav>
 
-    <button onclick="topFunction()" id="topBtn">Voltar ao Topo</button>
+    <main class="container mt-5 pt-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10">
+                <h1 class="display-6 mb-4 text-center text-white">Resumo para Vagas Júnior: Fundamentos e Mais</h1>
+                <div id="content" class="card bg-dark text-white border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status" id="loadingSpinner">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <p class="text-muted mt-2" id="loadingText">Carregando conteúdo... Se isso não carregar, verifique o console do navegador para erros.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
 
-    <script src="./js/script.js"></script>
+    <button id="topBtn" class="btn btn-primary rounded-circle" onclick="topFunction()">↑</button>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <!-- Custom JS -->
+    <script src="js/script.js"></script>
 </body>
 </html>
