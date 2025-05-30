@@ -1,0 +1,50 @@
+{
+    "title": "Performance e Otimização",
+    "description": "Performance e otimização envolvem técnicas para tornar aplicações Java mais rápidas, eficientes e escaláveis. Este arquivo foca em conceitos básicos para um desenvolvedor júnior melhorar o desempenho de sistemas backend.",
+    "subsections": [
+        {
+            "subtitle": "O que é performance em aplicações backend e por que ela é importante?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Performance em aplicações backend refere-se à velocidade e eficiência com que o sistema responde a requisições, processa dados e utiliza recursos como CPU e memória. Uma boa performance é crucial para garantir uma experiência fluida para os usuários, reduzir custos de infraestrutura e suportar mais acessos em sistemas grandes. Por exemplo, otimizar uma API REST para responder mais rápido melhora a satisfação do usuário. Técnicas de otimização incluem melhorar consultas ao banco de dados, usar cache e gerenciar a memória da JVM.<br>Resposta Simples: Performance é fazer a aplicação rodar rápido e usar menos recursos. É importante para usuários felizes e sistemas que aguentam muitos acessos."
+                }
+            ]
+        },
+        {
+            "subtitle": "Como otimizar consultas ao banco de dados?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "@Repository\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    // Consulta otimizada com índice\n    @Query(\"SELECT p FROM Produto p WHERE p.categoria = :categoria\")\n    List<Produto> findByCategoria(@Param(\"categoria\") String categoria);\n}",
+                    "explanation": "Resposta Ideal (Júnior): Otimizar consultas ao banco de dados é essencial para melhorar a performance de aplicações backend. Técnicas incluem: 1) Usar índices em colunas frequentemente consultadas, como IDs ou categorias, para acelerar buscas; 2) Evitar o problema N+1, onde múltiplas consultas desnecessárias são feitas, usando JOINs ou fetch strategies no Spring Data JPA; 3) Escrever consultas eficientes, como limitar o número de linhas retornadas. Por exemplo, em Spring Boot, usar anotações como @Query com parâmetros específicos reduz o tempo de execução. Isso diminui a latência e o uso de recursos do banco.<br>Resposta Simples: Para consultas mais rápidas, use índices, evite consultas extras e escreva comandos que buscam só o necessário."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é caching e como usá-lo em Java?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "@Service\npublic class ProdutoService {\n    @Cacheable(value = \"produtos\")\n    public List<Produto> listarProdutos() {\n        // Simula busca lenta no banco\n        return produtoRepository.findAll();\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Caching é armazenar dados frequentemente usados na memória para evitar acessos repetitivos ao banco de dados ou cálculos pesados. Por exemplo, salvar a lista de produtos em cache para que uma API não precise buscar no banco toda vez. Em Java com Spring Boot, usamos anotações como @Cacheable com ferramentas como Redis ou Ehcache. O cache guarda o resultado da primeira chamada e o reutiliza, reduzindo a latência e a carga no servidor. Porém, é preciso gerenciar a validade do cache para evitar dados desatualizados.<br>Resposta Simples: Caching é guardar dados na memória para não buscar de novo, como salvar uma lista de produtos. Em Spring, usamos @Cacheable."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o Garbage Collector e como ele afeta a performance?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O Garbage Collector (GC) é um mecanismo da JVM que libera memória removendo objetos que não são mais usados. Ele melhora a performance ao evitar vazamentos de memória, mas pausas do GC podem causar lentidão se não for bem configurado. Para otimizar, podemos: 1) Minimizar a criação desnecessária de objetos, como evitar loops que geram muitos temporários; 2) Usar ferramentas como VisualVM para monitorar o GC; 3) Ajustar parâmetros da JVM, como o tamanho do heap, em aplicações críticas. Por exemplo, escolher o G1 Garbage Collector pode reduzir pausas em sistemas grandes.<br>Resposta Simples: O Garbage Collector limpa memória que não usamos, mas pode deixar o sistema lento se não for ajustado."
+                }
+            ]
+        }
+    ]
+}

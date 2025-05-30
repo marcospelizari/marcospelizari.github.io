@@ -1,0 +1,50 @@
+{
+    "title": "Controle de Versão (Git)",
+    "description": "Git é a ferramenta padrão para controle de versão, permitindo que desenvolvedores gerenciem mudanças no código, colaborem em equipe e mantenham o histórico do projeto. Este tópico cobre os conceitos básicos para usar Git no desenvolvimento backend.",
+    "subsections": [
+        {
+            "subtitle": "O que é Git e por que ele é importante?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Git é um sistema de controle de versão distribuído que rastreia mudanças no código ao longo do tempo. Ele permite que vários desenvolvedores trabalhem no mesmo projeto, mantendo um histórico de alterações, possibilitando reverter erros e colaborar sem conflitos. Git é importante porque facilita o trabalho em equipe, mantém o código organizado e é amplamente usado em plataformas como GitHub, GitLab e Bitbucket.<br>Resposta Simples: Git é uma ferramenta que guarda o histórico do código e ajuda a trabalhar em equipe sem bagunçar o projeto."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são commits e como usá-los?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "git add .\ngit commit -m \"Adiciona classe ProdutoController\"",
+                    "explanation": "Resposta Ideal (Júnior): Um commit é como um 'salvar' do estado atual do código no repositório Git. Ele registra as mudanças feitas nos arquivos, com uma mensagem descrevendo o que foi alterado (ex.: 'Corrige bug na API'). Para criar um commit, usamos `git add` para selecionar os arquivos alterados e `git commit -m \"mensagem\"` para salvá-los com uma descrição. Commits são importantes porque criam um histórico claro e permitem reverter mudanças se necessário.<br>Resposta Simples: Um commit é salvar as mudanças do código com uma mensagem explicando o que mudou, usando `git commit`."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são branches e merges?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "git branch feature/nova-api\ngit checkout feature/nova-api\n# faz alterações\ngit add .\ngit commit -m \"Cria nova API\"\ngit checkout main\ngit merge feature/nova-api",
+                    "explanation": "Resposta Ideal (Júnior): Um branch é uma ramificação do código que permite trabalhar em uma versão paralela sem afetar o código principal (geralmente o branch `main`). Por exemplo, você pode criar um branch `feature/nova-api` para desenvolver uma nova funcionalidade. Quando o trabalho está pronto, você faz um merge, que combina as mudanças do branch com o `main`. Isso é útil para organizar o desenvolvimento e evitar conflitos em equipes. Comandos como `git branch` e `git merge` são usados para isso.<br>Resposta Simples: Um branch é uma cópia do código para trabalhar sem mexer no original. Merge junta o branch de volta ao código principal."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é um conflito e como resolvê-lo?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Um conflito acontece quando o Git não consegue combinar automaticamente as mudanças de dois branches, geralmente porque o mesmo trecho de código foi alterado de formas diferentes. Para resolver, você precisa abrir os arquivos marcados pelo Git, que mostram as mudanças conflitantes (indicadas por `<<<<<<<` e `>>>>>>>`). Você escolhe qual versão manter (ou combina as duas), remove as marcações e faz um commit. Ferramentas como VS Code ajudam a visualizar conflitos.<br>Resposta Simples: Um conflito é quando duas pessoas mudam a mesma parte do código. Você escolhe qual mudança fica, edita o arquivo e faz um commit."
+                }
+            ]
+        }
+    ]
+}

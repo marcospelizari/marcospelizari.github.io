@@ -1,0 +1,39 @@
+{
+    "title": "Contêineres e DevOps Básico (Docker, CI/CD)",
+    "description": "Contêineres e DevOps são práticas modernas para implantar e gerenciar aplicações backend. Este arquivo cobre conceitos básicos de Docker e CI/CD, essenciais para um desenvolvedor júnior entender como entregar software.",
+    "subsections": [
+        {
+            "subtitle": "O que são contêineres e por que usar Docker?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "FROM openjdk:17\nWORKDIR /app\nCOPY target/meu-app.jar meu-app.jar\nENTRYPOINT [\"java\", \"-jar\", \"meu-app.jar\"]",
+                    "explanation": "Resposta Ideal (Júnior): Contêineres são como caixas leves que empacotam uma aplicação e suas dependências (bibliotecas, sistema operacional) para rodar de forma consistente em qualquer ambiente, como na máquina do desenvolvedor ou em um servidor. Docker é uma ferramenta para criar e gerenciar contêineres. Por exemplo, um contêiner Docker pode rodar uma aplicação Spring Boot com Java e suas dependências, garantindo que ela funcione igual em desenvolvimento e produção. Docker simplifica a implantação, reduz conflitos de configuração e facilita a escalabilidade.<br>Resposta Simples: Contêineres são caixas que levam a aplicação e tudo que ela precisa. Docker cria essas caixas para rodar o mesmo código em qualquer lugar."
+                }
+            ]
+        },
+        {
+            "subtitle": "Como criar e rodar um contêiner com Docker?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "# Dockerfile\nFROM openjdk:17\nCOPY target/meu-app.jar meu-app.jar\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-jar\", \"meu-app.jar\"]\n\n# Comandos\n# Construir imagem\ndocker build -t meu-app .\n# Rodar contêiner\ndocker run -p 8080:8080 meu-app",
+                    "explanation": "Resposta Ideal (Júnior): Para criar um contêiner com Docker, primeiro criamos um Dockerfile, que é um arquivo com instruções para montar a imagem do contêiner. Por exemplo, para uma aplicação Spring Boot, o Dockerfile especifica a versão do Java, copia o JAR da aplicação e define como executá-lo. Depois, usamos o comando `docker build` para criar a imagem e `docker run` para rodar o contêiner, mapeando portas (ex.: 8080) para acesso externo. Isso garante que a aplicação rode isolada e com as dependências corretas, facilitando a implantação em servidores ou na nuvem.<br>Resposta Simples: Escrevo um Dockerfile com instruções, uso `docker build` para criar a imagem e `docker run` para rodar a aplicação."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é CI/CD e como ele ajuda no desenvolvimento?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "# Exemplo de pipeline GitHub Actions\nname: CI/CD Pipeline\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - name: Build JAR\n        run: mvn clean package\n      - name: Build Docker Image\n        run: docker build -t meu-app .\n      - name: Deploy\n        run: docker push meu-app",
+                    "explanation": "Resposta Ideal (Júnior): CI/CD significa Integração Contínua e Entrega/Implantação Contínua. É um conjunto de práticas para automatizar o processo de construção, teste e implantação de código. Na Integração Contínua (CI), cada mudança no código (commit) dispara a execução de testes automáticos e a construção do aplicativo, garantindo que o código novo não quebre o sistema. Na Entrega/Implantação Contínua (CD), o código testado é automaticamente implantado em um ambiente, como produção. Ferramentas como GitHub Actions ou Jenkins criam pipelines para isso. Por exemplo, um pipeline pode compilar um JAR Spring Boot, rodar testes e implantar um contêiner Docker. CI/CD economiza tempo e reduz erros manuais.<br>Resposta Simples: CI/CD é automatizar testes e implantação do código. Cada mudança é testada e pode ir direto para o servidor."
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,50 @@
+{
+    "title": "APIs and Web Services (REST/GraphQL)",
+    "description": "Conceitos fundamentais para criar e consumir APIs, que são essenciais para comunicação entre sistemas no desenvolvimento backend. Este tópico cobre os princípios de REST e uma introdução ao GraphQL, amplamente usados em aplicações Java com Spring Boot.",
+    "subsections": [
+        {
+            "subtitle": "O que é uma API e por que ela é importante?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Uma API (Application Programming Interface) é um conjunto de regras que permite que diferentes sistemas ou componentes de software se comuniquem. No contexto backend, APIs permitem que um frontend (como um site ou app) peça dados ou ações ao servidor. Por exemplo, uma API pode fornecer a lista de produtos de uma loja ou processar um pagamento. APIs são importantes porque possibilitam a integração entre sistemas, modularizam o código e permitem que diferentes tecnologias (como Java e JavaScript) trabalhem juntas.<br>Resposta Simples: Uma API é como um garçom que leva pedidos do cliente (frontend) para a cozinha (backend) e traz a resposta."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é REST e como ele funciona?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "import org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class ProdutoController {\n    @GetMapping(\"/produtos\")\n    public List<Produto> listarProdutos() {\n        return Arrays.asList(new Produto(\"Notebook\", 5000), new Produto(\"Celular\", 2000));\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): REST (Representational State Transfer) é um estilo de arquitetura para criar APIs baseadas em HTTP. Ele usa métodos como GET (buscar dados), POST (criar), PUT (atualizar) e DELETE (remover) para interagir com recursos, que são identificados por URLs (ex.: /produtos). Em REST, as respostas geralmente são em JSON, e as APIs seguem princípios como stateless (cada requisição é independente) e uso de códigos de status HTTP (200 para sucesso, 404 para não encontrado, etc.). Em Java, o Spring Boot facilita a criação de APIs REST com anotações como @RestController e @GetMapping.<br>Resposta Simples: REST é um jeito de criar APIs usando HTTP, onde cada URL representa algo, como /produtos para listar produtos, e usamos GET, POST, etc., para trabalhar com esses dados."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é GraphQL e como ele difere de REST?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "query {\n  produtos {\n    nome\n    preco\n  }\n}",
+                    "explanation": "Resposta Ideal (Júnior): GraphQL é uma tecnologia para APIs que permite aos clientes solicitar exatamente os dados que precisam, ao contrário do REST, onde o servidor define os dados retornados. Em GraphQL, você envia uma consulta (query) descrevendo os campos desejados, e o servidor responde apenas com esses dados. Isso reduz a quantidade de dados transferidos e evita problemas como overfetching (receber dados a mais) ou underfetching (faltar dados). Em Java, bibliotecas como graphql-java podem ser usadas com Spring Boot para criar APIs GraphQL. A principal diferença é a flexibilidade do cliente no GraphQL versus a rigidez das rotas no REST.<br>Resposta Simples: GraphQL é uma alternativa ao REST onde o cliente escolhe quais dados quer, como pedir só o nome e preço de produtos, em vez de tudo."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são códigos de status HTTP e para que servem?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Códigos de status HTTP são números que indicam o resultado de uma requisição em uma API. Eles são divididos em categorias: 2xx (sucesso, como 200 OK ou 201 Created), 3xx (redirecionamento, como 301 Moved Permanently), 4xx (erros do cliente, como 404 Not Found ou 400 Bad Request), e 5xx (erros do servidor, como 500 Internal Server Error). Em APIs REST, esses códigos ajudam o cliente a entender se a requisição foi bem-sucedida ou o que deu errado. Em Spring Boot, o servidor retorna esses códigos automaticamente ou você pode personalizá-los.<br>Resposta Simples: Códigos HTTP, como 200 ou 404, mostram se a requisição deu certo (200) ou falhou (404 para algo não encontrado)."
+                }
+            ]
+        }
+    ]
+}

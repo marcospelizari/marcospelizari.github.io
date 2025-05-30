@@ -1,0 +1,94 @@
+{
+    "title": "Banco de Dados",
+    "description": "Conceitos fundamentais sobre bancos de dados, que são sistemas usados para armazenar e gerenciar informações de forma organizada. Este arquivo foca nos conceitos essenciais para um desenvolvedor júnior.",
+    "subsections": [
+        {
+            "subtitle": "O que é um banco de dados e como ele funciona?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Um banco de dados é um sistema organizado para armazenar, gerenciar e recuperar dados de forma eficiente. Ele funciona como um arquivo digital onde as informações são guardadas em tabelas, com linhas e colunas, ou em outros formatos, dependendo do tipo de banco. Por exemplo, em um banco relacional, os dados são organizados em tabelas, como uma tabela de usuários com colunas para nome e idade. O banco de dados usa um sistema de gerenciamento, como o MySQL, para permitir que os desenvolvedores criem, consultem e atualizem os dados com comandos. Bancos de dados são essenciais porque permitem que aplicações guardem e acessem informações de forma segura e rápida.<br>Resposta Simples: Um banco de dados guarda dados em tabelas, como uma planilha, e usa um sistema para mexer nesses dados."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é um banco de dados relacional e como ele organiza dados?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Um banco de dados relacional organiza os dados em tabelas, onde cada tabela representa um tipo de informação, como usuários ou pedidos. Cada tabela tem colunas, como nome ou idade, e linhas, que são os registros específicos, como um usuário chamado João de 25 anos. As tabelas são conectadas por chaves: uma chave primária identifica um registro em uma tabela, e uma chave estrangeira conecta esse registro a outra tabela. Por exemplo, uma tabela de pedidos pode ter uma chave estrangeira que aponta para o ID de um usuário na tabela de usuários. Bancos relacionais, como MySQL e PostgreSQL, usam a linguagem SQL para criar, consultar e gerenciar os dados.<br>Resposta Simples: É um banco que guarda dados em tabelas conectadas, como uma tabela de usuários e outra de pedidos, e usa SQL para mexer nos dados."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são chaves primárias e chaves estrangeiras?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Uma chave primária é um valor único que identifica cada registro em uma tabela, como um ID de usuário. Ela garante que não haja duplicatas e que cada linha possa ser encontrada rapidamente. Por exemplo, em uma tabela de usuários, o ID 1 identifica o João, e o ID 2 identifica a Maria. Já a chave estrangeira é um campo em uma tabela que conecta a outra tabela, apontando para a chave primária dela. Por exemplo, em uma tabela de pedidos, posso ter uma coluna 'usuário_id' que é uma chave estrangeira apontando para o ID da tabela de usuários, indicando quem fez o pedido. Isso cria uma relação entre as tabelas e ajuda a manter a consistência dos dados.<br>Resposta Simples: Chave primária é o ID único de cada linha, como o ID de um usuário. Chave estrangeira conecta tabelas, como o ID do usuário em um pedido."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é SQL e quais são os comandos básicos?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): SQL, ou Structured Query Language, é a linguagem usada para interagir com bancos de dados relacionais. Ela permite criar, consultar, atualizar e deletar dados. Os comandos básicos são: SELECT, para buscar dados, como buscar todos os usuários com mais de 18 anos; INSERT, para adicionar um novo registro, como inserir um novo usuário; UPDATE, para alterar dados existentes, como mudar o nome de um usuário; e DELETE, para remover registros, como deletar um pedido. Além disso, há o comando CREATE para criar tabelas e DROP para excluí-las. Esses comandos são a base para trabalhar com dados em um banco relacional e são essenciais para qualquer desenvolvedor.<br>Resposta Simples: SQL é a linguagem para mexer no banco. Comandos básicos são: SELECT para buscar, INSERT para adicionar, UPDATE para mudar e DELETE para apagar dados."
+                }
+            ]
+        },
+        {
+            "subtitle": "Como modelar uma tabela simples em um banco relacional?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Modelar uma tabela significa definir sua estrutura, ou seja, quais colunas ela terá e que tipo de dados cada coluna vai armazenar. Primeiro, escolho o nome da tabela, como 'usuários'. Depois, defino as colunas: por exemplo, 'id' do tipo inteiro, que será a chave primária; 'nome' do tipo texto; e 'idade' do tipo inteiro. Cada coluna precisa ter um tipo de dado, como inteiro, texto ou data, para que o banco saiba como armazenar os valores. Também posso definir restrições, como dizer que o 'id' não pode ser nulo e deve ser único, ou que o 'nome' é obrigatório. Essa estrutura é criada com o comando CREATE do SQL, e depois posso inserir dados com INSERT. Modelar bem uma tabela é importante para garantir que os dados sejam organizados e fáceis de usar.<br>Resposta Simples: É criar uma tabela escolhendo as colunas, como 'id', 'nome' e 'idade', e dizendo o tipo de cada uma, como número ou texto."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é normalização de banco de dados e por que usá-la?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Normalização é o processo de organizar os dados em um banco relacional para evitar duplicação e garantir consistência. Ela divide os dados em várias tabelas seguindo regras específicas, chamadas formas normais. Por exemplo, em vez de ter uma tabela gigante com informações repetidas, como o nome de um cliente aparecendo várias vezes em uma tabela de pedidos, criamos uma tabela separada para clientes e usamos chaves para conectar os pedidos a eles. Isso reduz redundância, economiza espaço e facilita a manutenção, porque uma mudança no nome do cliente é feita em um só lugar. Normalmente, usamos até a terceira forma normal para equilibrar eficiência e simplicidade.<br>Resposta Simples: Normalização é organizar os dados em tabelas separadas para não repetir informações, como separar clientes e pedidos."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é a diferença entre SQL e NoSQL?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): SQL e NoSQL são dois tipos de bancos de dados com formas diferentes de organizar e acessar dados. Bancos SQL, como MySQL ou PostgreSQL, são relacionais: eles usam tabelas com linhas e colunas, e os dados são conectados por chaves, como IDs. Eles seguem um esquema fixo, ou seja, você define a estrutura das tabelas antes de inserir dados, e usam a linguagem SQL para consultas. São bons para dados estruturados, como registros financeiros, onde a consistência é crucial. Já os bancos NoSQL, como MongoDB ou Redis, são não relacionais: eles podem armazenar dados em formatos variados, como documentos, chave-valor ou grafos, e não exigem um esquema fixo, o que os torna mais flexíveis. São ideais para dados não estruturados ou que mudam muito, como em aplicações de redes sociais ou big data, e priorizam escalabilidade.<br>Resposta Simples: SQL usa tabelas e é mais organizado, como o MySQL. NoSQL é mais flexível e não usa tabelas, como o MongoDB, bom para dados que mudam muito."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é uma transação e por que ela é importante?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Uma transação é um conjunto de operações no banco de dados que devem ser executadas como uma unidade, ou seja, ou todas são concluídas com sucesso, ou nenhuma é aplicada. Por exemplo, em uma transferência bancária, preciso tirar dinheiro de uma conta e adicionar em outra. Se algo der errado no meio, como o sistema falhar, a transação garante que o dinheiro não seja perdido – ela desfaz tudo. Isso segue o princípio ACID: Atomicidade (tudo ou nada), Consistência (os dados ficam válidos), Isolamento (transações não interferem umas nas outras) e Durabilidade (os dados são salvos mesmo se o sistema falhar). Transações são cruciais para manter a confiabilidade dos dados.<br>Resposta Simples: Transação é um grupo de ações no banco que ou acontecem todas, ou não acontece nenhuma, como uma transferência bancária."
+                }
+            ]
+        }
+    ]
+}

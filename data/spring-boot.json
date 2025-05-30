@@ -1,0 +1,83 @@
+{
+    "title": "Spring Boot",
+    "description": "Spring Boot é um framework baseado em Java que simplifica o desenvolvimento de aplicações, especialmente web. Este arquivo foca nos conceitos fundamentais para um desenvolvedor júnior.",
+    "subsections": [
+        {
+            "subtitle": "O que é Spring Boot e como ele funciona?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Spring Boot é um framework construído sobre o Spring, um conjunto de ferramentas para desenvolver aplicações Java. Ele foi criado para simplificar o uso do Spring, reduzindo a configuração manual. Spring Boot funciona configurando automaticamente muitos componentes com base nas dependências que você adiciona, como um servidor web ou uma conexão com banco de dados. Ele também inclui um servidor embutido, como o Tomcat, para rodar a aplicação sem precisar de um servidor externo. É usado para criar aplicações robustas, como APIs e sistemas backend, com menos esforço.<br>Resposta Simples: Spring Boot é um framework que facilita criar aplicações Java, como APIs, configurando coisas automaticamente."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são starters e como usá-los?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Starters são dependências especiais no Spring Boot que agrupam várias bibliotecas relacionadas para facilitar o desenvolvimento. Por exemplo, o starter 'spring-boot-starter-web' traz tudo necessário para criar uma aplicação web, como um servidor embutido e bibliotecas para lidar com requisições HTTP. Outro exemplo é o 'spring-boot-starter-data-jpa', que ajuda a conectar a aplicação a um banco de dados relacional. Para usá-los, basta adicionar o starter ao arquivo de configuração do projeto, e o Spring Boot configura tudo automaticamente. Isso economiza tempo e evita erros de configuração.<br>Resposta Simples: Starters são pacotes do Spring Boot que já trazem tudo que preciso para algo, como criar uma API ou conectar a um banco."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é injeção de dependências e por que ela é importante?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Injeção de dependências é um conceito onde, em vez de uma classe criar os objetos que ela precisa, esses objetos são fornecidos a ela por um mecanismo externo. No Spring Boot, isso é feito automaticamente pelo Spring Framework, que gerencia as dependências. Por exemplo, se uma classe precisa de um serviço para acessar o banco de dados, o Spring Boot injeta esse serviço na classe, sem que eu precise criá-lo manualmente. Isso é importante porque reduz o acoplamento entre as classes, facilita a troca de implementações e torna o código mais fácil de testar e manter.<br>Resposta Simples: Injeção de dependências é quando o Spring Boot dá os objetos que uma classe precisa, em vez dela criar sozinha. Isso organiza o código."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o arquivo de configuração do Spring Boot?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O arquivo de configuração do Spring Boot é geralmente chamado de 'application.properties' ou 'application.yml', e serve para definir configurações da aplicação, como o endereço de um banco de dados, a porta do servidor ou outras opções personalizadas. Por exemplo, posso configurar a porta em que o servidor vai rodar ou as credenciais para conectar a um banco. Spring Boot lê esse arquivo automaticamente quando a aplicação inicia e aplica as configurações, o que facilita ajustar o comportamento da aplicação sem mudar o código.<br>Resposta Simples: É um arquivo onde coloco configurações, como a porta do servidor ou dados do banco, e o Spring Boot usa isso para ajustar a aplicação."
+                }
+            ]
+        },
+        {
+            "subtitle": "Como o Spring Boot gerencia conexões com bancos de dados?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Spring Boot facilita a conexão com bancos de dados usando o starter 'spring-boot-starter-data-jpa', que já traz as ferramentas necessárias para trabalhar com bancos relacionais, como MySQL ou PostgreSQL. No arquivo de configuração, coloco informações como o endereço do banco, usuário e senha, e o Spring Boot configura a conexão automaticamente. Ele usa o JPA (Java Persistence API) para mapear objetos Java para tabelas no banco, o que significa que posso trabalhar com dados usando classes e objetos, sem escrever comandos SQL manualmente. Isso simplifica o desenvolvimento e reduz erros.<br>Resposta Simples: Spring Boot conecta ao banco com um starter e configura quase tudo sozinho, deixando eu usar objetos para mexer nos dados."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são anotações no Spring Boot e quais são as principais?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Anotações no Spring Boot são marcações que adicionamos ao código para dizer ao framework como ele deve funcionar. Elas simplificam a configuração e substituem muito código manual. As principais incluem: '@SpringBootApplication', que marca a classe principal da aplicação e ativa configurações automáticas; '@Controller' ou '@RestController', que indicam que uma classe lida com requisições HTTP, como em uma API; '@Service', que marca uma classe como um serviço com lógica de negócios; '@Repository', que indica uma classe que acessa o banco de dados; e '@Autowired', que faz a injeção de dependências automaticamente. Essas anotações são fundamentais porque deixam o código mais limpo e fácil de entender.<br>Resposta Simples: Anotações são marcações que ajudam o Spring Boot a funcionar, como '@SpringBootApplication' para começar a aplicação e '@Autowired' para injetar objetos."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o ciclo de vida de uma aplicação Spring Boot?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O ciclo de vida de uma aplicação Spring Boot começa quando o programa é executado. Primeiro, o Spring Boot lê o arquivo de configuração, como 'application.properties', para definir portas, conexões e outras opções. Depois, ele inicializa o contexto da aplicação, criando e configurando todos os componentes, como serviços e conexões com banco de dados, usando injeção de dependências. Em seguida, o servidor embutido, como o Tomcat, é iniciado, e a aplicação começa a aceitar requisições, como chamadas a uma API. Durante a execução, o Spring Boot gerencia os recursos, e quando a aplicação é encerrada, ele fecha as conexões e libera os recursos. Entender esse ciclo ajuda a configurar e depurar a aplicação.<br>Resposta Simples: A aplicação começa lendo as configurações, cria os componentes, inicia o servidor e aceita requisições, até ser encerrada."
+                }
+            ]
+        }
+    ]
+}

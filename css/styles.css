@@ -1,0 +1,237 @@
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    margin: 0 auto;
+    background-color: #000000;
+}
+
+.container {
+    display: flex;
+    min-height: 100vh;
+}
+
+#sidebar {
+    width: 150px;
+    background-color: #1a1a1a;
+    padding: 10px;
+    position: fixed;
+    height: 100%;
+    overflow-y: auto;
+    border-right: 2px solid #1E90FF;
+}
+
+#sidebar ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+#sidebar ul li {
+    margin-bottom: 5px;
+}
+
+#sidebar ul li a {
+    color: #1E90FF;
+    text-decoration: none;
+    font-weight: normal;
+    font-size: 0.9em;
+    display: block;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+#sidebar ul li a:hover {
+    background-color: #333333;
+    color: #FFD700;
+}
+
+#sidebar ul li a.active {
+    background-color: #1E90FF;
+    color: #ffffff;
+}
+
+main {
+    margin-left: 270px;
+    padding: 20px;
+    width: calc(90% - 270px);
+    margin-right: auto;
+    margin-left: auto;
+}
+
+h1, h2, h3, p, li {
+    color: #ffffff;
+}
+
+h1 {
+    text-align: center;
+    font-size: 2.5em;
+    margin-bottom: 30px;
+}
+
+h2 {
+    border-bottom: 3px solid #1E90FF;
+    padding-bottom: 8px;
+    font-size: 1.8em;
+    margin-bottom: 20px;
+}
+
+h3 {
+    color: #1E90FF;
+    font-size: 1.4em;
+    margin-top: 20px;
+}
+
+p {
+    font-size: 0.95em; /* Reduzido de 1em (padrão implícito) */
+}
+
+li {
+    font-size: 0.95em; /* Reduzido de 1em */
+}
+
+pre {
+    background-color: #2d2d2d;
+    color: #d4d4d4;
+    padding: 20px;
+    border-radius: 8px;
+    font-size: 0.9em; /* Reduzido de 1em */
+    overflow-x: auto;
+    border: 1px solid #444;
+}
+
+code {
+    font-family: Consolas, monospace;
+    color: #d4d4d4;
+    font-size: 0.9em; /* Reduzido de 1em */
+}
+
+.section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #333;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+}
+
+.section:hover {
+    box-shadow: 0 6px 15px rgba(255, 255, 255, 0.1);
+    transform: translateY(-5px);
+}
+
+.example {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #222222;
+    border-left: 4px solid #1E90FF;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.example p {
+    margin: 5px 0;
+    font-size: 0.95em; /* Reduzido de 1.1em */
+    color: #e0e0e0;
+}
+
+.response {
+    margin-top: 10px;
+    padding: 5px;
+    color: #e0e0e0;
+    font-size: 0.95em; /* Reduzido de 1em (padrão implícito) */
+}
+
+.ideal-response {
+    border-left: 2px solid #1E90FF;
+    padding-left: 10px;
+}
+
+.simple-response {
+    border-left: 2px solid #FFD700;
+    padding-left: 10px;
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    margin-top: 15px;
+    border-radius: 8px;
+    border: 2px solid #ffffff;
+    background-color: #1a1a1a;
+    padding: 5px;
+}
+
+ul {
+    margin: 10px 0;
+    padding-left: 20px;
+    color: #e0e0e0;
+}
+
+li {
+    margin-bottom: 10px;
+}
+
+#topBtn {
+    position: fixed;
+    bottom: 20px;
+    right: 30px;
+    padding: 10px 20px;
+    background-color: #1E90FF;
+    color: #ffffff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: none;
+}
+
+#topBtn:hover {
+    background-color: #007BFF;
+}
+
+@media (max-width: 600px) {
+    .container {
+        flex-direction: column;
+    }
+
+    #sidebar {
+        width: 100%;
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 2px solid #1E90FF;
+    }
+
+    main {
+        margin-left: 0;
+        margin-right: 0;
+        padding: 10px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    h2 {
+        font-size: 1.5em;
+    }
+
+    pre {
+        font-size: 0.85em; /* Ajustado para telas menores */
+    }
+
+    p, li, .example p, .response {
+        font-size: 0.9em; /* Ajustado para telas menores */
+    }
+}
+
+/* Adicionar ao final do styles.css */
+.star-analysis {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #2d2d2d;
+    border-left: 4px solid #FFD700;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #e0e0e0;
+}

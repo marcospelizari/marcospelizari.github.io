@@ -1,0 +1,127 @@
+{
+    "title": "Fundamentos de Java",
+    "description": "Conceitos básicos de Java que são essenciais para qualquer desenvolvedor júnior. Esses tópicos são fundamentais para entender a linguagem e construir uma base sólida para programar.",
+    "subsections": [
+        {
+            "subtitle": "O que é Java e por que ele é popular?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Java é uma linguagem de programação orientada a objetos, criada pela Sun Microsystems em 1995, e hoje mantida pela Oracle. Ela é popular porque é portável, ou seja, o mesmo código pode rodar em diferentes sistemas operacionais (Windows, Linux, macOS) graças à JVM (Java Virtual Machine). Além disso, Java é robusto, com forte gerenciamento de memória, e amplamente usado em aplicações empresariais, Android e sistemas backend.<br>Resposta Simples: Java é uma linguagem que funciona em qualquer sistema por causa da JVM. É muito usada em empresas e apps Android."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é a JVM e qual sua função?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): A JVM (Java Virtual Machine) é uma máquina virtual que executa programas Java. Quando você escreve código Java, ele é compilado em bytecode, que é um formato intermediário. A JVM lê esse bytecode e o traduz para instruções que o sistema operacional entende, permitindo que o mesmo código Java rode em qualquer plataforma, como Windows ou Linux. A JVM também gerencia a memória e fornece segurança, como impedir acesso não autorizado a recursos do sistema.<br>Resposta Simples: A JVM é como um tradutor que faz o código Java funcionar em qualquer computador."
+                }
+            ]
+        },
+        {
+            "subtitle": "Qual a diferença entre JDK, JRE e JVM?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O JDK (Java Development Kit) é um kit completo para desenvolvedores, com ferramentas como o compilador (javac) para criar programas Java, além do JRE. O JRE (Java Runtime Environment) é o ambiente para executar programas Java, contendo a JVM e bibliotecas padrão. A JVM (Java Virtual Machine) é a parte do JRE que realmente executa o código, traduzindo o bytecode para instruções específicas da máquina. Em resumo, o JDK é para desenvolver, o JRE é para rodar, e a JVM é o motor que faz o código funcionar.<br>Resposta Simples: JDK é para programar, JRE é para rodar o programa, e JVM é o que executa o código."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é bytecode e por que ele é importante?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Bytecode é um código intermediário gerado pelo compilador Java (javac) a partir do código-fonte Java. Ele não é código de máquina (como binário), mas um formato que a JVM entende. O bytecode é importante porque permite a portabilidade: o mesmo bytecode pode ser executado em qualquer sistema que tenha uma JVM, sem precisar recompilar o código para cada plataforma. Isso é o que faz o Java ser 'escreva uma vez, rode em qualquer lugar'.<br>Resposta Simples: Bytecode é o código que a JVM lê para rodar o programa em qualquer computador."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o Garbage Collector e qual sua função?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O Garbage Collector (GC) é um mecanismo da JVM que gerencia a memória automaticamente. Ele identifica objetos que não são mais usados pelo programa (ou seja, que não têm referências apontando para eles) e os remove, liberando espaço na memória. Isso evita vazamentos de memória e reduz o trabalho do desenvolvedor, que não precisa liberar memória manualmente, como em linguagens como C. No entanto, o Garbage Collector pode pausar a execução do programa temporariamente para fazer essa limpeza.<br>Resposta Simples: O Garbage Collector limpa a memória que o programa não usa mais, para não ocupar espaço."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são variáveis e tipos de dados em Java?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Variáveis são espaços na memória usados para armazenar dados que o programa pode usar ou alterar. Em Java, toda variável precisa ter um tipo definido, como int para números inteiros, double para números com decimais, ou String para texto. Os tipos de dados em Java se dividem em dois grupos: primitivos e não primitivos. Os tipos primitivos incluem int, double, boolean (verdadeiro ou falso), char (para caracteres), entre outros. Já os tipos não primitivos, como String ou Array, são objetos e podem armazenar dados mais complexos. Definir o tipo ajuda o Java a gerenciar a memória e evitar erros.<br>Resposta Simples: Variáveis guardam informações, como números ou texto. Em Java, preciso dizer o tipo, como int para números ou String para palavras."
+                }
+            ]
+        },
+        {
+            "subtitle": "Qual a diferença entre variáveis primitivas e objetos (não primitivos)?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Variáveis primitivas, como int, double ou boolean, armazenam valores simples diretamente na memória e têm um tamanho fixo. Por exemplo, um int ocupa 4 bytes e guarda um número inteiro. Já objetos, ou variáveis não primitivas, como String ou Array, são mais complexas: elas não armazenam o valor diretamente, mas uma referência (um 'endereço') para o local na memória onde o valor está. Isso significa que objetos podem ser nulos (não apontar para nada), enquanto primitivas sempre têm um valor padrão, como 0 para int. Outra diferença é que objetos têm métodos, como length() em uma String, enquanto primitivas não.<br>Resposta Simples: Primitivas, como int, guardam valores simples e não podem ser nulas. Objetos, como String, são mais complexos e podem ser nulos."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o conceito de 'passagem por valor' em Java?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Em Java, todos os parâmetros de um método são passados por valor, o que significa que uma cópia do valor da variável é enviada ao método. Para tipos primitivos, como int, a cópia é o valor em si, então mudar o parâmetro dentro do método não afeta a variável original. Para objetos, a cópia é da referência (o 'endereço'), não do objeto em si. Isso significa que, se você alterar o objeto dentro do método, a mudança reflete fora, mas se você mudar a referência (apontar para outro objeto), a variável original não muda.<br>Resposta Simples: Em Java, quando passo uma variável para um método, envio uma cópia. Se for um número, nada muda fora. Se for um objeto, posso mudar o objeto, mas não a referência."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é uma classe e um objeto em Java?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Uma classe é como um modelo ou blueprint que define como um objeto deve ser. Ela descreve os dados (chamados atributos ou variáveis) e os comportamentos (chamados métodos) que o objeto terá. Por exemplo, uma classe Carro pode ter atributos como cor e velocidade, e métodos como acelerar. Um objeto é uma instância dessa classe, ou seja, um Carro específico criado a partir do modelo, com valores definidos, como um carro vermelho que está a 60 km/h. Em Java, usamos a palavra 'new' para criar um objeto a partir de uma classe.<br>Resposta Simples: Uma classe é o modelo de algo, como um Carro. Um objeto é o Carro de verdade, criado a partir desse modelo."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o método main e por que ele é importante?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O método main é o ponto de entrada de um programa Java. Quando você executa um programa, a JVM procura por esse método específico para começar a execução. Ele precisa ser público (para ser acessível), estático (para ser chamado sem criar um objeto da classe), e deve ter um formato específico que aceita um array de Strings como argumento. Sem o método main, o programa não pode ser executado diretamente. É dentro dele que começamos a escrever a lógica principal do programa.<br>Resposta Simples: O método main é onde o programa Java começa. Sem ele, o programa não roda."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são os modificadores 'private' e 'static' em Java?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O modificador 'private' é usado para restringir o acesso a um atributo ou método de uma classe, permitindo que ele só seja acessado dentro da própria classe. Por exemplo, se um atributo como saldo de uma conta bancária é privado, outras classes não podem alterá-lo diretamente; elas precisam usar métodos públicos, como depositar ou sacar, para interagir com ele. Isso ajuda a proteger os dados e é essencial para o encapsulamento. Já o modificador 'static' indica que um atributo ou método pertence à classe, e não a um objeto específico. Isso significa que posso acessar um método ou atributo estático sem criar um objeto da classe. Por exemplo, o método main é estático porque a JVM precisa chamá-lo sem instanciar a classe. Atributos estáticos são compartilhados entre todos os objetos da classe, como um contador de quantos objetos foram criados.<br>Resposta Simples: 'private' esconde um atributo ou método para só a classe usar, como proteger o saldo de uma conta. 'static' faz algo pertencer à classe, não ao objeto, como o método main que roda sem criar um objeto."
+                }
+            ]
+        }
+    ]
+}

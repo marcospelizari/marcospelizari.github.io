@@ -1,0 +1,72 @@
+{
+    "title": "Arquitetura de Sistema",
+    "description": "Arquitetura de sistema é o conjunto de decisões e estruturas que definem como um software é organizado, como suas partes se conectam e como ele atende aos requisitos. Este arquivo foca nos conceitos fundamentais para um desenvolvedor júnior.",
+    "subsections": [
+        {
+            "subtitle": "O que é arquitetura de sistema e quais são suas partes principais?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Arquitetura de sistema é o plano que define como um software é estruturado, incluindo seus componentes, como eles se comunicam e como atendem aos requisitos, como desempenho e segurança. As partes principais geralmente são: o frontend, que é a interface que o usuário vê, como um site ou app; o backend, que contém a lógica do sistema, como regras de negócios e APIs; e o banco de dados, que armazena os dados, como informações de usuários. Essas partes se conectam, por exemplo, o frontend faz requisições ao backend, que busca dados no banco. Uma boa arquitetura garante que o sistema seja fácil de usar, manter e expandir.<br>Resposta Simples: É o plano de como o software é feito. Tem o frontend (interface), o backend (lógica) e o banco de dados (dados)."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é a diferença entre frontend, backend e banco de dados?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): O frontend é a parte do sistema que o usuário interage diretamente, como a interface de um site ou aplicativo, feita com tecnologias como HTML, CSS e JavaScript. O backend é a parte que roda no servidor, cuidando da lógica do sistema, como processar pedidos ou autenticar usuários, e é feito com linguagens como Java ou Python. O banco de dados armazena os dados que o sistema usa, como informações de usuários ou produtos, e pode ser relacional, como MySQL, ou não relacional, como MongoDB. O frontend se comunica com o backend por APIs, e o backend acessa o banco de dados para buscar ou salvar informações.<br>Resposta Simples: Frontend é a tela que vejo, backend é a lógica no servidor, e banco de dados é onde os dados são guardados."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é uma arquitetura cliente-servidor?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): A arquitetura cliente-servidor é um modelo onde o sistema é dividido em dois papéis: o cliente, que faz requisições, e o servidor, que responde a elas. O cliente pode ser um aplicativo ou navegador que o usuário utiliza, como um app de celular pedindo dados. O servidor é o sistema que processa essas requisições, como buscar informações em um banco de dados e enviar de volta. Por exemplo, quando acesso um site, meu navegador (cliente) pede a página ao servidor do site, que responde com os dados. Essa arquitetura é comum porque separa a interface do usuário da lógica e dos dados, facilitando a manutenção.<br>Resposta Simples: É um modelo onde o cliente, como um app, pede algo, e o servidor, como o sistema principal, responde."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o padrão MVC e como ele organiza o código?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): MVC significa Model-View-Controller e é um padrão de arquitetura que separa uma aplicação em três partes. O Model representa os dados e a lógica de negócios, como as informações de um usuário e as regras para manipulá-las. A View é a interface que o usuário vê, como uma página web ou tela de aplicativo. O Controller é o intermediário que recebe as ações do usuário, como clicar em um botão, e decide o que fazer, atualizando o Model ou a View. O MVC organiza o código separando responsabilidades, o que facilita a manutenção e a reutilização. Frameworks como o Spring Boot usam o MVC para estruturar aplicações web.<br>Resposta Simples: MVC divide a aplicação em três: Model para dados, View para a tela e Controller para ações. Ajuda a organizar o código."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é uma API e como ela conecta partes do sistema?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Uma API, ou Interface de Programação de Aplicações, é um conjunto de regras que permite que diferentes partes de um sistema se comuniquem. Na arquitetura de um sistema, a API funciona como uma ponte entre componentes, como o frontend e o backend. Por exemplo, em um aplicativo, o frontend pode usar uma API para pedir ao backend a lista de produtos, e o backend responde com os dados. APIs são essenciais porque permitem que os componentes sejam independentes, facilitando a integração e a substituição de partes do sistema. Um tipo comum é a API REST, que usa HTTP para comunicação.<br>Resposta Simples: API é como uma ponte que deixa as partes do sistema conversarem, como o frontend pedir dados ao backend."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é a diferença entre arquitetura monolítica e microserviços?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Uma arquitetura monolítica é quando todo o sistema é construído como uma única aplicação, com todas as partes, como frontend, backend e banco de dados, funcionando juntas em um único bloco. É mais simples para projetos pequenos, mas pode ficar difícil de gerenciar conforme o sistema cresce, porque uma mudança em uma parte exige recompilar e implantar tudo. Já a arquitetura de microserviços divide o sistema em pequenos serviços independentes, cada um com uma função específica, como um serviço para usuários e outro para pedidos. Esses serviços se comunicam por APIs e podem ser desenvolvidos e implantados separadamente. Microserviços são mais flexíveis, mas mais complexos para gerenciar.<br>Resposta Simples: Monolítica é tudo junto em uma aplicação só, mais simples, mas difícil de mudar. Microserviços são pedaços separados, mais fáceis de crescer, mas mais complicados."
+                }
+            ]
+        }
+    ]
+}

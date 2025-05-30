@@ -1,0 +1,127 @@
+{
+    "title": "Orientação a Objetos (POO)",
+    "description": "A Programação Orientada a Objetos (POO) é um paradigma de programação que organiza o código em objetos, que combinam dados e comportamentos. Este arquivo foca nos conceitos fundamentais de POO em Java, essenciais para construir uma base sólida.",
+    "subsections": [
+        {
+            "subtitle": "O que é Programação Orientada a Objetos (POO)?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): A Programação Orientada a Objetos é um jeito de programar onde organizamos o código em objetos, que são como 'coisas' do mundo real. Cada objeto tem dados, chamados atributos, e comportamentos, chamados métodos. Por exemplo, um objeto Carro pode ter a cor como atributo e um comportamento como acelerar. A POO é baseada em quatro pilares principais: encapsulamento, herança, polimorfismo e abstração. Isso ajuda a deixar o código mais organizado, reutilizável e fácil de manter.<br>Resposta Simples: POO é programar usando objetos, que têm informações e ações, como um Carro que tem cor e pode acelerar."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é uma classe e um objeto?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public class Carro {\n    String cor;\n    int velocidade;\n\n    void acelerar() {\n        velocidade += 10;\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Carro meuCarro = new Carro();\n        meuCarro.cor = \"Vermelho\";\n        meuCarro.acelerar();\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Uma classe é como um modelo ou projeto que define como um objeto deve ser. Ela descreve os dados, que chamamos de atributos, e os comportamentos, que chamamos de métodos. Por exemplo, uma classe Carro pode definir que todo carro tem uma cor e pode acelerar. Um objeto é uma instância dessa classe, ou seja, é o Carro específico que criamos com base nesse modelo, como um carro vermelho que está a 60 km/h. Em Java, usamos a palavra 'new' para criar um objeto a partir de uma classe.<br>Resposta Simples: A classe é o molde de algo, como um Carro. O objeto é o Carro de verdade, criado a partir desse molde."
+                }
+            ]
+        },
+        {
+            "subtitle": "Quais são os quatro pilares da POO?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "",
+                    "explanation": "Resposta Ideal (Júnior): Os quatro pilares da POO são: 1) Encapsulamento, que protege os dados de um objeto, permitindo acesso controlado; 2) Herança, que permite que uma classe herde características de outra, reutilizando código; 3) Polimorfismo, que deixa um objeto ter diferentes comportamentos dependendo do contexto; e 4) Abstração, que simplifica o código ao esconder detalhes complexos e mostrar só o que é essencial. Esses pilares ajudam a criar programas mais organizados e fáceis de manter.<br>Resposta Simples: São quatro ideias principais: encapsulamento, herança, polimorfismo e abstração. Eles ajudam a organizar o código."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é encapsulamento e como usar o modificador 'private'?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public class ContaBancaria {\n    private double saldo;\n\n    public void depositar(double valor) {\n        if (valor > 0) {\n            saldo += valor;\n        }\n    }\n\n    public double getSaldo() {\n        return saldo;\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Encapsulamento é o pilar da POO que protege os dados de um objeto, escondendo os detalhes internos e permitindo acesso apenas por métodos específicos. Em Java, usamos o modificador 'private' para fazer isso: ele restringe o acesso a um atributo ou método, permitindo que só a própria classe o utilize. Por exemplo, se um atributo como saldo de uma conta bancária é privado, outras classes não podem alterá-lo diretamente; elas precisam usar métodos públicos, como depositar ou sacar, que têm validações para garantir que o saldo não fique negativo. Isso aumenta a segurança, evita mudanças acidentais nos dados e facilita a manutenção do código.<br>Resposta Simples: Encapsulamento é esconder os dados com 'private' e só deixar mexer neles por métodos, como proteger o saldo de uma conta."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é herança e qual sua vantagem?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public class Animal {\n    void comer() {\n        System.out.println(\"Animal comendo\");\n    }\n}\n\npublic class Gato extends Animal {\n    void miar() {\n        System.out.println(\"Miau!\");\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Herança é quando uma classe, chamada subclasse, herda características de outra classe, chamada superclasse. Por exemplo, uma classe Gato pode herdar de uma classe Animal, ganhando características como comer, que já estão definidas na classe Animal, e adicionando algo específico, como miar. A grande vantagem da herança é a reutilização de código: não preciso repetir as mesmas características em várias classes, o que reduz duplicação e facilita a manutenção. Também ajuda a organizar o código em uma hierarquia lógica.<br>Resposta Simples: Herança é quando uma classe ganha coisas de outra, como um Gato que herda comer de Animal. Isso evita repetir código."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é polimorfismo e como ele é útil?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public interface Animal {\n    void fazerSom();\n}\n\npublic class Cachorro implements Animal {\n    public void fazerSom() {\n        System.out.println(\"Latir!\");\n    }\n}\n\npublic class Gato implements Animal {\n    public void fazerSom() {\n        System.out.println(\"Miar!\");\n    }\n}\n\npublic class Main {\n    public static void main(String[] args) {\n        Animal animal1 = new Cachorro();\n        Animal animal2 = new Gato();\n        animal1.fazerSom(); // Latir!\n        animal2.fazerSom(); // Miar!\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Polimorfismo significa 'muitas formas' e é o pilar da POO que permite que um objeto tenha diferentes comportamentos dependendo do contexto. Por exemplo, imagine uma ação chamada 'fazer som': um cachorro late, um gato mia, mas ambos são animais. Com polimorfismo, posso tratar todos como animais e chamar a ação 'fazer som', e cada um responde do seu jeito. Isso é útil porque simplifica o código: posso trabalhar com objetos de forma genérica, sem precisar saber exatamente qual tipo de objeto é, tornando o programa mais flexível e fácil de expandir.<br>Resposta Simples: Polimorfismo é quando objetos diferentes podem fazer a mesma ação de jeitos diferentes, como um cachorro latir e um gato miar."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é abstração e qual sua função?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public abstract class Veiculo {\n    abstract void ligar();\n\n    void desligar() {\n        System.out.println(\"Veículo desligado\");\n    }\n}\n\npublic class Carro extends Veiculo {\n    void ligar() {\n        System.out.println(\"Carro ligado\");\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Abstração é o pilar da POO que simplifica o código ao esconder detalhes complexos e mostrar apenas o que é essencial. Por exemplo, se tenho um sistema de veículos, posso definir que todos os veículos precisam ligar e desligar, sem me preocupar com os detalhes de como um carro ou uma moto faz isso. Em Java, usamos classes abstratas ou interfaces para definir essas ações essenciais. A função da abstração é reduzir a complexidade, focando no que importa, e permitir que diferentes objetos implementem os detalhes de forma específica.<br>Resposta Simples: Abstração é simplificar, mostrando só o que importa, como dizer que um veículo liga, sem explicar como."
+                }
+            ]
+        },
+        {
+            "subtitle": "Qual a diferença entre uma classe abstrata e uma interface?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public abstract class Veiculo {\n    abstract void ligar();\n\n    void desligar() {\n        System.out.println(\"Veículo desligado\");\n    }\n}\n\npublic interface Desligavel {\n    void desligar();\n}",
+                    "explanation": "Resposta Ideal (Júnior): Uma classe abstrata é uma classe que não pode ser usada diretamente para criar objetos e pode ter tanto métodos com implementação quanto métodos sem implementação, que as subclasses precisam definir. Por exemplo, uma classe abstrata Veículo pode ter um método genérico desligar já implementado, mas deixar ligar para as subclasses definirem. Já uma interface é um contrato que só define métodos sem implementação, e qualquer classe que a use precisa implementar todos os métodos. Outra diferença é que uma classe só pode herdar de uma classe abstrata (herança única), mas pode implementar várias interfaces. Classes abstratas são usadas quando há uma relação 'é um', enquanto interfaces são para 'pode fazer'.<br>Resposta Simples: Classe abstrata pode ter métodos prontos e outros para completar, e só posso herdar uma. Interface só define o que fazer, e posso usar várias."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é o modificador 'static' no contexto de POO?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public class Contador {\n    private static int totalInstancias = 0;\n\n    public Contador() {\n        totalInstancias++;\n    }\n\n    public static int getTotalInstancias() {\n        return totalInstancias;\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): O modificador 'static', no contexto de POO, indica que um atributo ou método pertence à classe, e não a um objeto específico. Isso significa que posso acessar um método ou atributo estático sem precisar criar um objeto da classe. Por exemplo, se tenho um atributo estático para contar quantos objetos de uma classe foram criados, todos os objetos compartilham esse mesmo contador, porque ele pertence à classe, não a cada objeto. Métodos estáticos são úteis para ações que não dependem de um estado específico de um objeto, como um método para calcular algo genérico. Em POO, usamos 'static' com cuidado, porque ele quebra o princípio de que tudo deve estar ligado a objetos.<br>Resposta Simples: 'static' faz um atributo ou método ser da classe, não do objeto, como um contador que todos os objetos compartilham."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são Design Patterns e quais são os mais comuns em Java?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public class Singleton {\n    private static Singleton instance;\n\n    private Singleton() {}\n\n    public static Singleton getInstance() {\n        if (instance == null) {\n            instance = new Singleton();\n        }\n        return instance;\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Design Patterns são soluções padronizadas para problemas comuns em programação, especialmente em POO. Eles são como 'receitas' que ajudam a organizar o código de forma eficiente e reutilizável. Em Java, alguns padrões comuns são: 1) **Singleton**, que garante que uma classe tenha apenas uma instância, útil para gerenciar recursos compartilhados, como uma conexão com banco de dados; 2) **Factory**, que cria objetos sem especificar a classe exata, útil para criar diferentes tipos de objetos com base em condições; e 3) **Builder**, que ajuda a construir objetos complexos passo a passo, como configurar um objeto com muitos atributos. Esses padrões aplicam os pilares da POO, como encapsulamento e polimorfismo, para resolver problemas reais, como organizar serviços em uma aplicação Spring Boot.<br>Resposta Simples: Design Patterns são jeitos padrão de resolver problemas no código. Por exemplo, o Singleton faz uma classe ter só uma instância, como um único gerenciador de conexões."
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são modificadores de acesso em Java?",
+            "description": "",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "code": "public class Produto {\n    private String nome;\n    protected double preco;\n    public void setNome(String nome) {\n        this.nome = nome;\n    }\n}",
+                    "explanation": "Resposta Ideal (Júnior): Modificadores de acesso em Java controlam quem pode acessar um atributo, método ou classe. Os principais são: 'public', que permite acesso de qualquer lugar; 'private', que restringe o acesso só à própria classe; 'protected', que permite acesso dentro da mesma classe e subclasses, mesmo em pacotes diferentes; e o padrão (sem modificador), que permite acesso dentro do mesmo pacote. Esses modificadores são fundamentais em POO porque ajudam a implementar o encapsulamento, protegendo dados sensíveis e controlando como outras partes do programa interagem com uma classe. Por exemplo, um atributo privado só pode ser alterado por métodos da própria classe, garantindo segurança.<br>Resposta Simples: São regras que dizem quem pode acessar algo no código. 'public' é para todos, 'private' só para a classe, 'protected' para subclasses, e o padrão é para o mesmo pacote."
+                }
+            ]
+        }
+    ]
+}
