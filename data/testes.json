@@ -56,6 +56,28 @@
                     "code": ""
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em Testes",
+            "description": "Recomendações para escrever testes eficazes.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Escreva testes unitários para cada método importante; 2) Use nomes descritivos para testes (ex.: testSomarDoisNumeros); 3) Mantenha testes rápidos e independentes; 4) Use mocks para isolar dependências; 5) Mire 80%+ de cobertura, mas priorize cenários críticos. Isso garante qualidade e confiança.<br>Resposta Simples: Teste cada parte do código, use nomes claros, mocks e busque boa cobertura.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender testes.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) JUnit Tutorial (junit.org/junit5/docs): Aprenda JUnit; 2) Mockito (site.mockito.org): Guia para mocking; 3) Baeldung (baeldung.com): Tutoriais de testes em Java; 4) Testcontainers (testcontainers.org): Testes de integração. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use JUnit e Mockito para aprender, Baeldung para tutoriais e Testcontainers para integração.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }

@@ -45,6 +45,28 @@
                     "code": "# docker-compose.yml\nversion: '3.8'\nservices:\n  app:\n    image: meu-app\n    ports:\n      - \"8080:8080\"\n    depends_on:\n      - db\n  db:\n    image: mysql:8\n    environment:\n      MYSQL_ROOT_PASSWORD: senha\n    ports:\n      - \"3306:3306\""
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em Docker e DevOps",
+            "description": "Recomendações para contêineres e automação de implantação.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Use imagens leves no Dockerfile (ex.: openjdk:17-slim); 2) Nomeie imagens e contêineres claramente; 3) Configure CI/CD para testes e implantação automáticos; 4) Use Docker Compose para desenvolvimento multi-contêiner; 5) Monitore logs de contêineres. Isso melhora consistência e entrega.<br>Resposta Simples: Use imagens leves, nomeie bem, automatize com CI/CD, use Docker Compose e veja logs.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender Docker e DevOps.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Docker Hub (hub.docker.com): Explore imagens; 2) Play with Docker (labs.play-with-docker.com): Pratique comandos; 3) GitHub Actions (github.com/features/actions): Configure CI/CD; 4) Katacoda (katacoda.com): Tutoriais de Docker. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use Docker Hub para imagens, Play with Docker para praticar e GitHub Actions para CI/CD.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }

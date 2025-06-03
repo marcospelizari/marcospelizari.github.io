@@ -89,6 +89,28 @@
                     "code": "import org.springframework.web.bind.annotation.*;\n\n@RestController\n@RequestMapping(\"/api/produtos\")\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service;\n\n    @GetMapping\n    public List<Produto> listar() {\n        return service.listar();\n    }\n\n    @PostMapping\n    public Produto criar(@RequestBody Produto produto) {\n        return service.salvar(produto);\n    }\n}"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas no Spring Boot",
+            "description": "Recomendações para desenvolver aplicações eficientes e organizadas.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Use starters apenas para funcionalidades necessárias; 2) Estruture em camadas (controller, service, repository); 3) Valide entradas com @Valid; 4) Configure logs claros; 5) Teste endpoints com Postman. Isso melhora manutenção e performance.<br>Resposta Simples: Use só os starters que precisa, organize o código, valide dados e teste APIs.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender Spring Boot.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Spring Initializr (start.spring.io): Crie projetos com starters; 2) Spring Guides (spring.io/guides): Tutoriais práticos; 3) Baeldung (baeldung.com): Artigos sobre Spring; 4) Postman: Teste APIs. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use Spring Initializr para projetos, Spring Guides para tutoriais e Postman para testar APIs.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }

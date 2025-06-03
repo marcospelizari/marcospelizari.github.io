@@ -78,6 +78,28 @@
                     "code": "// Exemplo em Spring Boot\n@Controller // Camada de apresentação\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service; // Camada de negócios\n\n    @GetMapping(\"/produtos\")\n    public String listar(Model model) {\n        model.addAttribute(\"produtos\", service.listar());\n        return \"lista-produtos\"; // View\n    }\n}\n\n@Service // Camada de negócios\npublic class ProdutoService {\n    @Autowired\n    private ProdutoRepository repository; // Camada de dados\n\n    public List<Produto> listar() {\n        return repository.findAll();\n    }\n}"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em Arquitetura de Sistema",
+            "description": "Recomendações para estruturar sistemas escaláveis e manuteníveis.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Separe responsabilidades (ex.: MVC, camadas); 2) Use APIs para integrar componentes; 3) Planeje escalabilidade (ex.: microserviços para crescimento); 4) Documente a arquitetura com diagramas; 5) Priorize simplicidade para manutenção. Isso facilita evolução do sistema.<br>Resposta Simples: Divida o sistema, use APIs, planeje crescimento, documente e mantenha simples.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender arquitetura.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Draw.io (diagrams.net): Crie diagramas de arquitetura; 2) C4 Model (c4model.com): Aprenda a documentar sistemas; 3) Martin Fowler (martinfowler.com): Artigos sobre arquitetura; 4) Udemy: Cursos de arquitetura de software. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use Draw.io para diagramas, C4 Model para documentar e Martin Fowler para aprender.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }

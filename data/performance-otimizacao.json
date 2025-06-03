@@ -56,6 +56,28 @@
                     "code": "@Service\npublic class EmailService {\n    @Async\n    public CompletableFuture<Void> enviarEmail(String destinatario, String mensagem) {\n        // Simula envio lento\n        Thread.sleep(2000);\n        System.out.println(\"Email enviado para \" + destinatario);\n        return CompletableFuture.completedFuture(null);\n    }\n}"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em Performance",
+            "description": "Recomendações para otimizar aplicações backend.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Use índices e consultas otimizadas no banco; 2) Aplique caching para dados frequentes; 3) Minimize objetos na JVM para reduzir GC; 4) Use assincronismo para tarefas demoradas; 5) Monitore performance com ferramentas como VisualVM. Isso melhora velocidade e escalabilidade.<br>Resposta Simples: Otimize consultas, use cache, evite objetos extras, faça tarefas assíncronas e monitore.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender otimização.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) VisualVM (visualvm.github.io): Monitore JVM; 2) JMeter (jmeter.apache.org): Teste performance de APIs; 3) Redis (redis.io): Pratique caching; 4) Baeldung (baeldung.com): Tutoriais de performance. Essas ferramentas ajudam a otimizar.<br>Resposta Simples: Use VisualVM para monitorar, JMeter para testes e Redis para cache.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }
