@@ -111,6 +111,28 @@
                     "code": "CREATE INDEX idx_nome ON usuarios(nome);"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em Banco de Dados",
+            "description": "Recomendações para gerenciar bancos de dados de forma eficiente.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Use índices em colunas frequentemente consultadas; 2) Normalize tabelas para evitar redundâncias; 3) Escreva consultas específicas, evitando SELECT *; 4) Use transações para operações críticas; 5) Faça backups regulares. Isso melhora performance e segurança.<br>Resposta Simples: Use índices, organize tabelas, busque só o necessário, use transações e faça backups.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender Banco de Dados.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) SQLZoo (sqlzoo.net): Exercícios de SQL; 2) DB Fiddle (dbfiddle.uk): Teste consultas online; 3) MySQL Workbench: Gerencie bancos MySQL; 4) Mode Analytics SQL Tutorial (mode.com/sql-tutorial): Aprenda SQL. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Pratique SQL com SQLZoo, teste queries no DB Fiddle e use MySQL Workbench.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }

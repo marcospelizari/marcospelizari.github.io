@@ -122,6 +122,28 @@
                     "code": "public class Motor {\n    String tipo;\n    Motor(String tipo) { this.tipo = tipo; }\n}\npublic class Carro {\n    Motor motor;\n    Carro(String tipoMotor) {\n        this.motor = new Motor(tipoMotor);\n    }\n}"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em POO",
+            "description": "Recomendações para aplicar POO de forma eficiente em Java.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Use encapsulamento com atributos private e getters/setters; 2) Prefira composição a herança quando possível; 3) Crie classes com responsabilidade única (princípio SOLID); 4) Evite métodos longos e complexos; 5) Use interfaces para flexibilidade. Isso melhora a organização e reutilização do código.<br>Resposta Simples: Esconda dados, use composição, faça classes simples e claras, e prefira interfaces.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender POO.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Exercism (exercism.org): Exercícios de POO em Java; 2) Refactoring.Guru (refactoring.guru): Padrões de projeto e SOLID; 3) Udemy (udemy.com): Cursos de POO em Java; 4) IntelliJ IDEA: Use para criar projetos POO. Essas ferramentas ajudam a aplicar POO.<br>Resposta Simples: Pratique com Exercism, aprenda SOLID no Refactoring.Guru e use IntelliJ para projetos.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }
