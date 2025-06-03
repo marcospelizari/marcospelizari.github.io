@@ -78,6 +78,28 @@
                     "code": "git restore arquivo.txt\ngit revert abc123 # ID do commit\ngit reset --hard abc123 # Remove commit (cuidado!)"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em Git",
+            "description": "Recomendações para gerenciar código com Git de forma eficiente.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Faça commits pequenos e descritivos (ex.: 'Corrige bug na API'); 2) Use branches para novas funcionalidades (ex.: feature/nova-api); 3) Atualize regularmente com `git pull`; 4) Resolva conflitos com cuidado, revisando o código; 5) Use .gitignore para excluir arquivos desnecessários. Isso melhora colaboração e organização.<br>Resposta Simples: Faça commits claros, use branches, atualize o código e evite arquivos extras.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender Git.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Learn Git Branching (learngitbranching.js.org): Tutoriais interativos; 2) GitKraken (gitkraken.com): Cliente visual para Git; 3) GitHub (github.com): Hospede repositórios e pratique; 4) Atlassian Git Tutorials (atlassian.com/git): Guias detalhados. Essas ferramentas ajudam a dominar Git.<br>Resposta Simples: Use Learn Git Branching para praticar, GitHub para projetos e GitKraken para visualizar.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }

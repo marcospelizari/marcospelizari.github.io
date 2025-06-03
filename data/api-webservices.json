@@ -56,6 +56,28 @@
                     "code": "import org.springframework.web.client.RestTemplate;\n\npublic class ApiClient {\n    public Produto[] listarProdutos() {\n        RestTemplate restTemplate = new RestTemplate();\n        return restTemplate.getForObject(\"https://api.exemplo.com/produtos\", Produto[].class);\n    }\n}"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em APIs",
+            "description": "Recomendações para criar e consumir APIs eficientes.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Use URLs claras e consistentes (ex.: /api/v1/produtos); 2) Retorne códigos de status HTTP corretos (ex.: 200, 404); 3) Valide e documente endpoints (ex.: com OpenAPI); 4) Limite dados retornados para performance; 5) Trate erros com mensagens úteis. Isso melhora usabilidade e performance.<br>Resposta Simples: Faça URLs simples, use códigos certos, documente e retorne só o necessário.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender APIs.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Postman (postman.com): Teste APIs; 2) Swagger (swagger.io): Documente APIs REST; 3) GraphQL Playground (graphql.org): Pratique GraphQL; 4) REST API Tutorial (restfulapi.net): Aprenda REST. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use Postman para testar, Swagger para documentar e GraphQL Playground para GraphQL.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }

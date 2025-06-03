@@ -144,6 +144,28 @@
                     "code": "class Pessoa {\n    String nome;\n    Pessoa(String nome) { // Construtor\n        this.nome = nome;\n    }\n    void saudar() { // Método\n        System.out.println(\"Olá, \" + nome);\n    }\n}"
                 }
             ]
+        },
+        {
+            "subtitle": "Boas práticas em Java",
+            "description": "Recomendações para escrever código Java limpo e eficiente.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) Use nomes descritivos para variáveis e métodos (ex.: `calcularTotal`); 2) Siga convenções de código (camelCase para métodos); 3) Evite objetos desnecessários para otimizar memória; 4) Use try-with-resources para gerenciar recursos; 5) Documente com JavaDoc. Isso melhora legibilidade e manutenção.<br>Resposta Simples: Nomeie bem o código, siga padrões, evite desperdício de memória e documente.",
+                    "code": ""
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para prática",
+            "description": "Ferramentas e plataformas para aprender Java.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: 1) CodingBat (codingbat.com): Exercícios de lógica; 2) HackerRank (hackerrank.com): Desafios de programação; 3) Oracle Java Tutorials (docs.oracle.com/javase/tutorial): Guia oficial; 4) IntelliJ IDEA Community: IDE para prática. Essas ferramentas ajudam a consolidar conceitos.<br>Resposta Simples: Pratique com CodingBat, HackerRank, tutoriais da Oracle e use IntelliJ para programar.",
+                    "code": ""
+                }
+            ]
         }
     ]
 }
