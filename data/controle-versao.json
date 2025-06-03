@@ -1,48 +1,81 @@
 {
     "title": "Controle de Versão (Git)",
-    "description": "Git é a ferramenta padrão para controle de versão, permitindo que desenvolvedores gerenciem mudanças no código, colaborem em equipe e mantenham o histórico do projeto. Este tópico cobre os conceitos básicos para usar Git no desenvolvimento backend.",
+    "description": "Git é a ferramenta padrão para controle de versão, permitindo gerenciar mudanças no código, colaborar em equipe e manter o histórico do projeto. Este guia cobre conceitos básicos para desenvolvedores juniores usarem Git no desenvolvimento.",
     "subsections": [
         {
             "subtitle": "O que é Git e por que ele é importante?",
-            "description": "",
+            "description": "Introdução ao Git e sua relevância no desenvolvimento de software.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "code": "",
-                    "explanation": "Resposta Ideal (Júnior): Git é um sistema de controle de versão distribuído que rastreia mudanças no código ao longo do tempo. Ele permite que vários desenvolvedores trabalhem no mesmo projeto, mantendo um histórico de alterações, possibilitando reverter erros e colaborar sem conflitos. Git é importante porque facilita o trabalho em equipe, mantém o código organizado e é amplamente usado em plataformas como GitHub, GitLab e Bitbucket.<br>Resposta Simples: Git é uma ferramenta que guarda o histórico do código e ajuda a trabalhar em equipe sem bagunçar o projeto."
+                    "explanation": "Resposta Ideal: Git é um sistema de controle de versão distribuído que rastreia alterações no código, permitindo colaboração em equipe, histórico de mudanças e reversão de erros. É amplamente usado em plataformas como GitHub e GitLab por sua flexibilidade e portabilidade.<br>Resposta Simples: Git guarda o histórico do código e ajuda equipes a trabalharem juntas sem conflitos.",
+                    "code": ""
                 }
             ]
         },
         {
-            "subtitle": "O que são commits e como usá-los?",
-            "description": "",
+            "subtitle": "O que são commits e como criá-los?",
+            "description": "Como registrar mudanças no código com commits.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "code": "git add .\ngit commit -m \"Adiciona classe ProdutoController\"",
-                    "explanation": "Resposta Ideal (Júnior): Um commit é como um 'salvar' do estado atual do código no repositório Git. Ele registra as mudanças feitas nos arquivos, com uma mensagem descrevendo o que foi alterado (ex.: 'Corrige bug na API'). Para criar um commit, usamos `git add` para selecionar os arquivos alterados e `git commit -m \"mensagem\"` para salvá-los com uma descrição. Commits são importantes porque criam um histórico claro e permitem reverter mudanças se necessário.<br>Resposta Simples: Um commit é salvar as mudanças do código com uma mensagem explicando o que mudou, usando `git commit`."
+                    "explanation": "Resposta Ideal: Um commit é um registro das alterações no código, como um 'salvar' com uma mensagem descritiva. Usa-se `git add` para selecionar arquivos alterados e `git commit -m \"mensagem\"` para salvá-los. Commits criam um histórico claro e permitem reverter mudanças.<br>Resposta Simples: Commit é salvar mudanças com uma mensagem explicando o que foi feito.",
+                    "code": "git add .\ngit commit -m \"Adiciona classe ProdutoController\""
                 }
             ]
         },
         {
-            "subtitle": "O que são branches e merges?",
-            "description": "",
+            "subtitle": "O que são branches e como fazer merge?",
+            "description": "Como usar branches para desenvolver em paralelo e mesclar mudanças.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "code": "git branch feature/nova-api\ngit checkout feature/nova-api\n# faz alterações\ngit add .\ngit commit -m \"Cria nova API\"\ngit checkout main\ngit merge feature/nova-api",
-                    "explanation": "Resposta Ideal (Júnior): Um branch é uma ramificação do código que permite trabalhar em uma versão paralela sem afetar o código principal (geralmente o branch `main`). Por exemplo, você pode criar um branch `feature/nova-api` para desenvolver uma nova funcionalidade. Quando o trabalho está pronto, você faz um merge, que combina as mudanças do branch com o `main`. Isso é útil para organizar o desenvolvimento e evitar conflitos em equipes. Comandos como `git branch` e `git merge` são usados para isso.<br>Resposta Simples: Um branch é uma cópia do código para trabalhar sem mexer no original. Merge junta o branch de volta ao código principal."
+                    "explanation": "Resposta Ideal: Um branch é uma versão paralela do código, como `feature/nova-api`, que não afeta o branch principal (`main`). Após concluir o trabalho, o merge combina as mudanças no `main`. Usa-se `git branch` para criar e `git merge` para mesclar.<br>Resposta Simples: Branch é uma cópia do código para trabalhar sem mexer no original. Merge junta as mudanças de volta.",
+                    "code": "git branch feature/nova-api\ngit checkout feature/nova-api\ngit add .\ngit commit -m \"Cria nova API\"\ngit checkout main\ngit merge feature/nova-api"
                 }
             ]
         },
         {
             "subtitle": "O que é um conflito e como resolvê-lo?",
-            "description": "",
+            "description": "Como lidar com conflitos durante merges.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "code": "",
-                    "explanation": "Resposta Ideal (Júnior): Um conflito acontece quando o Git não consegue combinar automaticamente as mudanças de dois branches, geralmente porque o mesmo trecho de código foi alterado de formas diferentes. Para resolver, você precisa abrir os arquivos marcados pelo Git, que mostram as mudanças conflitantes (indicadas por `<<<<<<<` e `>>>>>>>`). Você escolhe qual versão manter (ou combina as duas), remove as marcações e faz um commit. Ferramentas como VS Code ajudam a visualizar conflitos.<br>Resposta Simples: Um conflito é quando duas pessoas mudam a mesma parte do código. Você escolhe qual mudança fica, edita o arquivo e faz um commit."
+                    "explanation": "Resposta Ideal: Um conflito ocorre quando o Git não consegue combinar mudanças de dois branches automaticamente, como alterações no mesmo trecho de código. Para resolver, edite o arquivo, escolha as mudanças desejadas, remova marcações (`<<<<<<<`, `>>>>>>>`) e faça um commit.<br>Resposta Simples: Conflito é quando duas mudanças no mesmo código brigam. Você edita o arquivo, escolhe o que fica e faz um commit.",
+                    "code": "// Exemplo de conflito no arquivo:\n<<<<<<< HEAD\ntexto = \"Versão 1\";\n=======\ntexto = \"Versão 2\";\n>>>>>>> feature/nova-api\n// Após resolver:\ntexto = \"Versão Combinada\";\ngit add .\ngit commit -m \"Resolve conflito\""
+                }
+            ]
+        },
+        {
+            "subtitle": "O que são repositórios remotos e como usá-los?",
+            "description": "Como trabalhar com repositórios hospedados em plataformas como GitHub.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: Um repositório remoto é uma cópia do projeto hospedada em servidores como GitHub ou GitLab, permitindo colaboração. Usa-se `git clone` para baixar, `git push` para enviar commits e `git pull` para atualizar com mudanças remotas.<br>Resposta Simples: Repositório remoto é o projeto guardado online. Você baixa com `git clone`, envia com `git push` e atualiza com `git pull`.",
+                    "code": "git clone https://github.com/usuario/projeto.git\ngit add .\ngit commit -m \"Adiciona funcionalidade\"\ngit push origin main\ngit pull origin main"
+                }
+            ]
+        },
+        {
+            "subtitle": "O que é git status e git log?",
+            "description": "Como verificar o estado do repositório e o histórico de commits.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: `git status` mostra o estado atual do repositório, como arquivos alterados ou prontos para commit. `git log` exibe o histórico de commits, com mensagens, autores e datas. São úteis para acompanhar o progresso do projeto.<br>Resposta Simples: `git status` mostra o que mudou no projeto. `git log` lista todos os commits feitos.",
+                    "code": "git status\ngit log --oneline"
+                }
+            ]
+        },
+        {
+            "subtitle": "Como reverter mudanças no Git?",
+            "description": "Como desfazer alterações ou commits indesejados.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Resposta Ideal: Para desfazer mudanças não salvas, usa-se `git restore` (arquivos) ou `git checkout --` (versão antiga). Para reverter um commit, usa-se `git revert` (cria um novo commit desfazendo) ou `git reset` (remove o commit, com cuidado). Esses comandos ajudam a corrigir erros.<br>Resposta Simples: Usa `git restore` para desfazer mudanças não salvas e `git revert` para cancelar um commit.",
+                    "code": "git restore arquivo.txt\ngit revert abc123 # ID do commit\ngit reset --hard abc123 # Remove commit (cuidado!)"
                 }
             ]
         }
