@@ -1,80 +1,58 @@
 {
     "title": "APIs (REST e GraphQL)",
-    "description": "APIs são essenciais para comunicação entre sistemas no desenvolvimento backend. Este guia cobre os fundamentos de REST e uma introdução ao GraphQL, usados em aplicações Java com Spring Boot, para desenvolvedores juniores.",
+    "description": "APIs (Application Programming Interfaces) permitem comunicação entre sistemas, essencial para backend.",
     "subsections": [
         {
-            "subtitle": "O que é uma API?",
-            "description": "Como APIs permitem comunicação entre sistemas.",
+            "subtitle": "Fundamentos de APIs",
+            "description": "Como APIs conectam sistemas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Uma API (Application Programming Interface) define regras para que sistemas se comuniquem, como um frontend (site ou app) pedindo dados a um backend. Por exemplo, uma API pode listar produtos ou processar pedidos. APIs promovem integração, modularidade e compatibilidade entre tecnologias.<br>Resposta Simples: Uma API é como um garçom que leva pedidos do frontend ao backend e traz a resposta.",
-                    "code": ""
+                    "explanation": "APIs (Application Programming Interfaces) definem regras para troca de dados via HTTP (Hypertext Transfer Protocol), retornando JSON (JavaScript Object Notation). Conectam frontend e backend ou sistemas externos.",
+                    "code": "GET /produtos\n[\n    {\"id\": 1, \"nome\": \"Notebook\"}\n]"
                 }
             ]
         },
         {
-            "subtitle": "O que é REST?",
-            "description": "Princípios da arquitetura REST para APIs.",
+            "subtitle": "REST e GraphQL",
+            "description": "Principais tipos de APIs.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: REST (Representational State Transfer) é um estilo de arquitetura para APIs baseado em HTTP. Usa métodos como GET (buscar), POST (criar), PUT (atualizar) e DELETE (excluir) para manipular recursos identificados por URLs (ex.: /produtos). Respostas são em JSON, e APIs REST são stateless (requisições independentes) com códigos de status HTTP (ex.: 200 OK). Em Spring Boot, REST é implementado com anotações como @RestController.<br>Resposta Simples: REST usa HTTP para criar APIs, com URLs como /produtos e comandos como GET ou POST, retornando JSON.",
-                    "code": "GET /produtos HTTP/1.1\nHost: api.exemplo.com\n\n// Resposta\n[\n    {\"id\": 1, \"nome\": \"Notebook\", \"preco\": 5000},\n    {\"id\": 2, \"nome\": \"Celular\", \"preco\": 2000}\n]"
+                    "explanation": "REST (Representational State Transfer) usa endpoints fixos (ex.: /produtos) e métodos HTTP (GET, POST). GraphQL permite ao cliente escolher dados específicos em uma única URL.",
+                    "code": "query {\n  produtos {\n    nome\n  }\n}\n// Resposta\n{\"data\": {\"produtos\": [{\"nome\": \"Notebook\"}] }}"
                 }
             ]
         },
         {
-            "subtitle": "O que é GraphQL?",
-            "description": "Como GraphQL difere de REST.",
+            "subtitle": "Códigos de Status HTTP",
+            "description": "Como interpretar respostas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: GraphQL é uma tecnologia para APIs onde o cliente especifica exatamente os dados que quer, evitando dados desnecessários (overfetching) ou insuficientes (underfetching). Usa uma única URL para consultas (queries) ou mutações (alterações), retornando JSON. Diferente do REST, que tem endpoints fixos, GraphQL é mais flexível. Em Java, usa-se com bibliotecas como graphql-java no Spring Boot.<br>Resposta Simples: GraphQL deixa o cliente escolher quais dados quer, como só nome e preço, diferente do REST que dá tudo.",
-                    "code": "query {\n  produtos {\n    nome\n    preco\n  }\n}\n\n// Resposta\n{\n  \"data\": {\n    \"produtos\": [\n      {\"nome\": \"Notebook\", \"preco\": 5000},\n      {\"nome\": \"Celular\", \"preco\": 2000}\n    ]\n  }\n}"
+                    "explanation": "Códigos HTTP indicam o resultado: 2xx (sucesso, ex.: 200 OK), 4xx (erro do cliente, ex.: 404 Not Found), 5xx (erro do servidor). Orientam o cliente sobre a requisição.",
+                    "code": "HTTP/1.1 404 Not Found\n{\"error\": \"Produto não encontrado\"}"
                 }
             ]
         },
         {
-            "subtitle": "O que são códigos de status HTTP?",
-            "description": "Como interpretar respostas de APIs.",
+            "subtitle": "Consumo e Teste de APIs",
+            "description": "Como interagir e validar APIs.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Códigos de status HTTP indicam o resultado de uma requisição. Principais categorias: 2xx (sucesso, ex.: 200 OK, 201 Created), 3xx (redirecionamento, ex.: 301 Moved Permanently), 4xx (erros do cliente, ex.: 404 Not Found, 400 Bad Request), 5xx (erros do servidor, ex.: 500 Internal Server Error). Em APIs REST, eles orientam o cliente sobre o sucesso ou falha.<br>Resposta Simples: Códigos como 200 (tudo certo) ou 404 (não encontrado) mostram se a requisição funcionou ou deu erro.",
-                    "code": "HTTP/1.1 404 Not Found\nContent-Type: application/json\n\n{\"error\": \"Produto não encontrado\"}"
+                    "explanation": "Consuma APIs com RestTemplate ou WebClient em Java. Teste com RestAssured ou Postman, verificando status e respostas JSON.",
+                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}"
                 }
             ]
         },
         {
-            "subtitle": "Como consumir uma API?",
-            "description": "Como fazer chamadas a APIs.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender APIs.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Consumir uma API envolve enviar requisições HTTP (GET, POST, etc.) para os endpoints da API e processar as respostas, geralmente em JSON. Em Java, usa-se bibliotecas como RestTemplate ou WebClient (Spring) para fazer chamadas. Por exemplo, um GET para /produtos retorna uma lista de produtos. É importante tratar códigos de status e erros.<br>Resposta Simples: Consumir uma API é chamar seus endpoints, como pedir uma lista de produtos, e usar a resposta, usando ferramentas como RestTemplate.",
-                    "code": "import org.springframework.web.client.RestTemplate;\n\npublic class ApiClient {\n    public Produto[] listarProdutos() {\n        RestTemplate restTemplate = new RestTemplate();\n        return restTemplate.getForObject(\"https://api.exemplo.com/produtos\", Produto[].class);\n    }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "Boas práticas em APIs",
-            "description": "Recomendações para criar e consumir APIs eficientes.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Use URLs claras e consistentes (ex.: /api/v1/produtos); 2) Retorne códigos de status HTTP corretos (ex.: 200, 404); 3) Valide e documente endpoints (ex.: com OpenAPI); 4) Limite dados retornados para performance; 5) Trate erros com mensagens úteis. Isso melhora usabilidade e performance.<br>Resposta Simples: Faça URLs simples, use códigos certos, documente e retorne só o necessário.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender APIs.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Postman (postman.com): Teste APIs; 2) Swagger (swagger.io): Documente APIs REST; 3) GraphQL Playground (graphql.org): Pratique GraphQL; 4) REST API Tutorial (restfulapi.net): Aprenda REST. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use Postman para testar, Swagger para documentar e GraphQL Playground para GraphQL.",
+                    "explanation": "Use Postman (testes), Swagger (documentação), GraphQL Playground (GraphQL) e REST API Tutorial (guias).",
                     "code": ""
                 }
             ]

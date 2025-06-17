@@ -1,69 +1,58 @@
 {
-    "title": "Contêineres e DevOps Básico (Docker, CI/CD)",
-    "description": "Contêineres e DevOps modernizam a implantação e gerenciamento de aplicações backend. Este guia cobre conceitos básicos de Docker e CI/CD para desenvolvedores juniores.",
+    "title": "Contêineres e DevOps",
+    "description": "Docker e CI/CD (Continuous Integration/Continuous Deployment) modernizam a implantação de aplicações backend.",
     "subsections": [
         {
-            "subtitle": "O que são contêineres e Docker?",
-            "description": "Introdução aos contêineres e o uso do Docker.",
+            "subtitle": "Fundamentos de Docker",
+            "description": "Como usar contêineres.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Contêineres empacotam uma aplicação e suas dependências (ex.: Java, bibliotecas) para rodar consistentemente em qualquer ambiente. Docker é uma ferramenta que cria e gerencia esses contêineres, como para uma aplicação Spring Boot. Ele simplifica implantação, elimina conflitos de configuração e facilita escalabilidade.<br>Resposta Simples: Contêineres são caixas com tudo que a aplicação precisa. Docker cria essas caixas para rodar o código igual em qualquer lugar.",
-                    "code": "FROM openjdk:17\nWORKDIR /app\nCOPY target/meu-app.jar meu-app.jar\nENTRYPOINT [\"java\", \"-jar\", \"meu-app.jar\"]"
+                    "explanation": "Docker empacota aplicações e dependências em contêineres, rodando consistentemente em qualquer ambiente. Um Dockerfile define a imagem.",
+                    "code": "FROM openjdk:17\nCOPY target/meu-app.jar meu-app.jar\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-jar\", \"meu-app.jar\"]\ndocker build -t meu-app .\ndocker run -p 8080:8080 meu-app"
                 }
             ]
         },
         {
-            "subtitle": "Como criar e rodar um contêiner Docker?",
-            "description": "Passos para construir e executar contêineres.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Para criar um contêiner, escreve-se um Dockerfile com instruções, como definir a imagem base (ex.: Java) e copiar o JAR da aplicação. Usa-se `docker build` para criar a imagem e `docker run` para executar o contêiner, mapeando portas (ex.: 8080) para acesso. Isso garante que a aplicação rode isolada e consistente.<br>Resposta Simples: Crio um Dockerfile, uso `docker build` para fazer a imagem e `docker run` para rodar a aplicação.",
-                    "code": "# Dockerfile\nFROM openjdk:17\nCOPY target/meu-app.jar meu-app.jar\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-jar\", \"meu-app.jar\"]\n\n# Comandos\ndocker build -t meu-app .\ndocker run -p 8080:8080 meu-app"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que é CI/CD?",
-            "description": "Como CI/CD automatiza desenvolvimento e implantação.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: CI/CD (Integração e Entrega/Implantação Contínua) automatiza a construção, teste e implantação de código. CI executa testes e compila a aplicação a cada commit, garantindo qualidade. CD implanta o código testado em ambientes como produção. Ferramentas como GitHub Actions criam pipelines para compilar JARs, rodar testes e implantar contêineres Docker, reduzindo erros e acelerando entregas.<br>Resposta Simples: CI/CD testa e implanta o código automaticamente a cada mudança, usando ferramentas como GitHub Actions.",
-                    "code": "# .github/workflows/ci-cd.yml\nname: CI/CD Pipeline\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - name: Build JAR\n        run: mvn clean package\n      - name: Build Docker Image\n        run: docker build -t meu-app .\n      - name: Deploy\n        run: docker push meu-app"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que é Docker Compose?",
+            "subtitle": "Docker Compose",
             "description": "Como gerenciar múltiplos contêineres.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Docker Compose é uma ferramenta para definir e gerenciar múltiplos contêineres em um único arquivo YAML (docker-compose.yml). Por exemplo, pode-se configurar um contêiner para uma aplicação Spring Boot e outro para um banco MySQL, especificando portas, redes e dependências. Usa-se `docker-compose up` para iniciar todos os contêineres. É útil para ambientes de desenvolvimento com vários serviços.<br>Resposta Simples: Docker Compose junta vários contêineres, como app e banco, em um arquivo e roda tudo com um comando.",
-                    "code": "# docker-compose.yml\nversion: '3.8'\nservices:\n  app:\n    image: meu-app\n    ports:\n      - \"8080:8080\"\n    depends_on:\n      - db\n  db:\n    image: mysql:8\n    environment:\n      MYSQL_ROOT_PASSWORD: senha\n    ports:\n      - \"3306:3306\""
+                    "explanation": "Docker Compose define serviços, como app e banco, em um arquivo YAML (YAML Ain't Markup Language). Inicia tudo com docker-compose up.",
+                    "code": "version: '3.8'\nservices:\n  app:\n    image: meu-app\n    ports:\n      - \"8080:8080\"\n  db:\n    image: mysql:8\n    ports:\n      - \"3306:3306\""
                 }
             ]
         },
         {
-            "subtitle": "Boas práticas em Docker e DevOps",
-            "description": "Recomendações para contêineres e automação de implantação.",
+            "subtitle": "CI/CD",
+            "description": "Como automatizar implantação.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Use imagens leves no Dockerfile (ex.: openjdk:17-slim); 2) Nomeie imagens e contêineres claramente; 3) Configure CI/CD para testes e implantação automáticos; 4) Use Docker Compose para desenvolvimento multi-contêiner; 5) Monitore logs de contêineres. Isso melhora consistência e entrega.<br>Resposta Simples: Use imagens leves, nomeie bem, automatize com CI/CD, use Docker Compose e veja logs.",
-                    "code": ""
+                    "explanation": "CI/CD (Continuous Integration/Continuous Deployment) automatiza testes e implantação com pipelines, como GitHub Actions, usando YAML.",
+                    "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - run: mvn clean package\n      - run: docker build -t meu-app ."
                 }
             ]
         },
         {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender Docker e DevOps.",
+            "subtitle": "Introdução ao Kubernetes",
+            "description": "Como orquestrar contêineres.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Docker Hub (hub.docker.com): Explore imagens; 2) Play with Docker (labs.play-with-docker.com): Pratique comandos; 3) GitHub Actions (github.com/features/actions): Configure CI/CD; 4) Katacoda (katacoda.com): Tutoriais de Docker. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use Docker Hub para imagens, Play with Docker para praticar e GitHub Actions para CI/CD.",
+                    "explanation": "Kubernetes gerencia contêineres, escalando e distribuindo aplicações. Pods agrupam contêineres relacionados, como app e banco.",
+                    "code": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: meu-app\nspec:\n  containers:\n  - name: app\n    image: meu-app:latest\n    ports:\n    - containerPort: 8080"
+                }
+            ]
+        },
+        {
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender DevOps.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use Docker Hub (imagens), Play with Docker (prática), GitHub Actions (CI/CD) e Katacoda (tutoriais).",
                     "code": ""
                 }
             ]

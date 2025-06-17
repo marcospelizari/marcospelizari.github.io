@@ -1,113 +1,69 @@
 {
     "title": "Spring Boot",
-    "description": "Spring Boot é um framework Java que simplifica o desenvolvimento de aplicações, especialmente APIs e sistemas backend. Este guia cobre conceitos fundamentais para desenvolvedores juniores.",
+    "description": "Spring Boot é um framework Java que simplifica o desenvolvimento de APIs e sistemas backend com configuração automática.",
     "subsections": [
         {
-            "subtitle": "O que é Spring Boot?",
-            "description": "Introdução ao framework e seu funcionamento.",
+            "subtitle": "Introdução ao Spring Boot",
+            "description": "Como o framework funciona.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Spring Boot é um framework baseado no Spring que facilita o desenvolvimento de aplicações Java com configuração automática. Ele inclui um servidor embutido (ex.: Tomcat) e configura componentes, como conexões com bancos, com base nas dependências adicionadas. É amplamente usado para criar APIs e sistemas backend robustos.<br>Resposta Simples: Spring Boot é uma ferramenta que torna mais fácil criar aplicações Java, configurando coisas automaticamente.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "O que são starters?",
-            "description": "Como usar starters para simplificar dependências.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Starters são dependências do Spring Boot que agrupam bibliotecas para tarefas específicas, como 'spring-boot-starter-web' para APIs web ou 'spring-boot-starter-data-jpa' para bancos de dados. Basta adicioná-los ao projeto (ex.: em pom.xml para Maven), e o Spring Boot configura tudo automaticamente.<br>Resposta Simples: Starters são pacotes que trazem tudo necessário para algo, como criar uma API, e o Spring configura sozinho.",
+                    "explanation": "Spring Boot usa starters (ex.: spring-boot-starter-web) para agrupar dependências e configura servidores embutidos (ex.: Tomcat). Facilita criar APIs REST (Representational State Transfer) robustas.",
                     "code": "<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-web</artifactId>\n</dependency>"
                 }
             ]
         },
         {
-            "subtitle": "O que é injeção de dependências?",
-            "description": "Como o Spring gerencia dependências automaticamente.",
+            "subtitle": "Injeção de Dependências e Anotações",
+            "description": "Como configurar componentes.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Injeção de dependências é quando o Spring fornece objetos que uma classe precisa, em vez de ela criá-los. Por exemplo, um serviço pode receber um repositório via @Autowired, reduzindo acoplamento e facilitando testes e manutenção. O Spring gerencia isso pelo contexto da aplicação.<br>Resposta Simples: O Spring dá os objetos que uma classe precisa automaticamente, usando @Autowired.",
-                    "code": "import org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.stereotype.Service;\n\n@Service\npublic class ProdutoService {\n    @Autowired\n    private ProdutoRepository repository;\n\n    public Produto salvar(Produto produto) {\n        return repository.save(produto);\n    }\n}"
+                    "explanation": "DI (Dependency Injection) fornece objetos automaticamente com @Autowired. Anotações como @RestController, @Service e @Repository definem papéis no sistema.",
+                    "code": "@RestController\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service;\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() { return service.listar(); }\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é o arquivo de configuração?",
-            "description": "Como configurar uma aplicação Spring Boot.",
+            "subtitle": "Conexão com Banco de Dados",
+            "description": "Como integrar com bancos relacionais.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: O arquivo de configuração, como 'application.properties' ou 'application.yml', define opções da aplicação, como porta do servidor ou conexão com banco. O Spring Boot lê esse arquivo ao iniciar e aplica as configurações automaticamente, simplificando ajustes.<br>Resposta Simples: É um arquivo onde coloco configurações, como porta ou banco, e o Spring usa isso ao iniciar.",
-                    "code": "# application.properties\nserver.port=8081\nspring.datasource.url=jdbc:mysql://localhost:3306/meubanco\nspring.datasource.username=root\nspring.datasource.password=senha"
+                    "explanation": "Use o starter spring-boot-starter-data-jpa e configure a conexão no application.properties. O JPA (Java Persistence API) mapeia objetos para tabelas.",
+                    "code": "# application.properties\nspring.datasource.url=jdbc:mysql://localhost:3306/banco\nspring.datasource.username=root\nspring.datasource.password=senha\n@Entity\npublic class Produto {\n    @Id\n    private Long id;\n}"
                 }
             ]
         },
         {
-            "subtitle": "Como conectar ao banco de dados?",
-            "description": "Como o Spring Boot gerencia conexões com bancos relacionais.",
+            "subtitle": "Validação e Tratamento de Erros",
+            "description": "Como garantir entradas válidas e gerenciar erros.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Spring Boot usa o starter 'spring-boot-starter-data-jpa' para conectar a bancos relacionais (ex.: MySQL). Configura-se a conexão no 'application.properties' com URL, usuário e senha. O JPA mapeia objetos Java para tabelas, permitindo operações sem SQL manual.<br>Resposta Simples: Adiciono um starter, configuro o banco no arquivo de propriedades, e o Spring conecta e mapeia os dados automaticamente.",
-                    "code": "# application.properties\nspring.datasource.url=jdbc:mysql://localhost:3306/meubanco\nspring.datasource.username=root\nspring.datasource.password=senha\n\n@Entity\npublic class Produto {\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    private Long id;\n    private String nome;\n    private double preco;\n    // getters e setters\n}"
+                    "explanation": "Use @Valid para validar dados de entrada. @ControllerAdvice captura exceções e retorna respostas padronizadas, como erros 404.",
+                    "code": "@RestController\npublic class ProdutoController {\n    @PostMapping(\"/produtos\")\n    public Produto criar(@Valid @RequestBody Produto produto) {\n        return service.salvar(produto);\n    }\n}\n@ControllerAdvice\npublic class ErrorHandler {\n    @ExceptionHandler(NotFoundException.class)\n    public ResponseEntity<String> handle(NotFoundException ex) {\n        return new ResponseEntity<>(\"Não encontrado\", HttpStatus.NOT_FOUND);\n    }\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que são anotações no Spring Boot?",
-            "description": "Principais anotações e seus papéis.",
+            "subtitle": "Ciclo de Vida e Configuração",
+            "description": "Como a aplicação é inicializada.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Anotações são marcações que orientam o Spring sobre como configurar a aplicação. Principais: @SpringBootApplication (inicia a aplicação), @RestController (lida com requisições HTTP), @Service (define lógica de negócios), @Repository (acessa banco de dados) e @Autowired (injeta dependências). Elas simplificam o código e a configuração.<br>Resposta Simples: Anotações dizem ao Spring o que fazer, como @RestController para APIs ou @Autowired para injetar objetos.",
-                    "code": "import org.springframework.web.bind.annotation.RestController;\nimport org.springframework.web.bind.annotation.GetMapping;\n\n@RestController\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service;\n\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() {\n        return service.listar();\n    }\n}"
+                    "explanation": "Spring Boot lê application.properties, inicializa o contexto com DI e levanta o servidor. Configurações como porta são definidas no properties.",
+                    "code": "# application.properties\nserver.port=8081"
                 }
             ]
         },
         {
-            "subtitle": "O que é o ciclo de vida da aplicação?",
-            "description": "Como uma aplicação Spring Boot é inicializada e executada.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender Spring Boot.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: O ciclo de vida começa com a leitura do 'application.properties' para configurações. O Spring inicializa o contexto, criando e injetando dependências (ex.: serviços, repositórios). O servidor embutido (ex.: Tomcat) é iniciado, e a aplicação passa a processar requisições até ser encerrada, quando recursos são liberados.<br>Resposta Simples: O Spring lê as configurações, cria os componentes, inicia o servidor e aceita requisições até parar.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Como criar uma API REST?",
-            "description": "Como construir uma API REST com Spring Boot.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Uma API REST é criada com o starter 'spring-boot-starter-web', usando @RestController para definir endpoints. Anotações como @GetMapping, @PostMapping, etc., mapeiam requisições HTTP (GET, POST) a métodos que retornam dados, geralmente em JSON. O Spring gerencia as requisições e respostas automaticamente.<br>Resposta Simples: Uso @RestController para criar endpoints que respondem a chamadas HTTP, como listar produtos em JSON.",
-                    "code": "import org.springframework.web.bind.annotation.*;\n\n@RestController\n@RequestMapping(\"/api/produtos\")\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service;\n\n    @GetMapping\n    public List<Produto> listar() {\n        return service.listar();\n    }\n\n    @PostMapping\n    public Produto criar(@RequestBody Produto produto) {\n        return service.salvar(produto);\n    }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "Boas práticas no Spring Boot",
-            "description": "Recomendações para desenvolver aplicações eficientes e organizadas.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Use starters apenas para funcionalidades necessárias; 2) Estruture em camadas (controller, service, repository); 3) Valide entradas com @Valid; 4) Configure logs claros; 5) Teste endpoints com Postman. Isso melhora manutenção e performance.<br>Resposta Simples: Use só os starters que precisa, organize o código, valide dados e teste APIs.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender Spring Boot.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Spring Initializr (start.spring.io): Crie projetos com starters; 2) Spring Guides (spring.io/guides): Tutoriais práticos; 3) Baeldung (baeldung.com): Artigos sobre Spring; 4) Postman: Teste APIs. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use Spring Initializr para projetos, Spring Guides para tutoriais e Postman para testar APIs.",
+                    "explanation": "Use Spring Initializr (projetos), Spring Guides (tutoriais), Baeldung (artigos) e Postman (testes de API).",
                     "code": ""
                 }
             ]
