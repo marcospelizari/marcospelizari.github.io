@@ -1,81 +1,88 @@
 {
     "title": "Banco de Dados",
-    "description": "Conceitos de bancos de dados para armazenar e gerenciar dados, com foco em relacionais e introdução ao NoSQL.",
+    "description": "Conceitos para gerenciar dados em sistemas backend, com foco em bancos relacionais e introdução ao NoSQL.",
     "subsections": [
         {
             "subtitle": "Conceitos de Bancos Relacionais",
-            "description": "Como funcionam bancos relacionais.",
+            "description": "Funcionamento de bancos relacionais.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Bancos relacionais organizam dados em tabelas com chaves primárias e estrangeiras, gerenciados por um RDBMS (Relational Database Management System) como MySQL usando SQL (Structured Query Language).",
-                    "code": "CREATE TABLE usuarios (\n    id INT PRIMARY KEY,\n    nome VARCHAR(50)\n);"
+                    "explanation": "Bancos relacionais organizam dados em tabelas com chaves primárias e estrangeiras, gerenciados por um RDBMS (Relational Database Management System) como MySQL. Usam SQL (Structured Query Language) para manipulação, ideal para dados estruturados.",
+                    "code": "CREATE TABLE usuarios (\n    id INT PRIMARY KEY,\n    nome VARCHAR(50)\n);",
+                    "interview_question": "O que caracteriza um banco de dados relacional?"
                 }
             ]
         },
         {
             "subtitle": "Modelagem e Normalização",
-            "description": "Como estruturar dados eficientemente.",
+            "description": "Estruturação eficiente de dados.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Modelagem define tabelas com colunas e tipos (ex.: INT, VARCHAR). Normalização separa dados em tabelas para evitar redundâncias, usando chaves.",
-                    "code": "CREATE TABLE pedidos (\n    id INT PRIMARY KEY,\n    usuario_id INT,\n    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)\n);"
+                    "explanation": "Modelagem define tabelas com colunas e tipos. Normalização separa dados em tabelas para evitar redundâncias, garantindo consistência em sistemas como e-commerce.",
+                    "code": "CREATE TABLE pedidos (\n    id INT PRIMARY KEY,\n    usuario_id INT,\n    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)\n);",
+                    "interview_question": "Por que normalizar um banco de dados?"
                 }
             ]
         },
         {
             "subtitle": "Comandos SQL",
-            "description": "Como manipular dados com SQL.",
+            "description": "Manipulação de dados.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "SQL (Structured Query Language) usa SELECT para buscar, INSERT para adicionar, UPDATE para alterar e DELETE para remover dados. JOIN combina tabelas.",
-                    "code": "SELECT u.nome, p.id FROM usuarios u INNER JOIN pedidos p ON u.id = p.usuario_id;\nINSERT INTO usuarios (id, nome) VALUES (1, \"João\");"
+                    "explanation": "SQL (Structured Query Language) usa SELECT (buscar), INSERT (adicionar), UPDATE (alterar) e DELETE (remover). JOIN combina tabelas, útil para relatórios complexos.",
+                    "code": "SELECT u.nome, p.id FROM usuarios u INNER JOIN pedidos p ON u.id = p.usuario_id;\nINSERT INTO usuarios (id, nome) VALUES (1, \"João\");",
+                    "interview_question": "Como você escreveria uma consulta SQL para combinar duas tabelas?"
                 }
             ]
         },
         {
             "subtitle": "Transações e Índices",
-            "description": "Como garantir confiabilidade e performance.",
+            "description": "Confiabilidade e performance.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Transações (ACID - Atomicidade, Consistência, Isolamento, Durabilidade) garantem operações completas ou revertidas. Índices aceleram buscas, mas consomem espaço.",
-                    "code": "BEGIN TRANSACTION;\nUPDATE conta SET saldo = saldo - 100 WHERE id = 1;\nCOMMIT;\nCREATE INDEX idx_nome ON usuarios(nome);"
+                    "explanation": "Transações seguem ACID (Atomicidade, Consistência, Isolamento, Durabilidade), garantindo operações completas. Índices aceleram buscas, mas aumentam o custo de inserções, otimizando relatórios.",
+                    "code": "BEGIN TRANSACTION;\nUPDATE conta SET saldo = saldo - 100 WHERE id = 1;\nCOMMIT;\nCREATE INDEX idx_nome ON usuarios(nome);",
+                    "interview_question": "O que significa o princípio ACID em transações?"
                 }
             ]
         },
         {
             "subtitle": "SQL vs. NoSQL",
-            "description": "Diferenças entre bancos relacionais e não relacionais.",
+            "description": "Comparação de bancos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Bancos SQL (ex.: MySQL) usam tabelas com esquema fixo, ideais para dados estruturados. Bancos NoSQL (Not Only SQL, ex.: MongoDB) são flexíveis para dados não estruturados.",
-                    "code": ""
+                    "explanation": "Bancos SQL (ex.: MySQL) usam tabelas com esquema fixo, ideais para finanças. Bancos NoSQL (Not Only SQL, ex.: MongoDB) são flexíveis para dados não estruturados, como logs.",
+                    "code": "",
+                    "interview_question": "Quando você escolheria um banco NoSQL em vez de SQL?"
                 }
             ]
         },
         {
             "subtitle": "Segurança em SQL",
-            "description": "Como proteger contra vulnerabilidades.",
+            "description": "Proteção contra vulnerabilidades.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use PreparedStatement para evitar SQL Injection, passando parâmetros com segurança em vez de concatenar strings.",
-                    "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT * FROM usuarios WHERE nome = ?\");\nstmt.setString(1, nome);\nResultSet rs = stmt.executeQuery();"
+                    "explanation": "PreparedStatement previne SQL Injection ao usar parâmetros seguros. Isso protege aplicações web contra ataques maliciosos.",
+                    "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT * FROM usuarios WHERE nome = ?\");\nstmt.setString(1, nome);\nResultSet rs = stmt.executeQuery();",
+                    "interview_question": "Como evitar SQL Injection em uma aplicação?"
                 }
             ]
         },
         {
             "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender bancos de dados.",
+            "description": "Ferramentas para aprender bancos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Pratique com SQLZoo (exercícios SQL), DB Fiddle (testes online), MySQL Workbench (gerenciamento) e Mode SQL Tutorial (guias).",
-                    "code": ""
+                    "explanation": "Use SQLZoo (exercícios), DB Fiddle (testes), MySQL Workbench (gerenciamento) e Mode SQL Tutorial (guias) para praticar.",
+                    "code": "",
+                    "interview_question": "Quais ferramentas você usou para aprender SQL?"
                 }
             ]
         }

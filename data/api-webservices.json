@@ -1,48 +1,52 @@
 {
     "title": "APIs (REST e GraphQL)",
-    "description": "APIs (Application Programming Interfaces) permitem comunicação entre sistemas, essencial para backend.",
+    "description": "APIs (Application Programming Interfaces) conectam sistemas, essenciais para comunicação em aplicações backend.",
     "subsections": [
         {
             "subtitle": "Fundamentos de APIs",
-            "description": "Como APIs conectam sistemas.",
+            "description": "Como APIs funcionam.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "APIs (Application Programming Interfaces) definem regras para troca de dados via HTTP (Hypertext Transfer Protocol), retornando JSON (JavaScript Object Notation). Conectam frontend e backend ou sistemas externos.",
-                    "code": "GET /produtos\n[\n    {\"id\": 1, \"nome\": \"Notebook\"}\n]"
+                    "explanation": "APIs (Application Programming Interfaces) definem regras para troca de dados via HTTP (Hypertext Transfer Protocol), retornando JSON (JavaScript Object Notation). Conectam frontend a backend, como em apps de e-commerce.",
+                    "code": "GET /produtos\n[\n    {\"id\": 1, \"nome\": \"Notebook\"}\n]",
+                    "interview_question": "O que é uma API e para que ela serve?"
                 }
             ]
         },
         {
             "subtitle": "REST e GraphQL",
-            "description": "Principais tipos de APIs.",
+            "description": "Tipos de APIs.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "REST (Representational State Transfer) usa endpoints fixos (ex.: /produtos) e métodos HTTP (GET, POST). GraphQL permite ao cliente escolher dados específicos em uma única URL.",
-                    "code": "query {\n  produtos {\n    nome\n  }\n}\n// Resposta\n{\"data\": {\"produtos\": [{\"nome\": \"Notebook\"}] }}"
+                    "explanation": "REST (Representational State Transfer) usa endpoints fixos (ex.: /produtos) e métodos HTTP (GET, POST). GraphQL permite ao cliente selecionar dados específicos, reduzindo overfetching em APIs complexas.",
+                    "code": "query {\n  produtos {\n    nome\n  }\n}\n// Resposta\n{\"data\": {\"produtos\": [{\"nome\": \"Notebook\"}] }}",
+                    "interview_question": "Qual a diferença entre REST e GraphQL?"
                 }
             ]
         },
         {
             "subtitle": "Códigos de Status HTTP",
-            "description": "Como interpretar respostas.",
+            "description": "Interpretação de respostas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Códigos HTTP indicam o resultado: 2xx (sucesso, ex.: 200 OK), 4xx (erro do cliente, ex.: 404 Not Found), 5xx (erro do servidor). Orientam o cliente sobre a requisição.",
-                    "code": "HTTP/1.1 404 Not Found\n{\"error\": \"Produto não encontrado\"}"
+                    "explanation": "Códigos HTTP indicam resultados: 2xx (sucesso, ex.: 200 OK), 4xx (erro cliente, ex.: 404 Not Found), 5xx (erro servidor). Orientam clientes em APIs, garantindo clareza.",
+                    "code": "HTTP/1.1 404 Not Found\n{\"error\": \"Produto não encontrado\"}",
+                    "interview_question": "O que significa o código HTTP 404 em uma API?"
                 }
             ]
         },
         {
             "subtitle": "Consumo e Teste de APIs",
-            "description": "Como interagir e validar APIs.",
+            "description": "Interação e validação de APIs.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Consuma APIs com RestTemplate ou WebClient em Java. Teste com RestAssured ou Postman, verificando status e respostas JSON.",
-                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}"
+                    "explanation": "Consuma APIs com RestTemplate ou WebClient em Java. Teste com RestAssured ou Postman, verificando status e JSON, essencial para garantir funcionalidade.",
+                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}",
+                    "interview_question": "Como você testaria uma API REST em um projeto?"
                 }
             ]
         },
@@ -52,8 +56,9 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use Postman (testes), Swagger (documentação), GraphQL Playground (GraphQL) e REST API Tutorial (guias).",
-                    "code": ""
+                    "explanation": "Use Postman (testes), Swagger (documentação), GraphQL Playground (GraphQL) e REST API Tutorial (guias) para praticar desenvolvimento de APIs.",
+                    "code": "",
+                    "interview_question": "Quais ferramentas você usaria para documentar uma API?"
                 }
             ]
         }

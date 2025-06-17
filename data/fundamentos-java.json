@@ -1,103 +1,112 @@
 {
     "title": "Fundamentos de Java",
-    "description": "Conceitos essenciais de Java para desenvolvedores juniores, com foco em clareza e exemplos práticos para construir uma base sólida.",
+    "description": "Conceitos essenciais de Java para desenvolvedores juniores, preparando para entrevistas e projetos backend.",
     "subsections": [
         {
             "subtitle": "O que é Java e por que usá-lo?",
-            "description": "Visão geral da linguagem Java e sua relevância.",
+            "description": "Visão geral da linguagem Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Java é uma linguagem orientada a objetos, portátil (roda na JVM - Java Virtual Machine) e amplamente usada em aplicações empresariais, Android e backend. Sua robustez e gerenciamento automático de memória a tornam ideal para sistemas escaláveis.",
-                    "code": ""
+                    "explanation": "Java é uma linguagem orientada a objetos, portátil via JVM (Java Virtual Machine), usada em APIs, Android e sistemas empresariais. Sua robustez e gerenciamento de memória facilitam aplicações escaláveis.",
+                    "code": "",
+                    "interview_question": "Por que o Java é tão popular em aplicações backend?"
                 }
             ]
         },
         {
             "subtitle": "JVM, JRE e JDK",
-            "description": "Como funcionam as ferramentas principais do Java.",
+            "description": "Ferramentas principais do Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "A JVM (Java Virtual Machine) executa bytecode, garantindo portabilidade. O JRE (Java Runtime Environment) inclui a JVM e bibliotecas para rodar programas. O JDK (Java Development Kit) contém o JRE e ferramentas como o compilador (javac) para desenvolver.",
-                    "code": ""
+                    "explanation": "A JVM (Java Virtual Machine) executa bytecode, garantindo portabilidade. O JRE (Java Runtime Environment) inclui JVM e bibliotecas para rodar programas. O JDK (Java Development Kit) adiciona ferramentas como javac para desenvolvimento.",
+                    "code": "",
+                    "interview_question": "Qual a diferença entre JDK, JRE e JVM?"
                 }
             ]
         },
         {
             "subtitle": "Bytecode e Garbage Collector",
-            "description": "Como Java gerencia código e memória.",
+            "description": "Gerenciamento de código e memória.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Bytecode é o código intermediário gerado pelo compilador (javac), executado pela JVM (Java Virtual Machine) em qualquer plataforma. O GC (Garbage Collector) libera memória de objetos não usados, mas pode pausar a execução se mal gerenciado.",
-                    "code": ""
+                    "explanation": "Bytecode, gerado pelo compilador javac, é executado pela JVM em qualquer plataforma. O GC (Garbage Collector) libera memória de objetos não usados, otimizando recursos em aplicações longas.",
+                    "code": "",
+                    "interview_question": "Como o Garbage Collector impacta a performance de uma aplicação?"
                 }
             ]
         },
         {
             "subtitle": "Variáveis e Tipos de Dados",
-            "description": "Como armazenar e usar dados em Java.",
+            "description": "Armazenamento de dados em Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Variáveis guardam dados com tipos como int (números inteiros), double (decimais), boolean (verdadeiro/falso) e String (texto). Primitivos (int, double) são simples; objetos (String, Array) podem ter métodos e ser nulos.",
-                    "code": "int idade = 25;\nString nome = \"João\";\nSystem.out.println(nome.length()); // Método do objeto"
+                    "explanation": "Variáveis armazenam dados com tipos como int (inteiros), double (decimais), boolean (verdadeiro/falso) e String (texto). Primitivos são simples; objetos, como String, têm métodos e podem ser nulos, úteis em manipulação de dados.",
+                    "code": "int idade = 25;\nString nome = \"João\";\nSystem.out.println(nome.length());",
+                    "interview_question": "Qual a diferença entre tipos primitivos e objetos em Java?"
                 }
             ]
         },
         {
             "subtitle": "Modificadores de Acesso e Static",
-            "description": "Como controlar acesso e comportamento de classes e membros.",
+            "description": "Controle de acesso e comportamento.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Modificadores de acesso definem visibilidade: public (todos), protected (classe, pacote, subclasses), default (pacote), private (só a classe). O modificador static faz atributos/métodos pertencerem à classe, não a objetos.",
-                    "code": "public class Exemplo {\n    public int publico = 1;\n    protected int protegido = 2;\n    int padrao = 3; // default\n    private int privado = 4;\n    static int contador = 0;\n}"
+                    "explanation": "Modificadores definem visibilidade: public (todos), protected (classe, pacote, subclasses), default (pacote), private (classe). Static associa membros à classe, não a objetos, como contadores globais.",
+                    "code": "public class Exemplo {\n    public int publico = 1;\n    protected int protegido = 2;\n    int padrao = 3;\n    private int privado = 4;\n    static int contador = 0;\n}",
+                    "interview_question": "Quando você usaria o modificador static em uma classe?"
                 }
             ]
         },
         {
             "subtitle": "Estruturas de Controle",
-            "description": "Como gerenciar o fluxo do programa.",
+            "description": "Gerenciamento do fluxo do programa.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "If executa código com base em condições. Loops (for, while) repetem ações enquanto uma condição é verdadeira. São usados para lógica condicional e repetitiva.",
-                    "code": "int idade = 18;\nif (idade >= 18) {\n    System.out.println(\"Maior de idade\");\n}\nfor (int i = 0; i < 3; i++) {\n    System.out.println(i);\n}"
+                    "explanation": "If executa código baseado em condições. Loops (for, while) repetem ações, essenciais para processar listas ou validar entradas em aplicações.",
+                    "code": "int idade = 18;\nif (idade >= 18) {\n    System.out.println(\"Maior de idade\");\n}\nfor (int i = 0; i < 3; i++) {\n    System.out.println(i);\n}",
+                    "interview_question": "Como você usaria um loop for para iterar uma lista em Java?"
                 }
             ]
         },
         {
-            "subtitle": "Métodos, Construtores e Main",
-            "description": "Como definir comportamentos e iniciar programas.",
+            "subtitle": "Métodos e Main",
+            "description": "Definição de comportamentos e início do programa.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Métodos definem ações; construtores inicializam objetos; o método main é o ponto de entrada do programa. Métodos podem receber parâmetros e retornar valores.",
-                    "code": "public class Pessoa {\n    String nome;\n    Pessoa(String nome) { // Construtor\n        this.nome = nome;\n    }\n    void saudar() { // Método\n        System.out.println(\"Olá, \" + nome);\n    }\n    public static void main(String[] args) { // Main\n        Pessoa p = new Pessoa(\"João\");\n        p.saudar();\n    }\n}"
+                    "explanation": "Métodos definem ações com parâmetros e retornos. O método main é o ponto de entrada, chamado pela JVM para iniciar aplicações console ou backend.",
+                    "code": "public class App {\n    public static void main(String[] args) {\n        System.out.println(saudar(\"João\"));\n    }\n    static String saudar(String nome) {\n        return \"Olá, \" + nome;\n    }\n}",
+                    "interview_question": "Qual é o papel do método main em um programa Java?"
                 }
             ]
         },
         {
             "subtitle": "Tratamento de Exceções",
-            "description": "Como lidar com erros no código.",
+            "description": "Gerenciamento de erros.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Exceções tratam erros com try-catch. Use throws para declarar exceções em métodos. Exceções personalizadas podem ser criadas para casos específicos.",
-                    "code": "public int dividir(int a, int b) throws ArithmeticException {\n    if (b == 0) throw new ArithmeticException(\"Divisão por zero\");\n    return a / b;\n}\ntry {\n    int resultado = dividir(10, 0);\n} catch (ArithmeticException e) {\n    System.out.println(\"Erro: \" + e.getMessage());\n}"
+                    "explanation": "Try-catch trata erros, como divisões por zero. Throws declara exceções em métodos, garantindo robustez em APIs ou sistemas críticos.",
+                    "code": "public int dividir(int a, int b) throws ArithmeticException {\n    if (b == 0) throw new ArithmeticException(\"Divisão por zero\");\n    return a / b;\n}\ntry {\n    int r = dividir(10, 0);\n} catch (ArithmeticException e) {\n    System.out.println(\"Erro: \" + e.getMessage());\n}",
+                    "interview_question": "Como você trataria uma exceção em um método Java?"
                 }
             ]
         },
         {
             "subtitle": "Passagem por Valor",
-            "description": "Como Java lida com parâmetros em métodos.",
+            "description": "Comportamento de parâmetros em métodos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Java passa parâmetros por valor: primitivos não mudam fora do método; objetos passam a referência, permitindo alterações no objeto, mas não na referência.",
-                    "code": "void alterar(int x, StringBuilder sb) {\n    x = 20; // Não afeta fora\n    sb.append(\" Mundo\"); // Afeta fora\n}\nint num = 10;\nStringBuilder texto = new StringBuilder(\"Olá\");\nalterar(num, texto);\nSystem.out.println(num); // 10\nSystem.out.println(texto); // Olá Mundo"
+                    "explanation": "Java passa parâmetros por valor: primitivos não mudam fora do método; objetos passam a referência, permitindo alterar conteúdo, mas não a referência. Isso evita efeitos colaterais indesejados.",
+                    "code": "void alterar(int x, StringBuilder sb) {\n    x = 20;\n    sb.append(\" Mundo\");\n}\nint num = 10;\nStringBuilder texto = new StringBuilder(\"Olá\");\nalterar(num, texto);\nSystem.out.println(num); // 10\nSystem.out.println(texto); // Olá Mundo",
+                    "interview_question": "O que acontece ao passar um objeto como parâmetro em um método Java?"
                 }
             ]
         },
@@ -107,8 +116,9 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Pratique com CodingBat (exercícios de lógica), HackerRank (desafios), Oracle Java Tutorials (guias oficiais) e IntelliJ IDEA (IDE - Integrated Development Environment) para projetos.",
-                    "code": ""
+                    "explanation": "Use CodingBat (lógica), HackerRank (desafios), Oracle Java Tutorials (guias) e IntelliJ IDEA (IDE - Integrated Development Environment) para desenvolver projetos práticos.",
+                    "code": "",
+                    "interview_question": "Quais recursos você usou para aprender Java?"
                 }
             ]
         }

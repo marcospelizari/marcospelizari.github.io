@@ -1,70 +1,76 @@
 {
     "title": "Boas Práticas Gerais",
-    "description": "Recomendações para escrever código limpo, eficiente e colaborativo em Java, backend e DevOps.",
+    "description": "Recomendações para código limpo, eficiente e colaborativo em Java, backend e DevOps, valorizadas em entrevistas.",
     "subsections": [
         {
             "subtitle": "Código e Organização",
-            "description": "Como estruturar projetos.",
+            "description": "Estruturação de projetos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use nomes descritivos, siga padrões como MVC (Model-View-Controller), documente com JavaDoc e organize em camadas (controller, service, repository).",
-                    "code": "/**\n * Lista produtos por categoria.\n * @param categoria Categoria desejada\n * @return Lista de produtos\n */\n@GetMapping(\"/produtos\")\npublic List<Produto> listarPorCategoria(@RequestParam String categoria) {\n    return service.findByCategoria(categoria);\n}"
+                    "explanation": "Use nomes descritivos, siga padrões como MVC (Model-View-Controller), documente com JavaDoc e organize em camadas (controller, service, repository). Isso facilita colaboração e manutenção.",
+                    "code": "/**\n * Lista produtos por categoria.\n * @param categoria Categoria desejada\n * @return Lista de produtos\n */\n@GetMapping(\"/produtos\")\npublic List<Produto> listarPorCategoria(@RequestParam String categoria) {\n    return service.findByCategoria(categoria);\n}",
+                    "interview_question": "Como você organiza o código em um projeto backend?"
                 }
             ]
         },
         {
             "subtitle": "Princípios de Design",
-            "description": "Como aplicar SOLID e DRY.",
+            "description": "Aplicação de SOLID e DRY.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Siga o SRP (Single Responsibility Principle) para classes com uma única função e o DRY (Don't Repeat Yourself) para evitar código repetido, usando métodos reutilizáveis.",
-                    "code": "public double aplicarDesconto(double valor, double percentual) {\n    return valor * (1 - percentual / 100);\n}"
+                    "explanation": "Siga o SRP (Single Responsibility Principle) para classes com uma função e o DRY (Don't Repeat Yourself) para evitar duplicação. Promove código reutilizável e fácil de testar.",
+                    "code": "public double aplicarDesconto(double valor, double percentual) {\n    return valor * (1 - percentual / 100);\n}",
+                    "interview_question": "O que é o princípio SOLID e como você o aplica?"
                 }
             ]
         },
         {
             "subtitle": "Bancos de Dados",
-            "description": "Como otimizar e proteger dados.",
+            "description": "Otimização e segurança de dados.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use índices, evite SELECT *, normalize tabelas, use transações e PreparedStatement para segurança contra SQL Injection.",
-                    "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT id, nome FROM usuarios WHERE id = ?\");\nstmt.setInt(1, id);\nResultSet rs = stmt.executeQuery();"
+                    "explanation": "Use índices, evite SELECT *, normalize tabelas, aplique transações e PreparedStatement para segurança. Garante performance e proteção em sistemas críticos.",
+                    "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT id, nome FROM usuarios WHERE id = ?\");\nstmt.setInt(1, id);\nResultSet rs = stmt.executeQuery();",
+                    "interview_question": "Quais práticas você segue para otimizar consultas SQL?"
                 }
             ]
         },
         {
             "subtitle": "APIs e Testes",
-            "description": "Como desenvolver e validar APIs.",
+            "description": "Desenvolvimento e validação de APIs.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use URLs claras, códigos HTTP corretos, valide entradas com @Valid e teste com JUnit e RestAssured, mirando 80%+ de cobertura.",
-                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}"
+                    "explanation": "Use URLs claras, códigos HTTP corretos, valide entradas com @Valid e teste com JUnit e RestAssured, mirando 80%+ de cobertura. Assegura APIs confiáveis e fáceis de usar.",
+                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}",
+                    "interview_question": "Como você garante a qualidade de uma API REST?"
                 }
             ]
         },
         {
             "subtitle": "Git e Colaboração",
-            "description": "Como gerenciar código em equipe.",
+            "description": "Gerenciamento de código em equipe.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Faça commits pequenos com mensagens claras, use branches (ex.: feature/nova-api), revise PRs (Pull Requests) e use .gitignore.",
-                    "code": "git commit -m \"Adiciona endpoint /produtos\"\ngit push origin feature/nova-api"
+                    "explanation": "Faça commits pequenos com mensagens claras, use branches (ex.: feature/nova-api), revise PRs (Pull Requests) e use .gitignore. Facilita colaboração em projetos distribuídos.",
+                    "code": "git commit -m \"Adiciona endpoint /produtos\"\ngit push origin feature/nova-api",
+                    "interview_question": "Como você organiza commits em um projeto em equipe?"
                 }
             ]
         },
         {
             "subtitle": "Performance e DevOps",
-            "description": "Como otimizar e implantar sistemas.",
+            "description": "Otimização e implantação.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use cache, assincronismo (@Async), imagens leves no Docker, pipelines CI/CD (Continuous Integration/Continuous Deployment) e monitore com Prometheus.",
-                    "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: mvn clean package"
+                    "explanation": "Use cache, assincronismo (@Async), imagens leves no Docker e pipelines CI/CD (Continuous Integration/Continuous Deployment). Monitorar com Prometheus garante sistemas escaláveis.",
+                    "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: mvn clean package",
+                    "interview_question": "Quais práticas DevOps você aplicaria para otimizar deploys?"
                 }
             ]
         }
