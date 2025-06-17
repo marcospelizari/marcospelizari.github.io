@@ -1,168 +1,124 @@
 {
     "title": "Fundamentos de Java",
-    "description": "Conceitos básicos de Java essenciais para desenvolvedores juniores, focando em clareza e objetividade para construir uma base sólida.",
+    "description": "Conceitos essenciais de Java para desenvolvedores juniores, com foco em clareza e exemplos práticos para construir uma base sólida.",
     "subsections": [
         {
-            "subtitle": "O que é Java e por que ele é popular?",
-            "description": "Entenda o que é a linguagem Java e suas principais características.",
+            "subtitle": "O que é Java e por que usá-lo?",
+            "description": "Visão geral da linguagem Java e sua relevância.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Java é uma linguagem orientada a objetos, criada em 1995 pela Sun Microsystems (hoje Oracle). É popular por sua portabilidade (roda em qualquer sistema com a JVM), robustez, gerenciamento automático de memória e ampla adoção em aplicações empresariais, Android e backend.<br>Resposta Simples: Java é uma linguagem que funciona em qualquer computador por causa da JVM e é muito usada em empresas e apps Android.",
+                    "explanation": "Java é uma linguagem orientada a objetos, portátil (roda na JVM) e amplamente usada em aplicações empresariais, Android e backend. Sua robustez e gerenciamento automático de memória a tornam ideal para sistemas escaláveis.",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "O que é a JVM e como ela funciona?",
-            "description": "Explicação sobre a Java Virtual Machine e sua função na execução de programas Java.",
+            "subtitle": "JVM, JRE e JDK",
+            "description": "Como funcionam as ferramentas principais do Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: A JVM (Java Virtual Machine) é uma máquina virtual que executa programas Java. Ela traduz o bytecode (código intermediário gerado pelo compilador Java) em instruções específicas para o sistema operacional, garantindo portabilidade. Também gerencia memória e segurança.<br>Resposta Simples: A JVM traduz o código Java para funcionar em qualquer computador.",
+                    "explanation": "A JVM executa bytecode, garantindo portabilidade. O JRE inclui a JVM e bibliotecas para rodar programas. O JDK contém o JRE e ferramentas como o compilador (javac) para desenvolver.",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "Qual a diferença entre JDK, JRE e JVM?",
-            "description": "Entenda as diferenças entre as ferramentas e ambientes do Java.",
+            "subtitle": "Bytecode e Garbage Collector",
+            "description": "Como Java gerencia código e memória.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: O JDK (Java Development Kit) é o kit para desenvolver em Java, incluindo o compilador (javac) e o JRE. O JRE (Java Runtime Environment) permite rodar programas Java, contendo a JVM e bibliotecas. A JVM (Java Virtual Machine) é o motor que executa o bytecode.<br>Resposta Simples: JDK é para programar, JRE para rodar, e JVM executa o código.",
+                    "explanation": "Bytecode é o código intermediário gerado pelo compilador (javac), executado pela JVM em qualquer plataforma. O Garbage Collector libera memória de objetos não usados, mas pode pausar a execução se mal gerenciado.",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "O que é bytecode?",
-            "description": "Entenda o papel do bytecode na portabilidade do Java.",
+            "subtitle": "Variáveis e Tipos de Dados",
+            "description": "Como armazenar e usar dados em Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Bytecode é o código intermediário gerado pelo compilador Java (javac). Ele é executado pela JVM, permitindo que o mesmo código rode em diferentes plataformas sem recompilação, garantindo a portabilidade do Java.<br>Resposta Simples: Bytecode é o código que a JVM entende e roda em qualquer computador.",
-                    "code": ""
+                    "explanation": "Variáveis guardam dados com tipos como int (números inteiros), double (decimais), boolean (verdadeiro/falso) e String (texto). Primitivos (int, double) são simples; objetos (String, Array) podem ter métodos e ser nulos.",
+                    "code": "int idade = 25;\nString nome = \"João\";\nSystem.out.println(nome.length()); // Método do objeto"
                 }
             ]
         },
         {
-            "subtitle": "O que é o Garbage Collector?",
-            "description": "Explicação sobre o gerenciamento automático de memória em Java.",
+            "subtitle": "Modificadores de Acesso e Static",
+            "description": "Como controlar acesso e comportamento de classes e membros.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: O Garbage Collector (GC) é um mecanismo da JVM que libera memória ao remover objetos não mais referenciados pelo programa, evitando vazamentos de memória. Ele funciona automaticamente, mas pode pausar o programa temporariamente.<br>Resposta Simples: O Garbage Collector limpa a memória que o programa não usa mais.",
-                    "code": ""
+                    "explanation": "Modificadores de acesso definem visibilidade: public (todos), protected (classe, pacote, subclasses), default (pacote), private (só a classe). Static faz atributos/métodos pertencerem à classe, não a objetos.",
+                    "code": "public class Exemplo {\n    public int publico = 1;\n    protected int protegido = 2;\n    int padrao = 3; // default\n    private int privado = 4;\n    static int contador = 0;\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que são variáveis e tipos de dados em Java?",
-            "description": "Conceitos fundamentais sobre variáveis e tipos de dados.",
+            "subtitle": "Estruturas de Controle",
+            "description": "Como gerenciar o fluxo do programa.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Variáveis são espaços na memória para armazenar dados, como números ou texto. Em Java, cada variável tem um tipo, como int (números inteiros), double (números decimais), boolean (verdadeiro/falso) ou String (texto). Tipos primitivos (int, double) armazenam valores simples; tipos não primitivos (String, Array) são objetos mais complexos.<br>Resposta Simples: Variáveis guardam dados, como números (int) ou texto (String), e precisam de um tipo definido.",
-                    "code": "int idade = 25;\nString nome = \"João\";"
+                    "explanation": "If executa código com base em condições. Loops (for, while) repetem ações enquanto uma condição é verdadeira. São usados para lógica condicional e repetitiva.",
+                    "code": "int idade = 18;\nif (idade >= 18) {\n    System.out.println(\"Maior de idade\");\n}\nfor (int i = 0; i < 3; i++) {\n    System.out.println(i);\n}"
                 }
             ]
         },
         {
-            "subtitle": "Variáveis primitivas vs. objetos",
-            "description": "Diferenças entre tipos primitivos e não primitivos.",
+            "subtitle": "Métodos, Construtores e Main",
+            "description": "Como definir comportamentos e iniciar programas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Variáveis primitivas (int, double, boolean) armazenam valores simples diretamente na memória e não podem ser nulas. Objetos (String, Array) armazenam referências a dados complexos, podem ser nulos e têm métodos, como length() em String.<br>Resposta Simples: Primitivas guardam valores simples e não podem ser nulas; objetos são mais complexos e podem ser nulos.",
-                    "code": "int numero = 10; // Primitivo\nString texto = \"Olá\"; // Objeto\nSystem.out.println(texto.length()); // Método do objeto"
+                    "explanation": "Métodos definem ações; construtores inicializam objetos; o método main é o ponto de entrada do programa. Métodos podem receber parâmetros e retornar valores.",
+                    "code": "public class Pessoa {\n    String nome;\n    Pessoa(String nome) { // Construtor\n        this.nome = nome;\n    }\n    void saudar() { // Método\n        System.out.println(\"Olá, \" + nome);\n    }\n    public static void main(String[] args) { // Main\n        Pessoa p = new Pessoa(\"João\");\n        p.saudar();\n    }\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é passagem por valor?",
+            "subtitle": "Tratamento de Exceções",
+            "description": "Como lidar com erros no código.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Exceções tratam erros com try-catch. Use throws para declarar exceções em métodos. Exceções personalizadas podem ser criadas para casos específicos.",
+                    "code": "public int dividir(int a, int b) throws ArithmeticException {\n    if (b == 0) throw new ArithmeticException(\"Divisão por zero\");\n    return a / b;\n}\ntry {\n    int resultado = dividir(10, 0);\n} catch (ArithmeticException e) {\n    System.out.println(\"Erro: \" + e.getMessage());\n}"
+                }
+            ]
+        },
+        {
+            "subtitle": "Passagem por Valor",
             "description": "Como Java lida com parâmetros em métodos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Em Java, parâmetros de métodos são passados por valor, ou seja, uma cópia do valor é enviada. Para primitivos, mudar o parâmetro não afeta a variável original. Para objetos, a cópia é da referência, então alterações no objeto afetam fora, mas mudar a referência não.<br>Resposta Simples: Java passa uma cópia do valor. Números não mudam fora do método; objetos podem mudar, mas a referência não.",
+                    "explanation": "Java passa parâmetros por valor: primitivos não mudam fora do método; objetos passam a referência, permitindo alterações no objeto, mas não na referência.",
                     "code": "void alterar(int x, StringBuilder sb) {\n    x = 20; // Não afeta fora\n    sb.append(\" Mundo\"); // Afeta fora\n}\nint num = 10;\nStringBuilder texto = new StringBuilder(\"Olá\");\nalterar(num, texto);\nSystem.out.println(num); // 10\nSystem.out.println(texto); // Olá Mundo"
                 }
             ]
         },
         {
-            "subtitle": "O que são classes e objetos?",
-            "description": "Conceitos centrais da programação orientada a objetos em Java.",
+            "subtitle": "Boas Práticas em Java",
+            "description": "Como escrever código limpo e eficiente.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Uma classe é um modelo que define atributos (dados) e métodos (comportamentos). Um objeto é uma instância da classe, criado com a palavra 'new', com valores específicos para os atributos. Por exemplo, uma classe Carro define cor e velocidade, e um objeto é um carro específico.<br>Resposta Simples: Classe é o modelo, como um Carro. Objeto é o Carro de verdade criado a partir do modelo.",
-                    "code": "class Carro {\n    String cor;\n    int velocidade;\n}\nCarro meuCarro = new Carro(); // Objeto\nmeuCarro.cor = \"Vermelho\";"
+                    "explanation": "Use nomes descritivos (ex.: calcularTotal), siga camelCase, documente com JavaDoc, evite objetos desnecessários e use try-with-resources para recursos.",
+                    "code": "/**\n * Calcula o total com desconto.\n * @param valor Valor original\n * @return Total após desconto\n */\npublic double calcularTotal(double valor, double desconto) {\n    return valor * (1 - desconto / 100);\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é o método main?",
-            "description": "A importância do método main em um programa Java.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: O método main é o ponto de entrada de um programa Java, onde a execução começa. Ele deve ser público, estático, retornar void e aceitar um array de Strings como argumento. A JVM chama esse método para iniciar o programa.<br>Resposta Simples: O método main é onde o programa Java começa a rodar.",
-                    "code": "public static void main(String[] args) {\n    System.out.println(\"Olá, Mundo!\");\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que são os modificadores 'private' e 'static'?",
-            "description": "Como os modificadores controlam acesso e comportamento em Java.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 'private' restringe o acesso a atributos ou métodos, permitindo uso apenas dentro da classe, promovendo encapsulamento. 'static' indica que um atributo ou método pertence à classe, não a objetos, permitindo uso sem instanciar, como no método main.<br>Resposta Simples: 'private' esconde algo para uso só na classe. 'static' faz algo pertencer à classe, não ao objeto.",
-                    "code": "class Exemplo {\n    private int saldo; // Só acessível na classe\n    static int contador = 0; // Compartilhado por todos os objetos\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que são estruturas de controle (if, loops)?",
-            "description": "Como controlar o fluxo do programa com condicionais e repetições.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Estruturas de controle definem o fluxo do programa. O 'if' executa um bloco de código se uma condição for verdadeira. Loops, como 'for' e 'while', repetem um bloco enquanto uma condição for atendida, permitindo iterações. São essenciais para lógica condicional e repetitiva.<br>Resposta Simples: 'if' decide o que fazer se algo for verdade. Loops como 'for' repetem ações várias vezes.",
-                    "code": "int idade = 18;\nif (idade >= 18) {\n    System.out.println(\"Maior de idade\");\n}\nfor (int i = 0; i < 5; i++) {\n    System.out.println(i);\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que são métodos e construtores?",
-            "description": "Como definir comportamentos e inicializar objetos em Java.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Métodos são funções dentro de uma classe que definem comportamentos, como calcular ou exibir algo. Eles podem receber parâmetros e retornar valores. Construtores são métodos especiais, com o mesmo nome da classe, usados para criar e inicializar objetos.<br>Resposta Simples: Métodos fazem ações, como somar números. Construtores criam objetos com valores iniciais.",
-                    "code": "class Pessoa {\n    String nome;\n    Pessoa(String nome) { // Construtor\n        this.nome = nome;\n    }\n    void saudar() { // Método\n        System.out.println(\"Olá, \" + nome);\n    }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "Boas práticas em Java",
-            "description": "Recomendações para escrever código Java limpo e eficiente.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Use nomes descritivos para variáveis e métodos (ex.: `calcularTotal`); 2) Siga convenções de código (camelCase para métodos); 3) Evite objetos desnecessários para otimizar memória; 4) Use try-with-resources para gerenciar recursos; 5) Documente com JavaDoc. Isso melhora legibilidade e manutenção.<br>Resposta Simples: Nomeie bem o código, siga padrões, evite desperdício de memória e documente.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender Java.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) CodingBat (codingbat.com): Exercícios de lógica; 2) HackerRank (hackerrank.com): Desafios de programação; 3) Oracle Java Tutorials (docs.oracle.com/javase/tutorial): Guia oficial; 4) IntelliJ IDEA Community: IDE para prática. Essas ferramentas ajudam a consolidar conceitos.<br>Resposta Simples: Pratique com CodingBat, HackerRank, tutoriais da Oracle e use IntelliJ para programar.",
+                    "explanation": "Pratique com CodingBat (exercícios de lógica), HackerRank (desafios), Oracle Java Tutorials (guias oficiais) e IntelliJ IDEA (IDE para projetos).",
                     "code": ""
                 }
             ]
