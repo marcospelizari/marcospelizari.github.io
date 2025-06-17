@@ -8,7 +8,7 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Java é uma linguagem orientada a objetos, portátil (roda na JVM) e amplamente usada em aplicações empresariais, Android e backend. Sua robustez e gerenciamento automático de memória a tornam ideal para sistemas escaláveis.",
+                    "explanation": "Java é uma linguagem orientada a objetos, portátil (roda na JVM - Java Virtual Machine) e amplamente usada em aplicações empresariais, Android e backend. Sua robustez e gerenciamento automático de memória a tornam ideal para sistemas escaláveis.",
                     "code": ""
                 }
             ]
@@ -19,7 +19,7 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "A JVM executa bytecode, garantindo portabilidade. O JRE inclui a JVM e bibliotecas para rodar programas. O JDK contém o JRE e ferramentas como o compilador (javac) para desenvolver.",
+                    "explanation": "A JVM (Java Virtual Machine) executa bytecode, garantindo portabilidade. O JRE (Java Runtime Environment) inclui a JVM e bibliotecas para rodar programas. O JDK (Java Development Kit) contém o JRE e ferramentas como o compilador (javac) para desenvolver.",
                     "code": ""
                 }
             ]
@@ -30,7 +30,7 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Bytecode é o código intermediário gerado pelo compilador (javac), executado pela JVM em qualquer plataforma. O Garbage Collector libera memória de objetos não usados, mas pode pausar a execução se mal gerenciado.",
+                    "explanation": "Bytecode é o código intermediário gerado pelo compilador (javac), executado pela JVM (Java Virtual Machine) em qualquer plataforma. O GC (Garbage Collector) libera memória de objetos não usados, mas pode pausar a execução se mal gerenciado.",
                     "code": ""
                 }
             ]
@@ -52,7 +52,7 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Modificadores de acesso definem visibilidade: public (todos), protected (classe, pacote, subclasses), default (pacote), private (só a classe). Static faz atributos/métodos pertencerem à classe, não a objetos.",
+                    "explanation": "Modificadores de acesso definem visibilidade: public (todos), protected (classe, pacote, subclasses), default (pacote), private (só a classe). O modificador static faz atributos/métodos pertencerem à classe, não a objetos.",
                     "code": "public class Exemplo {\n    public int publico = 1;\n    protected int protegido = 2;\n    int padrao = 3; // default\n    private int privado = 4;\n    static int contador = 0;\n}"
                 }
             ]
@@ -102,23 +102,12 @@
             ]
         },
         {
-            "subtitle": "Boas Práticas em Java",
-            "description": "Como escrever código limpo e eficiente.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use nomes descritivos (ex.: calcularTotal), siga camelCase, documente com JavaDoc, evite objetos desnecessários e use try-with-resources para recursos.",
-                    "code": "/**\n * Calcula o total com desconto.\n * @param valor Valor original\n * @return Total após desconto\n */\npublic double calcularTotal(double valor, double desconto) {\n    return valor * (1 - desconto / 100);\n}"
-                }
-            ]
-        },
-        {
             "subtitle": "Recursos para Prática",
             "description": "Ferramentas para aprender Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Pratique com CodingBat (exercícios de lógica), HackerRank (desafios), Oracle Java Tutorials (guias oficiais) e IntelliJ IDEA (IDE para projetos).",
+                    "explanation": "Pratique com CodingBat (exercícios de lógica), HackerRank (desafios), Oracle Java Tutorials (guias oficiais) e IntelliJ IDEA (IDE - Integrated Development Environment) para projetos.",
                     "code": ""
                 }
             ]

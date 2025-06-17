@@ -1,70 +1,48 @@
 {
     "title": "Banco de Dados",
-    "description": "Conceitos fundamentais sobre bancos de dados, sistemas para armazenar e gerenciar dados de forma organizada. Este guia cobre o essencial para desenvolvedores juniores, com foco em bancos relacionais e introdução ao NoSQL.",
+    "description": "Conceitos de bancos de dados para armazenar e gerenciar dados, com foco em relacionais e introdução ao NoSQL.",
     "subsections": [
         {
-            "subtitle": "O que é um banco de dados?",
-            "description": "Introdução aos bancos de dados e seu funcionamento.",
+            "subtitle": "Conceitos de Bancos Relacionais",
+            "description": "Como funcionam bancos relacionais.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Um banco de dados é um sistema organizado para armazenar, gerenciar e recuperar dados. Em bancos relacionais, dados são guardados em tabelas com linhas e colunas, como uma tabela de usuários com nome e idade. Um sistema de gerenciamento (ex.: MySQL) usa comandos para criar, consultar e atualizar dados, garantindo eficiência e segurança.<br>Resposta Simples: Um banco de dados guarda dados em tabelas, como uma planilha, e usa comandos para mexer neles.",
-                    "code": ""
+                    "explanation": "Bancos relacionais organizam dados em tabelas com chaves primárias e estrangeiras, gerenciados por um RDBMS (Relational Database Management System) como MySQL usando SQL (Structured Query Language).",
+                    "code": "CREATE TABLE usuarios (\n    id INT PRIMARY KEY,\n    nome VARCHAR(50)\n);"
                 }
             ]
         },
         {
-            "subtitle": "O que é um banco de dados relacional?",
-            "description": "Como os dados são organizados em bancos relacionais.",
+            "subtitle": "Modelagem e Normalização",
+            "description": "Como estruturar dados eficientemente.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Um banco relacional organiza dados em tabelas, com colunas (atributos) e linhas (registros). Tabelas são conectadas por chaves, como chaves primárias e estrangeiras. Por exemplo, uma tabela de pedidos pode se conectar a uma tabela de usuários por um ID. Bancos como MySQL e PostgreSQL usam SQL para gerenciar dados.<br>Resposta Simples: É um banco que usa tabelas conectadas por IDs, gerenciado por SQL.",
-                    "code": ""
+                    "explanation": "Modelagem define tabelas com colunas e tipos (ex.: INT, VARCHAR). Normalização separa dados em tabelas para evitar redundâncias, usando chaves.",
+                    "code": "CREATE TABLE pedidos (\n    id INT PRIMARY KEY,\n    usuario_id INT,\n    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)\n);"
                 }
             ]
         },
         {
-            "subtitle": "O que são chaves primárias e estrangeiras?",
-            "description": "Como chaves identificam e conectam dados em tabelas.",
+            "subtitle": "Comandos SQL",
+            "description": "Como manipular dados com SQL.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Uma chave primária é um valor único que identifica cada registro em uma tabela, como o ID de um usuário. Uma chave estrangeira é um campo que conecta uma tabela a outra, apontando para a chave primária, como o ID do usuário em uma tabela de pedidos. Elas garantem unicidade e relacionamentos.<br>Resposta Simples: Chave primária é o ID único de uma linha. Chave estrangeira liga tabelas, como o ID do usuário em um pedido.",
-                    "code": "CREATE TABLE usuarios (\n    id INT PRIMARY KEY,\n    nome VARCHAR(50)\n);\nCREATE TABLE pedidos (\n    id INT PRIMARY KEY,\n    usuario_id INT,\n    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)\n);"
+                    "explanation": "SQL (Structured Query Language) usa SELECT para buscar, INSERT para adicionar, UPDATE para alterar e DELETE para remover dados. JOIN combina tabelas.",
+                    "code": "SELECT u.nome, p.id FROM usuarios u INNER JOIN pedidos p ON u.id = p.usuario_id;\nINSERT INTO usuarios (id, nome) VALUES (1, \"João\");"
                 }
             ]
         },
         {
-            "subtitle": "O que é SQL e seus comandos básicos?",
-            "description": "Introdução à linguagem SQL e seus principais comandos.",
+            "subtitle": "Transações e Índices",
+            "description": "Como garantir confiabilidade e performance.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: SQL (Structured Query Language) é a linguagem para gerenciar bancos relacionais. Comandos básicos incluem: SELECT (buscar dados), INSERT (adicionar registros), UPDATE (alterar dados) e DELETE (remover registros). Também há CREATE (criar tabelas) e DROP (excluir tabelas).<br>Resposta Simples: SQL é a linguagem do banco. Usa SELECT para buscar, INSERT para adicionar, UPDATE para mudar e DELETE para apagar.",
-                    "code": "SELECT * FROM usuarios WHERE idade > 18;\nINSERT INTO usuarios (id, nome, idade) VALUES (1, 'João', 25);\nUPDATE usuarios SET nome = 'João Silva' WHERE id = 1;\nDELETE FROM usuarios WHERE id = 1;"
-                }
-            ]
-        },
-        {
-            "subtitle": "Como modelar uma tabela simples?",
-            "description": "Como definir a estrutura de uma tabela em um banco relacional.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Modelar uma tabela é definir suas colunas, tipos de dados (ex.: INT, VARCHAR) e restrições, como chave primária ou NOT NULL. Por exemplo, uma tabela 'usuarios' pode ter colunas 'id' (inteiro, chave primária), 'nome' (texto) e 'idade' (inteiro). Usa-se o comando CREATE TABLE em SQL.<br>Resposta Simples: É criar uma tabela com colunas, como 'id' (número) e 'nome' (texto), usando SQL.",
-                    "code": "CREATE TABLE usuarios (\n    id INT PRIMARY KEY,\n    nome VARCHAR(50) NOT NULL,\n    idade INT\n);"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que é normalização?",
-            "description": "Como organizar dados para evitar redundâncias.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Normalização organiza dados em tabelas separadas para evitar repetições e manter consistência. Por exemplo, em vez de repetir o nome de um cliente em uma tabela de pedidos, cria-se uma tabela de clientes com IDs, conectada por chaves. Geralmente, usa-se até a terceira forma normal.<br>Resposta Simples: Normalização separa dados em tabelas para não repetir informações, como clientes e pedidos.",
-                    "code": ""
+                    "explanation": "Transações (ACID - Atomicidade, Consistência, Isolamento, Durabilidade) garantem operações completas ou revertidas. Índices aceleram buscas, mas consomem espaço.",
+                    "code": "BEGIN TRANSACTION;\nUPDATE conta SET saldo = saldo - 100 WHERE id = 1;\nCOMMIT;\nCREATE INDEX idx_nome ON usuarios(nome);"
                 }
             ]
         },
@@ -74,62 +52,29 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Bancos SQL (ex.: MySQL) são relacionais, usam tabelas com esquema fixo e SQL para consultas. São ideais para dados estruturados, como finanças. Bancos NoSQL (ex.: MongoDB) são flexíveis, com formatos como documentos ou chave-valor, sem esquema fixo, ideais para dados não estruturados ou escalabilidade.<br>Resposta Simples: SQL usa tabelas e é organizado (ex.: MySQL). NoSQL é flexível, sem tabelas (ex.: MongoDB).",
+                    "explanation": "Bancos SQL (ex.: MySQL) usam tabelas com esquema fixo, ideais para dados estruturados. Bancos NoSQL (Not Only SQL, ex.: MongoDB) são flexíveis para dados não estruturados.",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "O que é uma transação?",
-            "description": "Como garantir operações confiáveis no banco.",
+            "subtitle": "Segurança em SQL",
+            "description": "Como proteger contra vulnerabilidades.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Uma transação é um conjunto de operações que devem ser todas concluídas ou nenhuma, seguindo o princípio ACID (Atomicidade, Consistência, Isolamento, Durabilidade). Por exemplo, uma transferência bancária debita uma conta e credita outra, revertendo tudo se algo falhar.<br>Resposta Simples: Transação é um grupo de ações que ou acontecem todas ou nenhuma, como transferir dinheiro.",
-                    "code": "BEGIN TRANSACTION;\nUPDATE conta SET saldo = saldo - 100 WHERE id = 1;\nUPDATE conta SET saldo = saldo + 100 WHERE id = 2;\nCOMMIT;"
+                    "explanation": "Use PreparedStatement para evitar SQL Injection, passando parâmetros com segurança em vez de concatenar strings.",
+                    "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT * FROM usuarios WHERE nome = ?\");\nstmt.setString(1, nome);\nResultSet rs = stmt.executeQuery();"
                 }
             ]
         },
         {
-            "subtitle": "O que é um JOIN em SQL?",
-            "description": "Como combinar dados de várias tabelas.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender bancos de dados.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Um JOIN combina dados de duas ou mais tabelas com base em uma chave comum, como uma chave estrangeira. O tipo mais comum é o INNER JOIN, que retorna apenas registros correspondentes em ambas as tabelas. Por exemplo, juntar 'usuarios' e 'pedidos' para mostrar quais usuários fizeram quais pedidos.<br>Resposta Simples: JOIN junta tabelas para mostrar dados relacionados, como usuários e seus pedidos.",
-                    "code": "SELECT usuarios.nome, pedidos.id\nFROM usuarios\nINNER JOIN pedidos ON usuarios.id = pedidos.usuario_id;"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que são índices e por que usá-los?",
-            "description": "Como melhorar a performance de consultas.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Índices são estruturas que aceleram consultas em bancos de dados, organizando dados de uma coluna (ex.: 'nome') para buscas rápidas. Por exemplo, um índice no 'id' de uma tabela de usuários torna SELECT mais eficiente. Porém, índices consomem espaço e podem lentificar inserções.<br>Resposta Simples: Índices tornam buscas no banco mais rápidas, mas ocupam espaço.",
-                    "code": "CREATE INDEX idx_nome ON usuarios(nome);"
-                }
-            ]
-        },
-        {
-            "subtitle": "Boas práticas em Banco de Dados",
-            "description": "Recomendações para gerenciar bancos de dados de forma eficiente.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Use índices em colunas frequentemente consultadas; 2) Normalize tabelas para evitar redundâncias; 3) Escreva consultas específicas, evitando SELECT *; 4) Use transações para operações críticas; 5) Faça backups regulares. Isso melhora performance e segurança.<br>Resposta Simples: Use índices, organize tabelas, busque só o necessário, use transações e faça backups.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender Banco de Dados.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) SQLZoo (sqlzoo.net): Exercícios de SQL; 2) DB Fiddle (dbfiddle.uk): Teste consultas online; 3) MySQL Workbench: Gerencie bancos MySQL; 4) Mode Analytics SQL Tutorial (mode.com/sql-tutorial): Aprenda SQL. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Pratique SQL com SQLZoo, teste queries no DB Fiddle e use MySQL Workbench.",
+                    "explanation": "Pratique com SQLZoo (exercícios SQL), DB Fiddle (testes online), MySQL Workbench (gerenciamento) e Mode SQL Tutorial (guias).",
                     "code": ""
                 }
             ]

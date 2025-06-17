@@ -1,80 +1,69 @@
 {
     "title": "Testes",
-    "description": "Testes garantem que o código funciona corretamente e é fácil de manter. Este guia cobre conceitos básicos de testes unitários e de integração, com foco em ferramentas como JUnit e Spring Boot Test para desenvolvedores juniores em Java.",
+    "description": "Testes garantem a qualidade do código, cobrindo unitários, integração e validação de APIs.",
     "subsections": [
         {
-            "subtitle": "O que são testes unitários?",
-            "description": "Como testar partes isoladas do código.",
+            "subtitle": "Testes Unitários e Asserções",
+            "description": "Como testar partes isoladas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Testes unitários verificam uma pequena parte do código, como um método, isoladamente. Eles garantem que cada unidade funcione corretamente antes da integração. Em Java, usamos JUnit com anotações como @Test e asserções como assertEquals para comparar resultados esperados com reais. São úteis para encontrar erros cedo e facilitar manutenção.<br>Resposta Simples: Testes unitários checam se um pedaço do código, como uma função, funciona direito, usando JUnit.",
-                    "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\npublic class CalculadoraTest {\n    @Test\n    void testSomar() {\n        Calculadora calc = new Calculadora();\n        int resultado = calc.somar(2, 3);\n        assertEquals(5, resultado);\n    }\n}"
+                    "explanation": "Testes unitários verificam métodos com JUnit, usando asserções como assertEquals. TDD (Test-Driven Development) escreve testes antes do código.",
+                    "code": "@Test\nvoid testSomar() {\n    Calculadora calc = new Calculadora();\n    assertEquals(5, calc.somar(2, 3));\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que são testes de integração?",
-            "description": "Como testar a interação entre diferentes partes do sistema.",
+            "subtitle": "Testes de Integração",
+            "description": "Como testar interações entre componentes.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Testes de integração verificam se várias partes do sistema, como um serviço e um banco de dados, funcionam juntas corretamente. Diferente dos testes unitários, eles testam fluxos completos. Em Java, usamos Spring Boot Test com @SpringBootTest para carregar o contexto da aplicação e testar interações reais, como salvar um objeto no banco.<br>Resposta Simples: Testes de integração checam se partes do sistema, como serviço e banco, trabalham bem juntas.",
-                    "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.context.SpringBootTest;\n\n@SpringBootTest\nclass ProdutoServiceTest {\n    @Autowired\n    private ProdutoService service;\n\n    @Test\n    void testSalvarProduto() {\n        Produto produto = new Produto(\"Notebook\", 5000);\n        Produto salvo = service.salvar(produto);\n        assertNotNull(salvo.getId());\n    }\n}"
+                    "explanation": "Testes de integração verificam fluxos entre serviços e bancos com @SpringBootTest. Garantem que componentes funcionem juntos.",
+                    "code": "@SpringBootTest\nclass ProdutoServiceTest {\n    @Autowired\n    private ProdutoService service;\n    @Test\n    void testSalvar() {\n        Produto p = new Produto(\"Notebook\", 5000);\n        assertNotNull(service.salvar(p).getId());\n    }\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é mocking?",
-            "description": "Como simular dependências em testes.",
+            "subtitle": "Mocking",
+            "description": "Como simular dependências.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Mocking cria objetos falsos (mocks) que imitam o comportamento de dependências, como um banco de dados ou API. Usado em testes unitários para testar uma parte do código isoladamente, sem depender de sistemas reais. Em Java, usamos Mockito para criar mocks e verificar interações. Isso economiza tempo e permite testar cenários específicos.<br>Resposta Simples: Mocking é fingir que uma parte do sistema existe para testar outra sozinha, usando Mockito.",
-                    "code": "import org.junit.jupiter.api.Test;\nimport org.mockito.Mockito;\n\nclass ProdutoServiceTest {\n    @Test\n    void testSalvarProduto() {\n        ProdutoRepository repo = Mockito.mock(ProdutoRepository.class);\n        ProdutoService service = new ProdutoService(repo);\n        Produto produto = new Produto(\"Celular\", 2000);\n        service.salvar(produto);\n        Mockito.verify(repo).save(produto);\n    }\n}"
+                    "explanation": "Mocking cria objetos falsos com Mockito para testar isoladamente, simulando bancos ou APIs (Application Programming Interfaces).",
+                    "code": "@Test\nvoid testSalvar() {\n    ProdutoRepository repo = Mockito.mock(ProdutoRepository.class);\n    ProdutoService service = new ProdutoService(repo);\n    service.salvar(new Produto(\"Celular\", 2000));\n    Mockito.verify(repo).save(any());\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que são asserções em testes?",
-            "description": "Como verificar resultados em testes.",
+            "subtitle": "Testes de API e Carga",
+            "description": "Como validar APIs e performance.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Asserções são verificações usadas em testes para comparar o resultado obtido com o esperado. Em JUnit, métodos como assertEquals (compara valores), assertTrue (verifica se é verdadeiro) e assertNotNull (verifica se não é nulo) são comuns. Elas garantem que o código atende aos requisitos.<br>Resposta Simples: Asserções checam se o resultado do teste está correto, como comparar se 2 + 3 é 5.",
-                    "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass CalculadoraTest {\n    @Test\n    void testDividir() {\n        Calculadora calc = new Calculadora();\n        assertEquals(2, calc.dividir(4, 2));\n        assertTrue(calc.isPositivo(5));\n        assertThrows(ArithmeticException.class, () -> calc.dividir(1, 0));\n    }\n}"
+                    "explanation": "Teste APIs com RestAssured, verificando status e JSON. Use JMeter para testes de carga, simulando múltiplas requisições.",
+                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é cobertura de testes?",
-            "description": "Como medir a qualidade dos testes.",
+            "subtitle": "Cobertura de Testes",
+            "description": "Como medir qualidade dos testes.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Cobertura de testes mede quanto do código é testado, em porcentagem, analisando linhas, métodos ou branches executados pelos testes. Ferramentas como JaCoCo mostram áreas não testadas. Alta cobertura (ex.: 80%+) indica confiança, mas não garante que todos os cenários foram testados.<br>Resposta Simples: Cobertura mostra quanto do código os testes checam, usando ferramentas como JaCoCo.",
+                    "explanation": "Cobertura mede o percentual de código testado com ferramentas como JaCoCo. Mire 80%+, mas priorize cenários críticos.",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "Boas práticas em Testes",
-            "description": "Recomendações para escrever testes eficazes.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender testes.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Escreva testes unitários para cada método importante; 2) Use nomes descritivos para testes (ex.: testSomarDoisNumeros); 3) Mantenha testes rápidos e independentes; 4) Use mocks para isolar dependências; 5) Mire 80%+ de cobertura, mas priorize cenários críticos. Isso garante qualidade e confiança.<br>Resposta Simples: Teste cada parte do código, use nomes claros, mocks e busque boa cobertura.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender testes.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) JUnit Tutorial (junit.org/junit5/docs): Aprenda JUnit; 2) Mockito (site.mockito.org): Guia para mocking; 3) Baeldung (baeldung.com): Tutoriais de testes em Java; 4) Testcontainers (testcontainers.org): Testes de integração. Essas ferramentas ajudam a praticar.<br>Resposta Simples: Use JUnit e Mockito para aprender, Baeldung para tutoriais e Testcontainers para integração.",
+                    "explanation": "Use JUnit (tutoriais), Mockito (mocking), Baeldung (artigos) e Testcontainers (integração).",
                     "code": ""
                 }
             ]

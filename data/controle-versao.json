@@ -1,102 +1,69 @@
 {
     "title": "Controle de Versão (Git)",
-    "description": "Git é a ferramenta padrão para controle de versão, permitindo gerenciar mudanças no código, colaborar em equipe e manter o histórico do projeto. Este guia cobre conceitos básicos para desenvolvedores juniores usarem Git no desenvolvimento.",
+    "description": "Git é um VCS (Version Control System) essencial para gerenciar mudanças no código e colaboração em equipe.",
     "subsections": [
         {
-            "subtitle": "O que é Git e por que ele é importante?",
-            "description": "Introdução ao Git e sua relevância no desenvolvimento de software.",
+            "subtitle": "O que é Git?",
+            "description": "Introdução ao controle de versão.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Git é um sistema de controle de versão distribuído que rastreia alterações no código, permitindo colaboração em equipe, histórico de mudanças e reversão de erros. É amplamente usado em plataformas como GitHub e GitLab por sua flexibilidade e portabilidade.<br>Resposta Simples: Git guarda o histórico do código e ajuda equipes a trabalharem juntas sem conflitos.",
+                    "explanation": "Git é um VCS (Version Control System) que rastreia alterações no código, permitindo colaboração e histórico. É usado com plataformas como GitHub para gerenciar projetos.",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "O que são commits e como criá-los?",
-            "description": "Como registrar mudanças no código com commits.",
+            "subtitle": "Commits e Branches",
+            "description": "Como salvar mudanças e trabalhar em paralelo.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Um commit é um registro das alterações no código, como um 'salvar' com uma mensagem descritiva. Usa-se `git add` para selecionar arquivos alterados e `git commit -m \"mensagem\"` para salvá-los. Commits criam um histórico claro e permitem reverter mudanças.<br>Resposta Simples: Commit é salvar mudanças com uma mensagem explicando o que foi feito.",
-                    "code": "git add .\ngit commit -m \"Adiciona classe ProdutoController\""
+                    "explanation": "Commits salvam alterações com mensagens descritivas. Branches criam versões paralelas do código, como feature/nova-api, mescladas com merge.",
+                    "code": "git add .\ngit commit -m \"Adiciona nova API\"\ngit branch feature/nova-api\ngit checkout feature/nova-api\ngit merge feature/nova-api"
                 }
             ]
         },
         {
-            "subtitle": "O que são branches e como fazer merge?",
-            "description": "Como usar branches para desenvolver em paralelo e mesclar mudanças.",
+            "subtitle": "Repositórios Remotos e Pull Requests",
+            "description": "Como colaborar em equipe.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Um branch é uma versão paralela do código, como `feature/nova-api`, que não afeta o branch principal (`main`). Após concluir o trabalho, o merge combina as mudanças no `main`. Usa-se `git branch` para criar e `git merge` para mesclar.<br>Resposta Simples: Branch é uma cópia do código para trabalhar sem mexer no original. Merge junta as mudanças de volta.",
-                    "code": "git branch feature/nova-api\ngit checkout feature/nova-api\ngit add .\ngit commit -m \"Cria nova API\"\ngit checkout main\ngit merge feature/nova-api"
+                    "explanation": "Repositórios remotos (ex.: GitHub) armazenam o projeto online. PRs (Pull Requests) propõem mudanças para revisão antes do merge.",
+                    "code": "git clone https://github.com/usuario/projeto.git\ngit push origin main\ngit pull origin main"
                 }
             ]
         },
         {
-            "subtitle": "O que é um conflito e como resolvê-lo?",
-            "description": "Como lidar com conflitos durante merges.",
+            "subtitle": "Conflitos e Reversão",
+            "description": "Como resolver problemas no Git.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Um conflito ocorre quando o Git não consegue combinar mudanças de dois branches automaticamente, como alterações no mesmo trecho de código. Para resolver, edite o arquivo, escolha as mudanças desejadas, remova marcações (`<<<<<<<`, `>>>>>>>`) e faça um commit.<br>Resposta Simples: Conflito é quando duas mudanças no mesmo código brigam. Você edita o arquivo, escolhe o que fica e faz um commit.",
-                    "code": "// Exemplo de conflito no arquivo:\n<<<<<<< HEAD\ntexto = \"Versão 1\";\n=======\ntexto = \"Versão 2\";\n>>>>>>> feature/nova-api\n// Após resolver:\ntexto = \"Versão Combinada\";\ngit add .\ngit commit -m \"Resolve conflito\""
+                    "explanation": "Conflitos ocorrem quando mudanças colidem; resolva editando o código. Use git revert ou git reset para desfazer commits.",
+                    "code": "<<<<<<< HEAD\ntexto = \"Versão 1\";\n=======\ntexto = \"Versão 2\";\n>>>>>>> feature/nova-api\n// Resolver: texto = \"Versão Final\";\ngit revert abc123"
                 }
             ]
         },
         {
-            "subtitle": "O que são repositórios remotos e como usá-los?",
-            "description": "Como trabalhar com repositórios hospedados em plataformas como GitHub.",
+            "subtitle": "Monitoramento do Repositório",
+            "description": "Como acompanhar mudanças.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Um repositório remoto é uma cópia do projeto hospedada em servidores como GitHub ou GitLab, permitindo colaboração. Usa-se `git clone` para baixar, `git push` para enviar commits e `git pull` para atualizar com mudanças remotas.<br>Resposta Simples: Repositório remoto é o projeto guardado online. Você baixa com `git clone`, envia com `git push` e atualiza com `git pull`.",
-                    "code": "git clone https://github.com/usuario/projeto.git\ngit add .\ngit commit -m \"Adiciona funcionalidade\"\ngit push origin main\ngit pull origin main"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que é git status e git log?",
-            "description": "Como verificar o estado do repositório e o histórico de commits.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: `git status` mostra o estado atual do repositório, como arquivos alterados ou prontos para commit. `git log` exibe o histórico de commits, com mensagens, autores e datas. São úteis para acompanhar o progresso do projeto.<br>Resposta Simples: `git status` mostra o que mudou no projeto. `git log` lista todos os commits feitos.",
+                    "explanation": "Use git status para ver alterações pendentes e git log para o histórico de commits. Isso ajuda a gerenciar o projeto.",
                     "code": "git status\ngit log --oneline"
                 }
             ]
         },
         {
-            "subtitle": "Como reverter mudanças no Git?",
-            "description": "Como desfazer alterações ou commits indesejados.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender Git.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Para desfazer mudanças não salvas, usa-se `git restore` (arquivos) ou `git checkout --` (versão antiga). Para reverter um commit, usa-se `git revert` (cria um novo commit desfazendo) ou `git reset` (remove o commit, com cuidado). Esses comandos ajudam a corrigir erros.<br>Resposta Simples: Usa `git restore` para desfazer mudanças não salvas e `git revert` para cancelar um commit.",
-                    "code": "git restore arquivo.txt\ngit revert abc123 # ID do commit\ngit reset --hard abc123 # Remove commit (cuidado!)"
-                }
-            ]
-        },
-        {
-            "subtitle": "Boas práticas em Git",
-            "description": "Recomendações para gerenciar código com Git de forma eficiente.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Faça commits pequenos e descritivos (ex.: 'Corrige bug na API'); 2) Use branches para novas funcionalidades (ex.: feature/nova-api); 3) Atualize regularmente com `git pull`; 4) Resolva conflitos com cuidado, revisando o código; 5) Use .gitignore para excluir arquivos desnecessários. Isso melhora colaboração e organização.<br>Resposta Simples: Faça commits claros, use branches, atualize o código e evite arquivos extras.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender Git.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Learn Git Branching (learngitbranching.js.org): Tutoriais interativos; 2) GitKraken (gitkraken.com): Cliente visual para Git; 3) GitHub (github.com): Hospede repositórios e pratique; 4) Atlassian Git Tutorials (atlassian.com/git): Guias detalhados. Essas ferramentas ajudam a dominar Git.<br>Resposta Simples: Use Learn Git Branching para praticar, GitHub para projetos e GitKraken para visualizar.",
+                    "explanation": "Pratique com Learn Git Branching (tutoriais interativos), GitKraken (interface visual), GitHub (repositórios) e Atlassian Git Tutorials (guias).",
                     "code": ""
                 }
             ]

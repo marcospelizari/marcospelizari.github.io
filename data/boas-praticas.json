@@ -1,0 +1,72 @@
+{
+    "title": "Boas Práticas Gerais",
+    "description": "Recomendações para escrever código limpo, eficiente e colaborativo em Java, backend e DevOps.",
+    "subsections": [
+        {
+            "subtitle": "Código e Organização",
+            "description": "Como estruturar projetos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use nomes descritivos, siga padrões como MVC (Model-View-Controller), documente com JavaDoc e organize em camadas (controller, service, repository).",
+                    "code": "/**\n * Lista produtos por categoria.\n * @param categoria Categoria desejada\n * @return Lista de produtos\n */\n@GetMapping(\"/produtos\")\npublic List<Produto> listarPorCategoria(@RequestParam String categoria) {\n    return service.findByCategoria(categoria);\n}"
+                }
+            ]
+        },
+        {
+            "subtitle": "Princípios de Design",
+            "description": "Como aplicar SOLID e DRY.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Siga o SRP (Single Responsibility Principle) para classes com uma única função e o DRY (Don't Repeat Yourself) para evitar código repetido, usando métodos reutilizáveis.",
+                    "code": "public double aplicarDesconto(double valor, double percentual) {\n    return valor * (1 - percentual / 100);\n}"
+                }
+            ]
+        },
+        {
+            "subtitle": "Bancos de Dados",
+            "description": "Como otimizar e proteger dados.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use índices, evite SELECT *, normalize tabelas, use transações e PreparedStatement para segurança contra SQL Injection.",
+                    "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT id, nome FROM usuarios WHERE id = ?\");\nstmt.setInt(1, id);\nResultSet rs = stmt.executeQuery();"
+                }
+            ]
+        },
+        {
+            "subtitle": "APIs e Testes",
+            "description": "Como desenvolver e validar APIs.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use URLs claras, códigos HTTP corretos, valide entradas com @Valid e teste com JUnit e RestAssured, mirando 80%+ de cobertura.",
+                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}"
+                }
+            ]
+        },
+        {
+            "subtitle": "Git e Colaboração",
+            "description": "Como gerenciar código em equipe.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Faça commits pequenos com mensagens claras, use branches (ex.: feature/nova-api), revise PRs (Pull Requests) e use .gitignore.",
+                    "code": "git commit -m \"Adiciona endpoint /produtos\"\ngit push origin feature/nova-api"
+                }
+            ]
+        },
+        {
+            "subtitle": "Performance e DevOps",
+            "description": "Como otimizar e implantar sistemas.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use cache, assincronismo (@Async), imagens leves no Docker, pipelines CI/CD (Continuous Integration/Continuous Deployment) e monitore com Prometheus.",
+                    "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: mvn clean package"
+                }
+            ]
+        }
+    ]
+}
