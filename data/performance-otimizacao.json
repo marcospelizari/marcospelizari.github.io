@@ -1,80 +1,69 @@
 {
     "title": "Performance e Otimização",
-    "description": "Performance e otimização tornam aplicações Java backend mais rápidas, eficientes e escaláveis. Este guia cobre conceitos básicos para desenvolvedores juniores melhorarem o desempenho de sistemas.",
+    "description": "Técnicas para tornar aplicações Java backend rápidas e escaláveis.",
     "subsections": [
         {
-            "subtitle": "O que é performance no backend?",
-            "description": "Importância da performance em aplicações backend.",
+            "subtitle": "Fundamentos de Performance",
+            "description": "Como melhorar velocidade e eficiência.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Performance no backend é a velocidade e eficiência com que o sistema responde requisições e usa recursos como CPU e memória. É crucial para melhorar a experiência do usuário, reduzir custos e suportar mais acessos. Técnicas incluem otimizar consultas ao banco, usar cache e gerenciar memória da JVM.<br>Resposta Simples: Performance é fazer o sistema rodar rápido e usar menos recursos, para usuários felizes e mais acessos.",
+                    "explanation": "Performance reduz latência e uso de recursos como CPU e memória. Otimize consultas, use cache e gerencie o GC (Garbage Collector).",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "Como otimizar consultas ao banco?",
-            "description": "Técnicas para melhorar a eficiência de consultas ao banco de dados.",
+            "subtitle": "Otimização de Consultas",
+            "description": "Como acelerar acesso ao banco.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Otimizar consultas reduz a latência e carga no banco. Técnicas: 1) Usar índices em colunas frequentes (ex.: ID, categoria) para buscas rápidas; 2) Evitar o problema N+1 com JOINs ou fetch otimizado no Spring Data JPA; 3) Limitar dados retornados com consultas específicas. Em Spring Boot, @Query ajuda a criar consultas eficientes.<br>Resposta Simples: Use índices, evite consultas extras e busque só o necessário para o banco responder rápido.",
+                    "explanation": "Use índices e JOINs no JPA (Java Persistence API) para evitar o problema N+1. Consulte apenas dados necessários.",
                     "code": "@Repository\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    @Query(\"SELECT p FROM Produto p WHERE p.categoria = :categoria\")\n    List<Produto> findByCategoria(@Param(\"categoria\") String categoria);\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é caching?",
-            "description": "Como usar cache para melhorar performance.",
+            "subtitle": "Caching",
+            "description": "Como reduzir acessos repetitivos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Caching armazena dados frequentes na memória para evitar acessos repetitivos ao banco ou cálculos pesados, reduzindo latência. Em Spring Boot, @Cacheable com Redis ou Ehcache guarda resultados, como uma lista de produtos. É preciso gerenciar a validade do cache para dados atualizados.<br>Resposta Simples: Caching guarda dados na memória para não buscar de novo, como produtos, usando @Cacheable no Spring.",
-                    "code": "@Service\npublic class ProdutoService {\n    @Cacheable(value = \"produtos\")\n    public List<Produto> listarProdutos() {\n        return produtoRepository.findAll();\n    }\n}"
+                    "explanation": "Caching armazena dados frequentes na memória com @Cacheable, usando Redis ou Ehcache, para melhorar latência.",
+                    "code": "@Service\npublic class ProdutoService {\n    @Cacheable(\"produtos\")\n    public List<Produto> listar() { return repository.findAll(); }\n}"
                 }
             ]
         },
         {
-            "subtitle": "Como o Garbage Collector impacta a performance?",
-            "description": "Efeitos do Garbage Collector na eficiência da JVM.",
+            "subtitle": "Assincronismo",
+            "description": "Como escalar com operações assíncronas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: O Garbage Collector (GC) da JVM libera memória de objetos não usados, mas pausas durante sua execução podem causar lentidão. Para otimizar: 1) Reduzir criação de objetos desnecessários, como em loops; 2) Monitorar GC com ferramentas como VisualVM; 3) Ajustar parâmetros da JVM (ex.: heap size) ou usar G1 GC para menos pausas. Isso melhora a resposta do sistema.<br>Resposta Simples: O GC limpa memória, mas pode pausar o sistema. Reduza objetos extras e ajuste a JVM para evitar lentidão.",
+                    "explanation": "Use @Async no Spring para executar tarefas demoradas, como envio de e-mails, sem bloquear a thread principal.",
+                    "code": "@Service\npublic class EmailService {\n    @Async\n    public CompletableFuture<Void> enviarEmail(String destinatario) {\n        Thread.sleep(2000);\n        return CompletableFuture.completedFuture(null);\n    }\n}"
+                }
+            ]
+        },
+        {
+            "subtitle": "Monitoramento",
+            "description": "Como acompanhar performance.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use Prometheus para coletar métricas como latência e VisualVM para monitorar o GC (Garbage Collector) e JVM (Java Virtual Machine).",
                     "code": ""
                 }
             ]
         },
         {
-            "subtitle": "Como usar assincronismo para melhorar performance?",
-            "description": "Benefícios de operações assíncronas no backend.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender otimização.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Assincronismo permite executar tarefas sem bloquear a thread principal, melhorando a escalabilidade. Em Spring Boot, @Async ou WebClient executam operações demoradas, como chamadas a APIs externas, em threads separadas. Por exemplo, enviar um e-mail sem esperar a conclusão libera o sistema para outras requisições. É preciso gerenciar erros e sincronização.<br>Resposta Simples: Assincronismo faz tarefas demoradas, como enviar e-mails, sem travar o sistema, usando @Async no Spring.",
-                    "code": "@Service\npublic class EmailService {\n    @Async\n    public CompletableFuture<Void> enviarEmail(String destinatario, String mensagem) {\n        // Simula envio lento\n        Thread.sleep(2000);\n        System.out.println(\"Email enviado para \" + destinatario);\n        return CompletableFuture.completedFuture(null);\n    }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "Boas práticas em Performance",
-            "description": "Recomendações para otimizar aplicações backend.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Use índices e consultas otimizadas no banco; 2) Aplique caching para dados frequentes; 3) Minimize objetos na JVM para reduzir GC; 4) Use assincronismo para tarefas demoradas; 5) Monitore performance com ferramentas como VisualVM. Isso melhora velocidade e escalabilidade.<br>Resposta Simples: Otimize consultas, use cache, evite objetos extras, faça tarefas assíncronas e monitore.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender otimização.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) VisualVM (visualvm.github.io): Monitore JVM; 2) JMeter (jmeter.apache.org): Teste performance de APIs; 3) Redis (redis.io): Pratique caching; 4) Baeldung (baeldung.com): Tutoriais de performance. Essas ferramentas ajudam a otimizar.<br>Resposta Simples: Use VisualVM para monitorar, JMeter para testes e Redis para cache.",
+                    "explanation": "Use VisualVM (JVM), JMeter (testes de carga), Redis (cache) e Baeldung (tutoriais).",
                     "code": ""
                 }
             ]

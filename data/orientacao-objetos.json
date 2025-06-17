@@ -1,146 +1,80 @@
 {
-    "title": "Programação Orientada a Objetos (POO)",
-    "description": "A Programação Orientada a Objetos (POO) organiza o código em objetos que combinam dados e comportamentos. Este guia foca nos conceitos fundamentais de POO em Java, destacando os pilares e sua aplicação prática para desenvolvedores juniores.",
+    "title": "Programação Orientada a Objetos",
+    "description": "POO (Programação Orientada a Objetos) organiza o código em objetos que combinam dados e comportamentos, essencial para desenvolvimento em Java.",
     "subsections": [
         {
-            "subtitle": "O que é Programação Orientada a Objetos (POO)?",
-            "description": "Introdução ao paradigma de POO e seus pilares.",
+            "subtitle": "Conceitos de POO",
+            "description": "O que é POO e seus pilares.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: POO é um paradigma que organiza o código em objetos, que combinam dados (atributos) e comportamentos (métodos). Por exemplo, um objeto Carro tem cor e pode acelerar. Baseia-se em quatro pilares: encapsulamento, herança, polimorfismo e abstração, que promovem organização, reutilização e manutenção.<br>Resposta Simples: POO usa objetos, como um Carro com cor e ações, para deixar o código mais organizado.",
-                    "code": ""
+                    "explanation": "POO (Programação Orientada a Objetos) usa objetos para modelar entidades, combinando dados (atributos) e ações (métodos). Seus pilares — encapsulamento, herança, polimorfismo e abstração — promovem organização e reutilização.",
+                    "code": "public class Carro {\n    String cor;\n    void acelerar() { System.out.println(\"Acelerando\"); }\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que são classes e objetos?",
-            "description": "Como classes definem modelos e objetos representam instâncias em POO.",
+            "subtitle": "Classes, Objetos e Encapsulamento",
+            "description": "Como criar e proteger objetos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Uma classe é um modelo que define atributos (dados) e métodos (comportamentos) de um objeto. Um objeto é uma instância da classe, criada com 'new', com valores específicos. Em POO, classes permitem modelar entidades do mundo real, como um Carro, e objetos representam casos concretos, como um carro vermelho.<br>Resposta Simples: Classe é o molde, como um Carro. Objeto é o Carro de verdade, criado do molde.",
-                    "code": "public class Carro {\n    String cor;\n    int velocidade;\n    void acelerar() {\n        velocidade += 10;\n    }\n}\nCarro meuCarro = new Carro();\nmeuCarro.cor = \"Vermelho\";\nmeuCarro.acelerar();"
+                    "explanation": "Classes são moldes que definem atributos e métodos; objetos são instâncias criadas com new. Encapsulamento protege dados com private e acesso via getters/setters.",
+                    "code": "public class Conta {\n    private double saldo;\n    public void depositar(double valor) { if (valor > 0) saldo += valor; }\n    public double getSaldo() { return saldo; }\n}"
                 }
             ]
         },
         {
-            "subtitle": "Quais são os quatro pilares da POO?",
-            "description": "Os princípios fundamentais que guiam a POO.",
+            "subtitle": "Herança e Composição",
+            "description": "Como reutilizar código entre classes.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Os quatro pilares da POO são: 1) Encapsulamento: protege dados, permitindo acesso controlado. 2) Herança: permite que uma classe herde de outra, reutilizando código. 3) Polimorfismo: faz objetos terem comportamentos diferentes para a mesma ação. 4) Abstração: simplifica o código, escondendo detalhes complexos.<br>Resposta Simples: Encapsulamento, herança, polimorfismo e abstração organizam o código de forma prática.",
-                    "code": ""
+                    "explanation": "Herança permite que uma classe herde de outra com extends, reutilizando código. Composição faz um objeto conter outro, promovendo flexibilidade.",
+                    "code": "public class Animal {\n    void comer() { System.out.println(\"Comendo\"); }\n}\npublic class Gato extends Animal {\n    void miar() { System.out.println(\"Miau\"); }\n}\npublic class Carro {\n    Motor motor = new Motor(\"V8\");\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é encapsulamento?",
-            "description": "Como proteger dados de um objeto usando modificadores de acesso.",
+            "subtitle": "Polimorfismo",
+            "description": "Como objetos têm comportamentos diferentes.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Encapsulamento protege os dados de um objeto, escondendo detalhes internos e permitindo acesso apenas por métodos controlados. Em Java, usa-se 'private' para atributos, com métodos públicos (getters/setters) para acessá-los, garantindo segurança e validação.<br>Resposta Simples: Encapsulamento é esconder dados com 'private' e usar métodos para mexer neles com segurança.",
-                    "code": "public class ContaBancaria {\n    private double saldo;\n    public void depositar(double valor) {\n        if (valor > 0) saldo += valor;\n    }\n    public double getSaldo() {\n        return saldo;\n    }\n}"
+                    "explanation": "Polimorfismo permite que objetos de classes diferentes respondam à mesma ação de forma única, usando interfaces ou herança. É útil para flexibilidade.",
+                    "code": "public interface Animal {\n    void fazerSom();\n}\npublic class Cachorro implements Animal {\n    public void fazerSom() { System.out.println(\"Latir\"); }\n}\nAnimal c = new Cachorro();\nc.fazerSom(); // Latir"
                 }
             ]
         },
         {
-            "subtitle": "O que é herança?",
-            "description": "Como reutilizar código entre classes relacionadas.",
+            "subtitle": "Abstração e Interfaces",
+            "description": "Como simplificar e definir contratos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Herança permite que uma classe (subclasse) herde atributos e métodos de outra (superclasse), promovendo reutilização de código. Por exemplo, um Gato herda comer de Animal e adiciona miar. É útil para criar hierarquias lógicas e evitar duplicação.<br>Resposta Simples: Herança é quando uma classe ganha coisas de outra, como Gato herdando de Animal, para não repetir código.",
-                    "code": "public class Animal {\n    void comer() {\n        System.out.println(\"Animal comendo\");\n    }\n}\npublic class Gato extends Animal {\n    void miar() {\n        System.out.println(\"Miau!\");\n    }\n}"
+                    "explanation": "Abstração esconde detalhes com classes abstratas ou interfaces. Interfaces definem contratos que classes implementam, permitindo múltiplas implementações desde Java 8.",
+                    "code": "public interface Desligavel {\n    default void desligar() { System.out.println(\"Desligado\"); }\n}\npublic class Carro implements Desligavel {\n    void ligar() { System.out.println(\"Ligado\"); }\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é polimorfismo?",
-            "description": "Como objetos podem ter comportamentos diferentes para a mesma ação.",
+            "subtitle": "Sobrecarga e Sobrescrita",
+            "description": "Como redefinir métodos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Polimorfismo permite que objetos de diferentes classes sejam tratados como um tipo comum, com comportamentos específicos. Por exemplo, Cachorro e Gato implementam 'fazerSom' de forma diferente (latir ou miar). Isso simplifica o código e aumenta a flexibilidade.<br>Resposta Simples: Polimorfismo é quando objetos diferentes fazem a mesma ação de jeitos próprios, como latir ou miar.",
-                    "code": "public interface Animal {\n    void fazerSom();\n}\npublic class Cachorro implements Animal {\n    public void fazerSom() {\n        System.out.println(\"Latir!\");\n    }\n}\npublic class Gato implements Animal {\n    public void fazerSom() {\n        System.out.println(\"Miar!\");\n    }\n}\nAnimal animal1 = new Cachorro();\nanimal1.fazerSom(); // Latir!"
+                    "explanation": "Sobrecarga cria métodos com o mesmo nome, mas parâmetros diferentes. Sobrescrita redefine um método herdado com a mesma assinatura.",
+                    "code": "public class Calculadora {\n    int somar(int a, int b) { return a + b; }\n    double somar(double a, double b) { return a + b; }\n}\npublic class Cachorro extends Animal {\n    void fazerSom() { System.out.println(\"Latir\"); }\n}"
                 }
             ]
         },
         {
-            "subtitle": "O que é abstração?",
-            "description": "Como simplificar o código escondendo detalhes complexos.",
+            "subtitle": "Recursos para Prática",
+            "description": "Ferramentas para aprender POO.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Resposta Ideal: Abstração simplifica o código ao mostrar apenas o essencial, escondendo detalhes complexos. Em Java, usa-se classes abstratas ou interfaces para definir ações que subclasses ou classes implementadoras detalham, como 'ligar' para um veículo.<br>Resposta Simples: Abstração é mostrar só o que importa, como dizer que um veículo liga, sem explicar como.",
-                    "code": "public abstract class Veiculo {\n    abstract void ligar();\n    void desligar() {\n        System.out.println(\"Veículo desligado\");\n    }\n}\npublic class Carro extends Veiculo {\n    void ligar() {\n        System.out.println(\"Carro ligado\");\n    }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "Classe abstrata vs. interface",
-            "description": "Diferenças entre classes abstratas e interfaces em POO.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Uma classe abstrata pode ter métodos implementados e não implementados, mas só permite herança única. Interfaces só definem métodos (ou com implementação padrão desde Java 8) e permitem múltiplas implementações. Classes abstratas são para relações 'é um'; interfaces, para 'pode fazer'.<br>Resposta Simples: Classe abstrata tem métodos prontos e só permite uma herança. Interface define o que fazer e permite várias.",
-                    "code": "public abstract class Veiculo {\n    abstract void ligar();\n    void desligar() {\n        System.out.println(\"Veículo desligado\");\n    }\n}\npublic interface Desligavel {\n    void desligar();\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que é o modificador 'static' em POO?",
-            "description": "Como 'static' afeta atributos e métodos no contexto de POO.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Em POO, 'static' faz um atributo ou método pertencer à classe, não a objetos. Por exemplo, um contador estático de instâncias é compartilhado por todos os objetos. Métodos estáticos não dependem de estados de objetos, mas devem ser usados com cuidado, pois podem quebrar a lógica orientada a objetos.<br>Resposta Simples: 'static' faz algo ser da classe, não do objeto, como um contador compartilhado.",
-                    "code": "public class Contador {\n    private static int totalInstancias = 0;\n    public Contador() {\n        totalInstancias++;\n    }\n    public static int getTotalInstancias() {\n        return totalInstancias;\n    }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que é sobrecarga e sobrescrita de métodos?",
-            "description": "Como métodos podem ser definidos ou redefinidos em POO.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Sobrecarga (overloading) é definir métodos com o mesmo nome, mas parâmetros diferentes, na mesma classe, como 'somar(int, int)' e 'somar(double, double)'. Sobrescrita (overriding) é redefinir um método de uma superclasse em uma subclasse, mantendo a mesma assinatura, para um comportamento específico. Ambos usam polimorfismo.<br>Resposta Simples: Sobrecarga é ter métodos com o mesmo nome, mas parâmetros diferentes. Sobrescrita é mudar um método herdado.",
-                    "code": "public class Calculadora {\n    // Sobrecarga\n    int somar(int a, int b) { return a + b; }\n    double somar(double a, double b) { return a + b; }\n}\npublic class Animal {\n    void fazerSom() { System.out.println(\"Som genérico\"); }\n}\npublic class Cachorro extends Animal {\n    // Sobrescrita\n    void fazerSom() { System.out.println(\"Latir!\"); }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "O que é composição em POO?",
-            "description": "Como objetos podem conter outros objetos para formar estruturas complexas.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: Composição é quando um objeto contém outros objetos como partes, criando uma relação 'tem um'. Por exemplo, um Carro tem um Motor. É uma alternativa à herança para construir objetos complexos, promovendo flexibilidade e reutilização.<br>Resposta Simples: Composição é quando um objeto tem outros dentro dele, como um Carro que tem um Motor.",
-                    "code": "public class Motor {\n    String tipo;\n    Motor(String tipo) { this.tipo = tipo; }\n}\npublic class Carro {\n    Motor motor;\n    Carro(String tipoMotor) {\n        this.motor = new Motor(tipoMotor);\n    }\n}"
-                }
-            ]
-        },
-        {
-            "subtitle": "Boas práticas em POO",
-            "description": "Recomendações para aplicar POO de forma eficiente em Java.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Use encapsulamento com atributos private e getters/setters; 2) Prefira composição a herança quando possível; 3) Crie classes com responsabilidade única (princípio SOLID); 4) Evite métodos longos e complexos; 5) Use interfaces para flexibilidade. Isso melhora a organização e reutilização do código.<br>Resposta Simples: Esconda dados, use composição, faça classes simples e claras, e prefira interfaces.",
-                    "code": ""
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para prática",
-            "description": "Ferramentas e plataformas para aprender POO.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Resposta Ideal: 1) Exercism (exercism.org): Exercícios de POO em Java; 2) Refactoring.Guru (refactoring.guru): Padrões de projeto e SOLID; 3) Udemy (udemy.com): Cursos de POO em Java; 4) IntelliJ IDEA: Use para criar projetos POO. Essas ferramentas ajudam a aplicar POO.<br>Resposta Simples: Pratique com Exercism, aprenda SOLID no Refactoring.Guru e use IntelliJ para projetos.",
+                    "explanation": "Pratique com Exercism (exercícios de POO), Refactoring.Guru (padrões SOLID - Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, Dependency Inversion), Udemy (cursos) e IntelliJ IDEA (IDE).",
                     "code": ""
                 }
             ]
