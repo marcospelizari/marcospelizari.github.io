@@ -1,59 +1,64 @@
 {
     "title": "Performance e Otimização",
-    "description": "Técnicas para tornar aplicações Java backend rápidas e escaláveis.",
+    "description": "Técnicas para tornar aplicações Java backend rápidas e escaláveis, cruciais para experiência do usuário.",
     "subsections": [
         {
             "subtitle": "Fundamentos de Performance",
-            "description": "Como melhorar velocidade e eficiência.",
+            "description": "Melhoria de velocidade e eficiência.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Performance reduz latência e uso de recursos como CPU e memória. Otimize consultas, use cache e gerencie o GC (Garbage Collector).",
-                    "code": ""
+                    "explanation": "Performance reduz latência e uso de recursos como CPU. Otimize consultas, use cache e gerencie o GC (Garbage Collector) para suportar mais usuários.",
+                    "code": "",
+                    "interview_question": "O que você considera ao otimizar a performance de uma aplicação?"
                 }
             ]
         },
         {
             "subtitle": "Otimização de Consultas",
-            "description": "Como acelerar acesso ao banco.",
+            "description": "Aceleração de acesso ao banco.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use índices e JOINs no JPA (Java Persistence API) para evitar o problema N+1. Consulte apenas dados necessários.",
-                    "code": "@Repository\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    @Query(\"SELECT p FROM Produto p WHERE p.categoria = :categoria\")\n    List<Produto> findByCategoria(@Param(\"categoria\") String categoria);\n}"
+                    "explanation": "Use índices e JOINs no JPA (Java Persistence API) para evitar o problema N+1. Consulte apenas dados necessários, reduzindo carga em sistemas como relatórios.",
+                    "code": "@Repository\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    @Query(\"SELECT p FROM Produto p WHERE p.categoria = :categoria\")\n    List<Produto> findByCategoria(@Param(\"categoria\") String categoria);\n}",
+                    "interview_question": "Como você evitaria o problema N+1 em consultas JPA?"
                 }
             ]
         },
         {
             "subtitle": "Caching",
-            "description": "Como reduzir acessos repetitivos.",
+            "description": "Redução de acessos repetitivos.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Caching armazena dados frequentes na memória com @Cacheable, usando Redis ou Ehcache, para melhorar latência.",
-                    "code": "@Service\npublic class ProdutoService {\n    @Cacheable(\"produtos\")\n    public List<Produto> listar() { return repository.findAll(); }\n}"
+                    "explanation": "Caching armazena dados frequentes com @Cacheable, usando Redis ou Ehcache. Reduz latência e carga no banco, melhorando a experiência em APIs públicas.",
+                    "code": "@Service\npublic class ProdutoService {\n    @Cacheable(\"produtos\")\n    public List<Produto> listar() { return repository.findAll(); }\n}",
+                    "interview_question": "Quando você usaria caching em uma aplicação?"
                 }
             ]
         },
         {
             "subtitle": "Assincronismo",
-            "description": "Como escalar com operações assíncronas.",
+            "description": "Escalabilidade com operações assíncronas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use @Async no Spring para executar tarefas demoradas, como envio de e-mails, sem bloquear a thread principal.",
-                    "code": "@Service\npublic class EmailService {\n    @Async\n    public CompletableFuture<Void> enviarEmail(String destinatario) {\n        Thread.sleep(2000);\n        return CompletableFuture.completedFuture(null);\n    }\n}"
+                    "explanation": "Use @Async no Spring para tarefas demoradas, como envio de e-mails, sem bloquear threads. Melhora a escalabilidade em sistemas com alta demanda.",
+                    "code": "@Service\npublic class EmailService {\n    @Async\n    public CompletableFuture<Void> enviarEmail(String destinatario) {\n        Thread.sleep(2000);\n        return CompletableFuture.completedFuture(null);\n    }\n}",
+                    "interview_question": "Como o assincronismo pode melhorar a performance de uma API?"
                 }
             ]
         },
         {
             "subtitle": "Monitoramento",
-            "description": "Como acompanhar performance.",
+            "description": "Acompanhamento de performance.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use Prometheus para coletar métricas como latência e VisualVM para monitorar o GC (Garbage Collector) e JVM (Java Virtual Machine).",
-                    "code": ""
+                    "explanation": "Prometheus coleta métricas como latência; VisualVM monitora o GC (Garbage Collector) e JVM (Java Virtual Machine). Estou aprendendo essas ferramentas para otimizar sistemas.",
+                    "code": "",
+                    "interview_question": "Quais ferramentas você usaria para monitorar uma aplicação Java?"
                 }
             ]
         },
@@ -63,8 +68,9 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use VisualVM (JVM), JMeter (testes de carga), Redis (cache) e Baeldung (tutoriais).",
-                    "code": ""
+                    "explanation": "Use VisualVM (JVM), JMeter (testes de carga), Redis (cache) e Baeldung (tutoriais) para praticar otimização de performance.",
+                    "code": "",
+                    "interview_question": "Como você testaria a performance de uma aplicação backend?"
                 }
             ]
         }
