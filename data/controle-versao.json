@@ -1,6 +1,6 @@
 {
     "title": "Controle de Versão (Git)",
-    "description": "Git é um VCS (Version Control System) essencial para gerenciar mudanças no código e colaboração em equipe.",
+    "description": "Git é um VCS (Version Control System) essencial para gerenciar código e colaboração em projetos backend.",
     "subsections": [
         {
             "subtitle": "O que é Git?",
@@ -8,52 +8,45 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Git é um VCS (Version Control System) que rastreia alterações no código, permitindo colaboração e histórico. É usado com plataformas como GitHub para gerenciar projetos.",
-                    "code": ""
+                    "explanation": "Git, um VCS (Version Control System), rastreia alterações no código, permitindo colaboração em equipe. Integra com plataformas como GitHub, agilizando fluxos de desenvolvimento.",
+                    "code": "",
+                    "interview_question": "Por que o Git é importante para equipes de desenvolvimento?"
                 }
             ]
         },
         {
-            "subtitle": "Commits e Branches",
-            "description": "Como salvar mudanças e trabalhar em paralelo.",
+            "subtitle": "Commits, Branches e Remotos",
+            "description": "Gerenciamento de mudanças e colaboração.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Commits salvam alterações com mensagens descritivas. Branches criam versões paralelas do código, como feature/nova-api, mescladas com merge.",
-                    "code": "git add .\ngit commit -m \"Adiciona nova API\"\ngit branch feature/nova-api\ngit checkout feature/nova-api\ngit merge feature/nova-api"
+                    "explanation": "Commits salvam alterações com mensagens claras. Branches (ex.: feature/nova-api) isolam desenvolvimentos, mesclados com merge. Repositórios remotos sincronizam via push/pull, essencial em times distribuídos.",
+                    "code": "git add .\ngit commit -m \"Adiciona endpoint\"\ngit branch feature/nova-api\ngit push origin feature/nova-api",
+                    "interview_question": "Como você organizaria branches em um projeto em equipe?"
                 }
             ]
         },
         {
-            "subtitle": "Repositórios Remotos e Pull Requests",
-            "description": "Como colaborar em equipe.",
+            "subtitle": "Pull Requests e Conflitos",
+            "description": "Revisão e resolução de problemas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Repositórios remotos (ex.: GitHub) armazenam o projeto online. PRs (Pull Requests) propõem mudanças para revisão antes do merge.",
-                    "code": "git clone https://github.com/usuario/projeto.git\ngit push origin main\ngit pull origin main"
+                    "explanation": "PRs (Pull Requests) propõem mudanças para revisão antes do merge, garantindo qualidade. Conflitos, quando mudanças colidem, são resolvidos editando o código, mantendo a integridade do projeto.",
+                    "code": "<<<<<<< HEAD\ntexto = \"Versão 1\";\n=======\ntexto = \"Versão 2\";\n>>>>>>> feature/nova-api\n// Resolvido: texto = \"Versão Final\";\ngit add .\ngit commit",
+                    "interview_question": "Como você resolveria um conflito de merge no Git?"
                 }
             ]
         },
         {
-            "subtitle": "Conflitos e Reversão",
-            "description": "Como resolver problemas no Git.",
+            "subtitle": "Monitoramento e Reversão",
+            "description": "Acompanhamento e correção de mudanças.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Conflitos ocorrem quando mudanças colidem; resolva editando o código. Use git revert ou git reset para desfazer commits.",
-                    "code": "<<<<<<< HEAD\ntexto = \"Versão 1\";\n=======\ntexto = \"Versão 2\";\n>>>>>>> feature/nova-api\n// Resolver: texto = \"Versão Final\";\ngit revert abc123"
-                }
-            ]
-        },
-        {
-            "subtitle": "Monitoramento do Repositório",
-            "description": "Como acompanhar mudanças.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use git status para ver alterações pendentes e git log para o histórico de commits. Isso ajuda a gerenciar o projeto.",
-                    "code": "git status\ngit log --oneline"
+                    "explanation": "Git status mostra alterações pendentes; git log exibe o histórico. Git revert ou reset desfazem commits, úteis para corrigir erros em produção.",
+                    "code": "git status\ngit log --oneline\ngit revert abc123",
+                    "interview_question": "Como você desfaria um commit já enviado para o repositório remoto?"
                 }
             ]
         },
@@ -63,8 +56,9 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Pratique com Learn Git Branching (tutoriais interativos), GitKraken (interface visual), GitHub (repositórios) e Atlassian Git Tutorials (guias).",
-                    "code": ""
+                    "explanation": "Use Learn Git Branching (tutoriais), GitKraken (interface visual), GitHub (repositórios) e Atlassian Git Tutorials (guias) para dominar Git.",
+                    "code": "",
+                    "interview_question": "Quais ferramentas você usa para gerenciar repositórios Git?"
                 }
             ]
         }

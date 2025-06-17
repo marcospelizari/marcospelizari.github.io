@@ -1,6 +1,6 @@
 {
     "title": "Spring Boot",
-    "description": "Spring Boot é um framework Java que simplifica o desenvolvimento de APIs e sistemas backend com configuração automática.",
+    "description": "Spring Boot é um framework Java que simplifica o desenvolvimento de APIs e sistemas backend, amplamente usado em aplicações empresariais.",
     "subsections": [
         {
             "subtitle": "Introdução ao Spring Boot",
@@ -8,8 +8,9 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Spring Boot usa starters (ex.: spring-boot-starter-web) para agrupar dependências e configura servidores embutidos (ex.: Tomcat). Facilita criar APIs REST (Representational State Transfer) robustas.",
-                    "code": "<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-web</artifactId>\n</dependency>"
+                    "explanation": "Spring Boot usa starters (ex.: spring-boot-starter-web) para agrupar dependências e configura servidores embutidos como Tomcat. Isso agiliza a criação de APIs REST (Representational State Transfer), reduzindo configurações manuais.",
+                    "code": "<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-web</artifactId>\n</dependency>",
+                    "interview_question": "Por que o Spring Boot é preferido para desenvolver APIs em Java?"
                 }
             ]
         },
@@ -19,41 +20,45 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "DI (Dependency Injection) fornece objetos automaticamente com @Autowired. Anotações como @RestController, @Service e @Repository definem papéis no sistema.",
-                    "code": "@RestController\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service;\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() { return service.listar(); }\n}"
+                    "explanation": "DI (Dependency Injection) fornece objetos automaticamente com @Autowired, reduzindo acoplamento. Anotações como @RestController, @Service e @Repository definem papéis, facilitando manutenção e testes.",
+                    "code": "@RestController\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service;\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() { return service.listar(); }\n}",
+                    "interview_question": "Como a injeção de dependências melhora a testabilidade do código?"
                 }
             ]
         },
         {
             "subtitle": "Conexão com Banco de Dados",
-            "description": "Como integrar com bancos relacionais.",
+            "description": "Integração com bancos relacionais.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use o starter spring-boot-starter-data-jpa e configure a conexão no application.properties. O JPA (Java Persistence API) mapeia objetos para tabelas.",
-                    "code": "# application.properties\nspring.datasource.url=jdbc:mysql://localhost:3306/banco\nspring.datasource.username=root\nspring.datasource.password=senha\n@Entity\npublic class Produto {\n    @Id\n    private Long id;\n}"
+                    "explanation": "Use o starter spring-boot-starter-data-jpa e configure a conexão no application.properties. O JPA (Java Persistence API) mapeia objetos para tabelas, simplificando operações em bancos como MySQL.",
+                    "code": "# application.properties\nspring.datasource.url=jdbc:mysql://localhost:3306/banco\nspring.datasource.username=root\nspring.datasource.password=senha\n@Entity\npublic class Produto {\n    @Id\n    private Long id;\n}",
+                    "interview_question": "Como você configuraria uma conexão com MySQL no Spring Boot?"
                 }
             ]
         },
         {
             "subtitle": "Validação e Tratamento de Erros",
-            "description": "Como garantir entradas válidas e gerenciar erros.",
+            "description": "Entradas válidas e gerenciamento de erros.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use @Valid para validar dados de entrada. @ControllerAdvice captura exceções e retorna respostas padronizadas, como erros 404.",
-                    "code": "@RestController\npublic class ProdutoController {\n    @PostMapping(\"/produtos\")\n    public Produto criar(@Valid @RequestBody Produto produto) {\n        return service.salvar(produto);\n    }\n}\n@ControllerAdvice\npublic class ErrorHandler {\n    @ExceptionHandler(NotFoundException.class)\n    public ResponseEntity<String> handle(NotFoundException ex) {\n        return new ResponseEntity<>(\"Não encontrado\", HttpStatus.NOT_FOUND);\n    }\n}"
+                    "explanation": "Use @Valid para validar entradas, como campos obrigatórios. @ControllerAdvice captura exceções, retornando erros claros como 404, melhorando a experiência do cliente da API.",
+                    "code": "@RestController\npublic class ProdutoController {\n    @PostMapping(\"/produtos\")\n    public Produto criar(@Valid @RequestBody Produto produto) {\n        return service.salvar(produto);\n    }\n}\n@ControllerAdvice\npublic class ErrorHandler {\n    @ExceptionHandler(NotFoundException.class)\n    public ResponseEntity<String> handle(NotFoundException ex) {\n        return new ResponseEntity<>(\"Não encontrado\", HttpStatus.NOT_FOUND);\n    }\n}",
+                    "interview_question": "Como você trataria um erro de recurso não encontrado em uma API Spring Boot?"
                 }
             ]
         },
         {
             "subtitle": "Ciclo de Vida e Configuração",
-            "description": "Como a aplicação é inicializada.",
+            "description": "Inicialização da aplicação.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Spring Boot lê application.properties, inicializa o contexto com DI e levanta o servidor. Configurações como porta são definidas no properties.",
-                    "code": "# application.properties\nserver.port=8081"
+                    "explanation": "Spring Boot lê application.properties, inicializa o contexto com DI e levanta o servidor. Configurações como porta ou profiles ajustam o comportamento para diferentes ambientes.",
+                    "code": "# application.properties\nserver.port=8081",
+                    "interview_question": "O que acontece quando você executa uma aplicação Spring Boot?"
                 }
             ]
         },
@@ -63,8 +68,9 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use Spring Initializr (projetos), Spring Guides (tutoriais), Baeldung (artigos) e Postman (testes de API).",
-                    "code": ""
+                    "explanation": "Use Spring Initializr (projetos), Spring Guides (tutoriais), Baeldung (artigos) e Postman (testes de API) para dominar o framework.",
+                    "code": "",
+                    "interview_question": "Quais ferramentas você usaria para testar uma API Spring Boot?"
                 }
             ]
         }

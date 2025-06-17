@@ -1,48 +1,52 @@
 {
     "title": "Arquitetura de Sistema",
-    "description": "Arquitetura define como sistemas são organizados para atender requisitos, conectando componentes como frontend e backend.",
+    "description": "Arquitetura organiza sistemas para atender requisitos, conectando componentes como frontend e backend.",
     "subsections": [
         {
             "subtitle": "Componentes de Sistemas",
-            "description": "Como frontend, backend e banco interagem.",
+            "description": "Interação entre frontend, backend e banco.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Frontend (interface) faz requisições ao backend (lógica) via APIs (Application Programming Interfaces), que acessa o banco de dados. Essa separação facilita manutenção e escalabilidade.",
-                    "code": ""
+                    "explanation": "Frontend (interface) faz requisições ao backend (lógica) via APIs (Application Programming Interfaces), que acessa o banco de dados. Essa separação suporta escalabilidade em aplicações web.",
+                    "code": "",
+                    "interview_question": "Como frontend e backend se comunicam em um sistema?"
                 }
             ]
         },
         {
             "subtitle": "Cliente-Servidor e MVC",
-            "description": "Modelos comuns de arquitetura.",
+            "description": "Modelos de arquitetura.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Na arquitetura cliente-servidor, o cliente (ex.: navegador) pede dados ao servidor. MVC (Model-View-Controller) separa dados, interface e lógica, comum em Spring Boot.",
-                    "code": "@RestController\npublic class ProdutoController {\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() { return service.listar(); }\n}"
+                    "explanation": "Cliente-servidor divide o sistema em cliente (ex.: navegador) e servidor. MVC (Model-View-Controller) separa dados, interface e lógica, facilitando manutenção em Spring Boot.",
+                    "code": "@RestController\npublic class ProdutoController {\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() { return service.listar(); }\n}",
+                    "interview_question": "O que é o padrão MVC e onde ele é usado?"
                 }
             ]
         },
         {
             "subtitle": "Monolítica vs. Microserviços",
-            "description": "Diferenças entre arquiteturas.",
+            "description": "Comparação de arquiteturas.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Arquitetura monolítica integra todas as partes em um sistema único, simples, mas difícil de escalar. Microserviços dividem em serviços independentes, conectados por APIs, mais flexíveis.",
-                    "code": ""
+                    "explanation": "Monolítica integra tudo em um sistema, simples para projetos pequenos. Microserviços dividem em serviços independentes, conectados por APIs, ideais para escalabilidade em grandes sistemas.",
+                    "code": "",
+                    "interview_question": "Quais as vantagens de uma arquitetura de microserviços?"
                 }
             ]
         },
         {
             "subtitle": "Arquitetura em Camadas",
-            "description": "Como organizar sistemas funcionalmente.",
+            "description": "Organização funcional.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Camadas separam responsabilidades: apresentação (controller), negócios (service) e dados (repository). Reduz acoplamento e facilita manutenção.",
-                    "code": "@Service\npublic class ProdutoService {\n    @Autowired\n    private ProdutoRepository repository;\n    public List<Produto> listar() { return repository.findAll(); }\n}"
+                    "explanation": "Camadas separam apresentação (controller), negócios (service) e dados (repository). Reduz acoplamento, facilitando testes e manutenção em APIs.",
+                    "code": "@Service\npublic class ProdutoService {\n    @Autowired\n    private ProdutoRepository repository;\n    public List<Produto> listar() { return repository.findAll(); }\n}",
+                    "interview_question": "Como a arquitetura em camadas beneficia um projeto?"
                 }
             ]
         },
@@ -52,8 +56,9 @@
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Use Draw.io (diagramas), C4 Model (documentação), Martin Fowler (artigos) e Udemy (cursos de arquitetura).",
-                    "code": ""
+                    "explanation": "Use Draw.io (diagramas), C4 Model (documentação), Martin Fowler (artigos) e Udemy (cursos) para estudar arquiteturas de sistemas.",
+                    "code": "",
+                    "interview_question": "Como você documentaria a arquitetura de um sistema?"
                 }
             ]
         }
