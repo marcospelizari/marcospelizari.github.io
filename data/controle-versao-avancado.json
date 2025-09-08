@@ -1,0 +1,30 @@
+{
+    "title": "Git — Extra Avançado",
+    "description": "Fluxos profissionais e comandos menos comuns.",
+    "subsections": [
+        {
+            "subtitle": "Rebase, Squash e Histórico Limpo",
+            "description": "Linha do tempo legível.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Rebase reescreve base para integrar mudanças sem merges ruidosos; squash compacta commits de WIP. Útil antes de abrir PR.",
+                    "code": "git rebase -i origin/main",
+                    "interview_question": "Quando evitar rebase em branches compartilhadas?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Cherry-pick e Hotfix",
+            "description": "Selecionar commits.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Cherry-pick aplica um commit específico em outra branch, útil para hotfix sem levar todo o histórico.",
+                    "code": "git cherry-pick <hash>",
+                    "interview_question": "Quando cherry-pick é uma boa solução?"
+                }
+            ]
+        }
+    ]
+}

@@ -1,6 +1,6 @@
 // js/script.js
 document.addEventListener('DOMContentLoaded', () => {
-    const navLinks = document.querySelectorAll('.nav-link');
+    const navLinks = document.querySelectorAll('.nav-link, .dropdown-item');
     const contentDiv = document.getElementById('content');
     const loadingSpinner = document.getElementById('loadingSpinner');
     const loadingText = document.getElementById('loadingText');
@@ -86,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Automatically load "Fundamentos de Java" on page load
-    const fundamentosLink = document.querySelector('.nav-link[data-section="fundamentos-java.json"]');
+    const fundamentosLink = document.querySelector('[data-section="fundamentos-java.json"]');
     if (fundamentosLink) {
         loadSection('fundamentos-java.json', fundamentosLink);
     }

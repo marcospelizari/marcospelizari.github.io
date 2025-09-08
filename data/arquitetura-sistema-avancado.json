@@ -1,0 +1,42 @@
+{
+    "title": "Arquitetura de Sistemas — Extra Avançado",
+    "description": "Resiliência, consistência e governança.",
+    "subsections": [
+        {
+            "subtitle": "Resiliência",
+            "description": "Circuit breaker, timeout e retry.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Defina timeouts e limites de retry com backoff exponencial. Circuit breaker protege serviços sob falha persistente.",
+                    "code": "",
+                    "interview_question": "Como evitar efeito cascata em falhas entre serviços?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Mensageria e Eventual Consistency",
+            "description": "Filas e logs.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use filas (RabbitMQ) para desacoplar e Kafka para eventos duráveis. Sagas coordenam transações distribuídas com compensações.",
+                    "code": "",
+                    "interview_question": "Quando aplicar o padrão Saga?"
+                }
+            ]
+        },
+        {
+            "subtitle": "API Gateway e BFF",
+            "description": "Bordas do sistema.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Gateway concentra autenticação, rate limiting e roteamento. BFF customiza APIs por front-end, reduzindo acoplamento.",
+                    "code": "",
+                    "interview_question": "Qual a vantagem de BFF em apps mobile e web?"
+                }
+            ]
+        }
+    ]
+}

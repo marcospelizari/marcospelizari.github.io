@@ -1,0 +1,42 @@
+{
+    "title": "Fundamentos de Java — Extra Avançado",
+    "description": "Tópicos avançados de Java para entrevistas de nível pleno/avançado.",
+    "subsections": [
+        {
+            "subtitle": "Gerenciamento de Memória e GC",
+            "description": "Coleta de lixo e impactos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "A JVM usa geração jovem/velha e diferentes coletores (ex.: G1) para balancear throughput e latência. Pausas do GC afetam SLAs, então métricas e tuning são úteis.",
+                    "code": "java -XX:+UseG1GC -Xms512m -Xmx512m",
+                    "interview_question": "Como o Garbage Collector pode impactar latência e throughput?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Concorrência e Imutabilidade",
+            "description": "Threads, sincronização e segurança.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Imutabilidade simplifica concorrência. Em casos mutáveis, use mecanismos como synchronized, locks e atomics. Preferir pools (Executors) em vez de criar threads manualmente.",
+                    "code": "ExecutorService pool=Executors.newFixedThreadPool(10); pool.submit(() -> {/*...*/});",
+                    "interview_question": "Quando você escolheria imutabilidade vs sincronização explícita?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Streams e Performance",
+            "description": "Estilo funcional e custos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Streams tornam o código expressivo, mas criam objetos intermediários. Para coleções pequenas, for tradicional pode ser mais rápido; para grandes, parallel streams exigem cuidado.",
+                    "code": "list.stream().filter(x->x>0).map(x->x*2).toList();",
+                    "interview_question": "Quando evitar parallel streams?"
+                }
+            ]
+        }
+    ]
+}
