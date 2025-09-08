@@ -1,0 +1,30 @@
+{
+    "title": "POO — Extra Avançado",
+    "description": "Princípios e padrões além do básico.",
+    "subsections": [
+        {
+            "subtitle": "SOLID na Prática",
+            "description": "Aplicação objetiva.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "SRP evita classes “faz-tudo”. OCP favorece extensões via interfaces. DIP reduz acoplamento via inversão de dependência e injeção.",
+                    "code": "interface Pagamento { void processar(); } class Pix implements Pagamento { public void processar(){} }",
+                    "interview_question": "Dê um exemplo de violação de SRP e como corrigir."
+                }
+            ]
+        },
+        {
+            "subtitle": "Padrões de Projeto",
+            "description": "Criação, estrutura e comportamento.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use Strategy para trocar algoritmos em runtime; Factory para criar objetos sem expor construção; Adapter para integrar sistemas legados.",
+                    "code": "",
+                    "interview_question": "Quando usar Strategy ao invés de if-else encadeado?"
+                }
+            ]
+        }
+    ]
+}

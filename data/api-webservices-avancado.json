@@ -1,0 +1,54 @@
+{
+    "title": "APIs — Extra Avançado",
+    "description": "Design, segurança e protocolos.",
+    "subsections": [
+        {
+            "subtitle": "Maturidade REST e Versionamento",
+            "description": "Evolução sem quebrar clientes.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Versione por URL ou header. Idempotência para PUT/DELETE e uso correto de status e verbos evitam surpresas.",
+                    "code": "PUT /v2/pedidos/123",
+                    "interview_question": "Como adicionar campos sem quebrar clientes existentes?"
+                }
+            ]
+        },
+        {
+            "subtitle": "GraphQL vs REST",
+            "description": "Trade-offs objetivos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "GraphQL reduz over/under-fetch em UIs complexas, mas exige gateway e cache mais sofisticado. REST é simples, cacheável por HTTP e dominante.",
+                    "code": "",
+                    "interview_question": "Quando GraphQL é mais indicado que REST?"
+                }
+            ]
+        },
+        {
+            "subtitle": "gRPC e Streaming",
+            "description": "Alto desempenho.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "gRPC usa Protobuf e HTTP/2 para baixa latência e streaming bidirecional. Ótimo para comunicações internas.",
+                    "code": "",
+                    "interview_question": "Quando preferir gRPC a REST?"
+                }
+            ]
+        },
+        {
+            "subtitle": "OAuth2/OIDC e Escopos",
+            "description": "Delegação segura.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "OAuth2 delega acesso e OIDC adiciona identidade. Escopos limitam permissões; tokens curtos + refresh reduzem riscos.",
+                    "code": "",
+                    "interview_question": "Diferença entre OAuth2 e OIDC em uma API?"
+                }
+            ]
+        }
+    ]
+}

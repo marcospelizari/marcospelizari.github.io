@@ -1,0 +1,42 @@
+{
+    "title": "Testes — Extra Avançado",
+    "description": "Cobertura estratégica e confiabilidade.",
+    "subsections": [
+        {
+            "subtitle": "Testcontainers e Integração Real",
+            "description": "Ambientes reprodutíveis.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Suba bancos e filas em contêiner para testes reais em pipeline. Reduz falsos positivos de mocks excessivos.",
+                    "code": "PostgreSQLContainer<?> pg=new PostgreSQLContainer<>(\"postgres:15\");",
+                    "interview_question": "Quando preferir Testcontainers a mocks?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Contratos e Pact Testing",
+            "description": "Integração entre serviços.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Contratos garantem que produtor e consumidor concordem em formatos de API, evitando quebras em microserviços.",
+                    "code": "",
+                    "interview_question": "Como contratos evitam deploys quebrados entre times?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Carga e Observabilidade de Testes",
+            "description": "KPIs sob pressão.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Simule picos e defina SLOs. Monitore latência p95/p99 e erros para orientar ajustes de capacidade.",
+                    "code": "",
+                    "interview_question": "Quais métricas você acompanha em testes de carga?"
+                }
+            ]
+        }
+    ]
+}

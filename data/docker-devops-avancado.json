@@ -1,0 +1,42 @@
+{
+    "title": "Docker e DevOps — Extra Avançado",
+    "description": "Construção, deploy e estratégias.",
+    "subsections": [
+        {
+            "subtitle": "Docker Multi-stage e Slim Images",
+            "description": "Otimização de builds.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Multi-stage reduz tamanho e superfície de ataque. Imagens slim melhoram startup e transferência.",
+                    "code": "FROM maven:3.9 AS build\nRUN mvn -q -DskipTests package\nFROM eclipse-temurin:17-jre\nCOPY --from=build target/app.jar app.jar\nENTRYPOINT [\"java\",\"-jar\",\"/app.jar\"]",
+                    "interview_question": "Quais benefícios práticos do multi-stage build?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Kubernetes: Deploy e Configurações",
+            "description": "Operação básica.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Deployments gerenciam réplicas e rollouts; ConfigMap/Secret separam configuração do código. Liveness/Readiness evitam tráfego para pods doentes.",
+                    "code": "readinessProbe: { httpGet: { path: /health, port: 8080 } }",
+                    "interview_question": "Diferença entre readiness e liveness probe?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Estratégias de Release",
+            "description": "Blue/Green e Canary.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Blue/Green alterna tráfego entre versões; Canary libera para uma fração de usuários, reduzindo risco em produção.",
+                    "code": "",
+                    "interview_question": "Quando escolher canary em vez de blue/green?"
+                }
+            ]
+        }
+    ]
+}

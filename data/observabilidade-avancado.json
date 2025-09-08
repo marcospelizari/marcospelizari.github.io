@@ -1,0 +1,42 @@
+{
+    "title": "Observabilidade — Extra Avançado",
+    "description": "Logs, métricas e rastreamento.",
+    "subsections": [
+        {
+            "subtitle": "Logs Estruturados",
+            "description": "Facilitam correlação.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Formato JSON padronizado e correlação por traceId. Verbosidade controlada evita ruído e custo.",
+                    "code": "{\"ts\":\"...\",\"level\":\"INFO\",\"traceId\":\"...\",\"msg\":\"pedido criado\"}",
+                    "interview_question": "Por que preferir logs estruturados a texto livre?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Métricas de Negócio e Técnicas",
+            "description": "KPIs e SLOs.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Acompanhe latência p95/p99, taxa de erro e throughput técnico; e também métricas de negócio (conversão, pedidos) para decisões.",
+                    "code": "",
+                    "interview_question": "Quais métricas você definiria como SLO para uma API crítica?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Tracing Distribuído",
+            "description": "Cadeia ponta a ponta.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Propague contextos entre serviços para ver gargalos fim-a-fim. Útil em microserviços com múltiplas dependências.",
+                    "code": "",
+                    "interview_question": "Como o tracing ajuda a encontrar gargalos entre serviços?"
+                }
+            ]
+        }
+    ]
+}
