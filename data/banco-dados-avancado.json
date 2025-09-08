@@ -1,0 +1,54 @@
+{
+    "title": "Banco de Dados — Extra Avançado",
+    "description": "Desempenho, transações e escalabilidade.",
+    "subsections": [
+        {
+            "subtitle": "Índices e Planos de Execução",
+            "description": "Entender custos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Índices aceleram leitura e custam escrita. Ler o plano (EXPLAIN) mostra varreduras, seleções e junções, guiando otimizações.",
+                    "code": "EXPLAIN ANALYZE SELECT * FROM pedidos p JOIN usuarios u ON u.id=p.usuario_id;",
+                    "interview_question": "Como decidir quando criar ou remover um índice?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Níveis de Isolamento",
+            "description": "Trade-offs.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "READ COMMITTED evita leituras sujas; REPEATABLE READ evita leituras não repetíveis; SERIALIZABLE maximiza integridade com custo de concorrência.",
+                    "code": "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;",
+                    "interview_question": "Quando usar SERIALIZABLE apesar do custo?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Concorrência e Locking",
+            "description": "Controle de conflitos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Lock otimista detecta conflitos ao commitar; pessimista bloqueia cedo. Otimista funciona bem quando colisões são raras.",
+                    "code": "",
+                    "interview_question": "Quando preferir locking otimista ao pessimista?"
+                }
+            ]
+        },
+        {
+            "subtitle": "NoSQL e Consistência Eventual",
+            "description": "Modelagem para escala.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Documentos (MongoDB) favorecem agregação por acesso; chave-valor escala leitura. Consistência eventual aceita atrasos controlados para ganho de disponibilidade.",
+                    "code": "",
+                    "interview_question": "Quando um modelo orientado a documentos é mais adequado?"
+                }
+            ]
+        }
+    ]
+}

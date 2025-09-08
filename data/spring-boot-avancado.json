@@ -1,0 +1,54 @@
+{
+    "title": "Spring Boot — Extra Avançado",
+    "description": "Segurança, dados e microserviços com Spring.",
+    "subsections": [
+        {
+            "subtitle": "Transações e @Transactional",
+            "description": "Limites e propagação.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Delimite escopos transacionais no service. Propagation e Isolation ajustam comportamento frente a chamadas aninhadas e concorrência.",
+                    "code": "@Transactional(isolation=Isolation.READ_COMMITTED, propagation=Propagation.REQUIRED)",
+                    "interview_question": "Por que evitar transações muito longas?"
+                }
+            ]
+        },
+        {
+            "subtitle": "JPA: N+1 e Lazy/Eager",
+            "description": "Armadilhas de ORM.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "N+1 ocorre quando múltiplas consultas são geradas em laços. Resolver com fetch join, EntityGraph ou DTOs específicos.",
+                    "code": "@Query(\"select p from Pedido p join fetch p.itens where p.id=:id\")",
+                    "interview_question": "Como identificar e mitigar N+1?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Spring Security com JWT",
+            "description": "Autenticação e autorização.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "JWT carrega claims assinado e dispensa estado de sessão. Combine com filtros e roles para autorizar rotas.",
+                    "code": "",
+                    "interview_question": "Quais riscos comuns ao usar JWT e como mitigá-los?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Spring Cloud Patterns",
+            "description": "Config, Discovery e Resiliência.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Use Config Server para centralizar configs, Service Discovery para localizar serviços e Circuit Breaker/Retry para resiliência.",
+                    "code": "",
+                    "interview_question": "Quando aplicar circuit breaker e retry?"
+                }
+            ]
+        }
+    ]
+}
