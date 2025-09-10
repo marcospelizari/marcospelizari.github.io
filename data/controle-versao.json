@@ -1,66 +1,54 @@
 {
-    "title": "Controle de Versão (Git)",
-    "description": "Git é um VCS (Version Control System) essencial para gerenciar código e colaboração em projetos backend.",
-    "subsections": [
+  "title": "Controle de Versão (Git)",
+  "description": "Conceitos básicos de versionamento para entrevistas.",
+  "subsections": [
+    {
+      "subtitle": "O que é Git?",
+      "description": "Definição e propósito do Git.",
+      "examples": [
         {
-            "subtitle": "O que é Git?",
-            "description": "Introdução ao controle de versão.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Git, um VCS (Version Control System), rastreia alterações no código, permitindo colaboração em equipe. Integra com plataformas como GitHub, agilizando fluxos de desenvolvimento.",
-                    "code": "",
-                    "interview_question": "Por que o Git é importante para equipes de desenvolvimento?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Commits, Branches e Remotos",
-            "description": "Gerenciamento de mudanças e colaboração.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Commits salvam alterações com mensagens claras. Branches (ex.: feature/nova-api) isolam desenvolvimentos, mesclados com merge. Repositórios remotos sincronizam via push/pull, essencial em times distribuídos.",
-                    "code": "git add .\ngit commit -m \"Adiciona endpoint\"\ngit branch feature/nova-api\ngit push origin feature/nova-api",
-                    "interview_question": "Como você organizaria branches em um projeto em equipe?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Pull Requests e Conflitos",
-            "description": "Revisão e resolução de problemas.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "PRs (Pull Requests) propõem mudanças para revisão antes do merge, garantindo qualidade. Conflitos, quando mudanças colidem, são resolvidos editando o código, mantendo a integridade do projeto.",
-                    "code": "<<<<<<< HEAD\ntexto = \"Versão 1\";\n=======\ntexto = \"Versão 2\";\n>>>>>>> feature/nova-api\n// Resolvido: texto = \"Versão Final\";\ngit add .\ngit commit",
-                    "interview_question": "Como você resolveria um conflito de merge no Git?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Monitoramento e Reversão",
-            "description": "Acompanhamento e correção de mudanças.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Git status mostra alterações pendentes; git log exibe o histórico. Git revert ou reset desfazem commits, úteis para corrigir erros em produção.",
-                    "code": "git status\ngit log --oneline\ngit revert abc123",
-                    "interview_question": "Como você desfaria um commit já enviado para o repositório remoto?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender Git.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Learn Git Branching (tutoriais), GitKraken (interface visual), GitHub (repositórios) e Atlassian Git Tutorials (guias) para dominar Git.",
-                    "code": "",
-                    "interview_question": "Quais ferramentas você usa para gerenciar repositórios Git?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "Git é um sistema de controle de versão distribuído que registra mudanças no código ao longo do tempo. Ele permite colaboração entre desenvolvedores, histórico detalhado e rollback de alterações.",
+          "code": "git init   # inicia repositório\n git status # mostra estado atual",
+          "interview_question": "Explique o que é Git e por que usamos controle de versão."
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Clone, Commit e Push",
+      "description": "Fluxo inicial de versionamento.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Clone baixa um repositório existente. Commit salva mudanças localmente no histórico. Push envia commits para o repositório remoto, compartilhando com outros.",
+          "code": "git clone url\n git add .\n git commit -m \"msg\"\n git push",
+          "interview_question": "Qual a diferença entre commit e push?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Branch e Merge",
+      "description": "Trabalho paralelo e integração.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Branches permitem desenvolver novas features ou corrigir bugs sem impactar o código principal. Merge integra as mudanças de uma branch em outra.",
+          "code": "git checkout -b nova-feature\n git merge nova-feature",
+          "interview_question": "Por que usamos branches no Git?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Merge vs Rebase",
+      "description": "Formas de integrar histórico.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Merge preserva o histórico criando um commit de junção. Rebase reescreve o histórico para deixá-lo linear. Merge é mais seguro; rebase mantém histórico limpo em times que preferem linearidade.",
+          "code": "git merge main\n git rebase main",
+          "interview_question": "Quando você prefere rebase em vez de merge?"
+        }
+      ]
+    }
+  ]
 }

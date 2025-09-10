@@ -1,90 +1,66 @@
 {
-    "title": "Programação Orientada a Objetos",
-    "description": "POO (Programação Orientada a Objetos) organiza código em objetos, essencial para desenvolver sistemas Java robustos.",
-    "subsections": [
+  "title": "Orientação a Objetos",
+  "description": "Princípios e práticas de OOP em Java.",
+  "subsections": [
+    {
+      "subtitle": "O que é Programação Orientada a Objetos (POO)?",
+      "description": "Definição e propósito da POO.",
+      "examples": [
         {
-            "subtitle": "Conceitos de POO",
-            "description": "Fundamentos e pilares da POO.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "POO (Programação Orientada a Objetos) modela entidades com objetos que unem dados e ações. Seus pilares — encapsulamento, herança, polimorfismo, abstração — promovem reutilização e manutenção em projetos complexos.",
-                    "code": "",
-                    "interview_question": "Quais são os principais pilares da POO e seus benefícios?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Classes, Objetos e Encapsulamento",
-            "description": "Criação e proteção de objetos.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Classes definem moldes com atributos e métodos; objetos são instâncias criadas com new. Encapsulamento usa private e getters/setters para proteger dados, garantindo segurança em sistemas.",
-                    "code": "public class Conta {\n    private double saldo;\n    public void depositar(double valor) { if (valor > 0) saldo += valor; }\n    public double getSaldo() { return saldo; }\n}",
-                    "interview_question": "Como o encapsulamento melhora a segurança de uma classe?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Herança e Composição",
-            "description": "Reutilização de código.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Herança (extends) permite reutilizar código de uma superclasse. Composição faz um objeto conter outro, oferecendo flexibilidade em modelagem de sistemas complexos.",
-                    "code": "public class Animal {\n    void comer() { System.out.println(\"Comendo\"); }\n}\npublic class Gato extends Animal {\n    void miar() { System.out.println(\"Miau\"); }\n}\npublic class Carro {\n    Motor motor = new Motor(\"V8\");\n}",
-                    "interview_question": "Quando você prefere composição em vez de herança?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Polimorfismo",
-            "description": "Comportamentos variados.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Polimorfismo permite que objetos de classes diferentes respondam à mesma ação de forma única, via interfaces ou herança. Simplifica extensões em sistemas dinâmicos.",
-                    "code": "public interface Animal {\n    void fazerSom();\n}\npublic class Cachorro implements Animal {\n    public void fazerSom() { System.out.println(\"Latir\"); }\n}\nAnimal c = new Cachorro();\nc.fazerSom();",
-                    "interview_question": "Como o polimorfismo facilita a manutenção de código?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Abstração e Interfaces",
-            "description": "Simplificação e contratos.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Abstração esconde detalhes com classes abstratas ou interfaces. Interfaces definem contratos, permitindo múltiplas implementações, úteis em APIs modulares desde Java 8.",
-                    "code": "public interface Desligavel {\n    default void desligar() { System.out.println(\"Desligado\"); }\n}\npublic class Carro implements Desligavel {\n    void ligar() { System.out.println(\"Ligado\"); }\n}",
-                    "interview_question": "Qual a diferença entre uma classe abstrata e uma interface?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Sobrecarga e Sobrescrita",
-            "description": "Redefinição de métodos.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Sobrecarga usa o mesmo nome de método com parâmetros diferentes. Sobrescrita redefine métodos herdados, permitindo comportamentos específicos em subclasses.",
-                    "code": "public class Calculadora {\n    int somar(int a, int b) { return a + b; }\n    double somar(double a, double b) { return a + b; }\n}\npublic class Cachorro extends Animal {\n    void fazerSom() { System.out.println(\"Latir\"); }\n}",
-                    "interview_question": "O que diferencia sobrecarga de sobrescrita de métodos?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender POO.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Exercism (exercícios POO), Refactoring.Guru (padrões SOLID - Single Responsibility, Open-Closed, Liskov Substitution, Interface Segregation, Dependency Inversion), Udemy (cursos) e IntelliJ IDEA (IDE).",
-                    "code": "",
-                    "interview_question": "Como você aplicaria o princípio SOLID em um projeto?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "POO é um paradigma de programação baseado em objetos que representam entidades do mundo real, combinando dados (atributos) e comportamentos (métodos). Ela facilita a organização, a reutilização e a manutenção do código.",
+          "code": "class Carro {\n  String modelo;\n  void acelerar(){ System.out.println(\"Vruum!\"); }\n}",
+          "interview_question": "Explique com suas palavras o que é POO."
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Pilares da OOP",
+      "description": "Encapsulamento, herança, polimorfismo e abstração.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Encapsulamento protege dados com getters e setters. Herança permite reutilizar código e especializar comportamentos. Polimorfismo possibilita tratar objetos diferentes de forma uniforme. Abstração foca no essencial, escondendo detalhes de implementação.",
+          "code": "class Animal { void som(){} }\nclass Cachorro extends Animal { void som(){ System.out.println(\"Au\"); } }",
+          "interview_question": "Explique os quatro pilares da orientação a objetos."
+        }
+      ]
+    },
+    {
+      "subtitle": "Classe Abstrata vs Interface",
+      "description": "Diferença de uso entre abstrações.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Classes abstratas permitem herança parcial, podendo conter atributos e métodos implementados ou abstratos. Interfaces definem contratos que podem ser implementados por várias classes, permitindo múltipla herança de comportamento.",
+          "code": "abstract class Forma { abstract double area(); }\ninterface Desenhavel { void desenhar(); }",
+          "interview_question": "Quando usar classe abstrata em vez de interface?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Overloading vs Overriding",
+      "description": "Duas formas de polimorfismo.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Overloading permite métodos com mesmo nome mas assinaturas diferentes na mesma classe. Overriding redefine o comportamento de um método herdado para adequar à subclasse.",
+          "code": "class Calc {\n int soma(int a,int b){return a+b;}\n double soma(double a,double b){return a+b;}\n}\nclass Filho extends Calc{\n @Override int soma(int a,int b){return a+b+1;}\n}",
+          "interview_question": "Qual a diferença entre overloading e overriding?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Imutabilidade e Record",
+      "description": "Modelos de objetos imutáveis.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Objetos imutáveis não podem ter seu estado alterado após a criação, facilitando concorrência e previsibilidade. Desde Java 14, records simplificam a criação de classes de transporte de dados imutáveis.",
+          "code": "public record Usuario(String nome,int idade){}",
+          "interview_question": "Qual a vantagem de usar objetos imutáveis?"
+        }
+      ]
+    }
+  ]
 }

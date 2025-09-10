@@ -1,90 +1,54 @@
 {
-    "title": "Banco de Dados",
-    "description": "Conceitos para gerenciar dados em sistemas backend, com foco em bancos relacionais e introdução ao NoSQL.",
-    "subsections": [
+  "title": "Banco de Dados",
+  "description": "Conceitos essenciais para trabalhar com bancos relacionais e NoSQL.",
+  "subsections": [
+    {
+      "subtitle": "Modelo Relacional e SQL",
+      "description": "Organização dos dados em tabelas.",
+      "examples": [
         {
-            "subtitle": "Conceitos de Bancos Relacionais",
-            "description": "Funcionamento de bancos relacionais.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Bancos relacionais organizam dados em tabelas com chaves primárias e estrangeiras, gerenciados por um RDBMS (Relational Database Management System) como MySQL. Usam SQL (Structured Query Language) para manipulação, ideal para dados estruturados.",
-                    "code": "CREATE TABLE usuarios (\n    id INT PRIMARY KEY,\n    nome VARCHAR(50)\n);",
-                    "interview_question": "O que caracteriza um banco de dados relacional?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Modelagem e Normalização",
-            "description": "Estruturação eficiente de dados.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Modelagem define tabelas com colunas e tipos. Normalização separa dados em tabelas para evitar redundâncias, garantindo consistência em sistemas como e-commerce.",
-                    "code": "CREATE TABLE pedidos (\n    id INT PRIMARY KEY,\n    usuario_id INT,\n    FOREIGN KEY (usuario_id) REFERENCES usuarios(id)\n);",
-                    "interview_question": "Por que normalizar um banco de dados?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Comandos SQL",
-            "description": "Manipulação de dados.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "SQL (Structured Query Language) usa SELECT (buscar), INSERT (adicionar), UPDATE (alterar) e DELETE (remover). JOIN combina tabelas, útil para relatórios complexos.",
-                    "code": "SELECT u.nome, p.id FROM usuarios u INNER JOIN pedidos p ON u.id = p.usuario_id;\nINSERT INTO usuarios (id, nome) VALUES (1, \"João\");",
-                    "interview_question": "Como você escreveria uma consulta SQL para combinar duas tabelas?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Transações e Índices",
-            "description": "Confiabilidade e performance.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Transações seguem ACID (Atomicidade, Consistência, Isolamento, Durabilidade), garantindo operações completas. Índices aceleram buscas, mas aumentam o custo de inserções, otimizando relatórios.",
-                    "code": "BEGIN TRANSACTION;\nUPDATE conta SET saldo = saldo - 100 WHERE id = 1;\nCOMMIT;\nCREATE INDEX idx_nome ON usuarios(nome);",
-                    "interview_question": "O que significa o princípio ACID em transações?"
-                }
-            ]
-        },
-        {
-            "subtitle": "SQL vs. NoSQL",
-            "description": "Comparação de bancos.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Bancos SQL (ex.: MySQL) usam tabelas com esquema fixo, ideais para finanças. Bancos NoSQL (Not Only SQL, ex.: MongoDB) são flexíveis para dados não estruturados, como logs.",
-                    "code": "",
-                    "interview_question": "Quando você escolheria um banco NoSQL em vez de SQL?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Segurança em SQL",
-            "description": "Proteção contra vulnerabilidades.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "PreparedStatement previne SQL Injection ao usar parâmetros seguros. Isso protege aplicações web contra ataques maliciosos.",
-                    "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT * FROM usuarios WHERE nome = ?\");\nstmt.setString(1, nome);\nResultSet rs = stmt.executeQuery();",
-                    "interview_question": "Como evitar SQL Injection em uma aplicação?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender bancos.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use SQLZoo (exercícios), DB Fiddle (testes), MySQL Workbench (gerenciamento) e Mode SQL Tutorial (guias) para praticar.",
-                    "code": "",
-                    "interview_question": "Quais ferramentas você usou para aprender SQL?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "O modelo relacional organiza dados em tabelas com linhas e colunas. SQL é a linguagem padrão para consultas, manipulação e definição de dados em bancos relacionais.",
+          "code": "SELECT nome, idade FROM usuarios WHERE idade > 18;",
+          "interview_question": "O que é o modelo relacional e como o SQL se relaciona com ele?"
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Chaves Primária e Estrangeira",
+      "description": "Garantia de integridade.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A chave primária identifica unicamente uma linha em uma tabela. A chave estrangeira cria relacionamento entre tabelas, garantindo integridade referencial.",
+          "code": "CREATE TABLE Pedido(\n id SERIAL PRIMARY KEY,\n usuario_id INT REFERENCES Usuario(id)\n);",
+          "interview_question": "Qual a diferença entre chave primária e chave estrangeira?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Normalização",
+      "description": "Organização para evitar redundância.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Normalização divide dados em múltiplas tabelas para reduzir redundância e inconsistência. Exemplo: separar endereço do usuário em outra tabela relacionada.",
+          "code": "",
+          "interview_question": "O que é normalização em banco de dados?"
+        }
+      ]
+    },
+    {
+      "subtitle": "ACID e BASE",
+      "description": "Garantias de transações.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "ACID garante atomicidade, consistência, isolamento e durabilidade em bancos relacionais. BASE prioriza disponibilidade e escalabilidade em bancos NoSQL, aceitando consistência eventual.",
+          "code": "",
+          "interview_question": "Qual a diferença entre ACID e BASE?"
+        }
+      ]
+    }
+  ]
 }
