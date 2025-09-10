@@ -1,124 +1,100 @@
 {
     "title": "Fundamentos de Java",
-    "description": "Conceitos essenciais de Java para desenvolvedores juniores, preparando para entrevistas e projetos backend.",
+    "description": "Conceitos principais da linguagem e pontos comuns em entrevistas.",
     "subsections": [
         {
-            "subtitle": "O que é Java e por que usá-lo?",
-            "description": "Visão geral da linguagem Java.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Java é uma linguagem orientada a objetos, portátil via JVM (Java Virtual Machine), usada em APIs, Android e sistemas empresariais. Sua robustez e gerenciamento de memória facilitam aplicações escaláveis.",
-                    "code": "",
-                    "interview_question": "Por que o Java é tão popular em aplicações backend?"
-                }
-            ]
-        },
-        {
             "subtitle": "JVM, JRE e JDK",
-            "description": "Ferramentas principais do Java.",
+            "description": "Componentes centrais da plataforma Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "A JVM (Java Virtual Machine) executa bytecode, garantindo portabilidade. O JRE (Java Runtime Environment) inclui JVM e bibliotecas para rodar programas. O JDK (Java Development Kit) adiciona ferramentas como javac para desenvolvimento.",
-                    "code": "",
-                    "interview_question": "Qual a diferença entre JDK, JRE e JVM?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Bytecode e Garbage Collector",
-            "description": "Gerenciamento de código e memória.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Bytecode, gerado pelo compilador javac, é executado pela JVM em qualquer plataforma. O GC (Garbage Collector) libera memória de objetos não usados, otimizando recursos em aplicações longas.",
-                    "code": "",
-                    "interview_question": "Como o Garbage Collector impacta a performance de uma aplicação?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Variáveis e Tipos de Dados",
-            "description": "Armazenamento de dados em Java.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Variáveis armazenam dados com tipos como int (inteiros), double (decimais), boolean (verdadeiro/falso) e String (texto). Primitivos são simples; objetos, como String, têm métodos e podem ser nulos, úteis em manipulação de dados.",
-                    "code": "int idade = 25;\nString nome = \"João\";\nSystem.out.println(nome.length());",
-                    "interview_question": "Qual a diferença entre tipos primitivos e objetos em Java?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Modificadores de Acesso e Static",
-            "description": "Controle de acesso e comportamento.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Modificadores definem visibilidade: public (todos), protected (classe, pacote, subclasses), default (pacote), private (classe). Static associa membros à classe, não a objetos, como contadores globais.",
-                    "code": "public class Exemplo {\n    public int publico = 1;\n    protected int protegido = 2;\n    int padrao = 3;\n    private int privado = 4;\n    static int contador = 0;\n}",
-                    "interview_question": "Quando você usaria o modificador static em uma classe?"
+                    "explanation": "A JVM é a máquina virtual que executa o bytecode, garantindo portabilidade entre sistemas. O JRE inclui a JVM e bibliotecas necessárias para rodar aplicações. O JDK engloba o JRE e adiciona ferramentas de desenvolvimento, como o compilador javac e debugger. Em resumo: JVM executa, JRE roda aplicações, JDK é usado para desenvolver.",
+                    "code": "javac Main.java  // compila para bytecode\njava Main       // executa na JVM",
+                    "interview_question": "Qual a diferença entre JVM, JRE e JDK?"
                 }
             ]
         },
         {
             "subtitle": "Estruturas de Controle",
-            "description": "Gerenciamento do fluxo do programa.",
+            "description": "Controle de fluxo em Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "If executa código baseado em condições. Loops (for, while) repetem ações, essenciais para processar listas ou validar entradas em aplicações.",
-                    "code": "int idade = 18;\nif (idade >= 18) {\n    System.out.println(\"Maior de idade\");\n}\nfor (int i = 0; i < 3; i++) {\n    System.out.println(i);\n}",
-                    "interview_question": "Como você usaria um loop for para iterar uma lista em Java?"
+                    "explanation": "If/else decide entre condições, switch organiza múltiplos casos e loops (for, while, for-each) permitem repetição. O enhanced for simplifica iteração sobre coleções. Essas estruturas permitem implementar qualquer lógica de decisão e repetição em programas.",
+                    "code": "for(int i=0; i<3; i++) {\n  if(i==1) System.out.println(\"um\");\n  else System.out.println(i);\n}",
+                    "interview_question": "Explique as principais estruturas de controle em Java e quando usá-las."
                 }
             ]
         },
         {
-            "subtitle": "Métodos e Main",
-            "description": "Definição de comportamentos e início do programa.",
+            "subtitle": "Tipos Primitivos e Wrapper",
+            "description": "Diferença entre tipos primitivos e classes wrapper.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Métodos definem ações com parâmetros e retornos. O método main é o ponto de entrada, chamado pela JVM para iniciar aplicações console ou backend.",
-                    "code": "public class App {\n    public static void main(String[] args) {\n        System.out.println(saudar(\"João\"));\n    }\n    static String saudar(String nome) {\n        return \"Olá, \" + nome;\n    }\n}",
-                    "interview_question": "Qual é o papel do método main em um programa Java?"
+                    "explanation": "Primitivos armazenam valores simples na memória stack (int, double, boolean). Wrappers (Integer, Double, Boolean) são objetos que permitem null, métodos utilitários e integração com coleções genéricas. Autoboxing converte automaticamente entre ambos.",
+                    "code": "int x = 5;\nInteger y = null;\nSystem.out.println(Integer.parseInt(\"10\"));",
+                    "interview_question": "Qual a diferença entre int e Integer em Java?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Modificadores de Acesso",
+            "description": "Controle de visibilidade de classes e membros.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Public permite acesso em qualquer lugar. Protected restringe ao pacote e a subclasses. Default (sem modificador) limita ao pacote. Private restringe ao escopo da própria classe. Esse controle organiza responsabilidades e garante encapsulamento.",
+                    "code": "public class Exemplo {\n  public int a;\n  protected int b;\n  int c;\n  private int d;\n}",
+                    "interview_question": "Explique a diferença entre public, protected, default e private."
+                }
+            ]
+        },
+        {
+            "subtitle": "Palavra-chave static",
+            "description": "Uso de variáveis e métodos estáticos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Static vincula variáveis e métodos à classe, não às instâncias. É útil para constantes compartilhadas, contadores globais e utilitários. Porém, deve ser usado com cautela para não introduzir dependências difíceis de testar.",
+                    "code": "class Util {\n  public static final double PI = 3.14;\n  public static int soma(int a, int b){ return a+b; }\n}",
+                    "interview_question": "Quando você usaria o modificador static em Java?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Strings e Imutabilidade",
+            "description": "Comportamento de Strings em Java.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Strings são imutáveis: qualquer alteração cria um novo objeto. Isso garante segurança em threads e caching eficiente. Para manipulação intensiva, use StringBuilder ou StringBuffer (thread-safe).",
+                    "code": "String s = \"Oi\";\ns = s + \" Marcos\"; // cria nova String",
+                    "interview_question": "Por que Strings são imutáveis em Java?"
                 }
             ]
         },
         {
             "subtitle": "Tratamento de Exceções",
-            "description": "Gerenciamento de erros.",
+            "description": "Mecanismo de erro controlado.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Try-catch trata erros, como divisões por zero. Throws declara exceções em métodos, garantindo robustez em APIs ou sistemas críticos.",
-                    "code": "public int dividir(int a, int b) throws ArithmeticException {\n    if (b == 0) throw new ArithmeticException(\"Divisão por zero\");\n    return a / b;\n}\ntry {\n    int r = dividir(10, 0);\n} catch (ArithmeticException e) {\n    System.out.println(\"Erro: \" + e.getMessage());\n}",
-                    "interview_question": "Como você trataria uma exceção em um método Java?"
+                    "explanation": "Checked Exceptions (como IOException) precisam ser tratadas ou declaradas. Unchecked Exceptions (como NullPointerException) são falhas de programação. O bloco try-catch-finally trata erros e o throws propaga para quem chama.",
+                    "code": "try {\n  int x = 10/0;\n} catch (ArithmeticException e) {\n  System.out.println(\"Erro: \" + e.getMessage());\n}",
+                    "interview_question": "Qual a diferença entre checked e unchecked exceptions?"
                 }
             ]
         },
         {
-            "subtitle": "Passagem por Valor",
-            "description": "Comportamento de parâmetros em métodos.",
+            "subtitle": "Coleções Básicas",
+            "description": "Estruturas mais usadas em Java.",
             "examples": [
                 {
                     "title": "Explicação",
-                    "explanation": "Java passa parâmetros por valor: primitivos não mudam fora do método; objetos passam a referência, permitindo alterar conteúdo, mas não a referência. Isso evita efeitos colaterais indesejados.",
-                    "code": "void alterar(int x, StringBuilder sb) {\n    x = 20;\n    sb.append(\" Mundo\");\n}\nint num = 10;\nStringBuilder texto = new StringBuilder(\"Olá\");\nalterar(num, texto);\nSystem.out.println(num); // 10\nSystem.out.println(texto); // Olá Mundo",
-                    "interview_question": "O que acontece ao passar um objeto como parâmetro em um método Java?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender Java.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use CodingBat (lógica), HackerRank (desafios), Oracle Java Tutorials (guias) e IntelliJ IDEA (IDE - Integrated Development Environment) para desenvolver projetos práticos.",
-                    "code": "",
-                    "interview_question": "Quais recursos você usou para aprender Java?"
+                    "explanation": "List mantém ordem e aceita duplicados. Set não permite duplicados. Map armazena pares chave-valor. A escolha depende da necessidade: ordem, busca rápida ou unicidade.",
+                    "code": "List<String> lista = new ArrayList<>();\nSet<String> set = new HashSet<>();\nMap<Integer, String> map = new HashMap<>();",
+                    "interview_question": "Quando usar List, Set ou Map em Java?"
                 }
             ]
         }

@@ -1,66 +1,55 @@
 {
-    "title": "Arquitetura de Sistema",
-    "description": "Arquitetura organiza sistemas para atender requisitos, conectando componentes como frontend e backend.",
-    "subsections": [
+  "title": "Arquitetura de Sistemas",
+  "description": "Conceitos básicos de design de software.",
+  "subsections": [
+    {
+      "subtitle": "O que é Arquitetura de Software?",
+      "description": "Definição inicial.",
+      "examples": [
         {
-            "subtitle": "Componentes de Sistemas",
-            "description": "Interação entre frontend, backend e banco.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Frontend (interface) faz requisições ao backend (lógica) via APIs (Application Programming Interfaces), que acessa o banco de dados. Essa separação suporta escalabilidade em aplicações web.",
-                    "code": "",
-                    "interview_question": "Como frontend e backend se comunicam em um sistema?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Cliente-Servidor e MVC",
-            "description": "Modelos de arquitetura.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Cliente-servidor divide o sistema em cliente (ex.: navegador) e servidor. MVC (Model-View-Controller) separa dados, interface e lógica, facilitando manutenção em Spring Boot.",
-                    "code": "@RestController\npublic class ProdutoController {\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() { return service.listar(); }\n}",
-                    "interview_question": "O que é o padrão MVC e onde ele é usado?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Monolítica vs. Microserviços",
-            "description": "Comparação de arquiteturas.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Monolítica integra tudo em um sistema, simples para projetos pequenos. Microserviços dividem em serviços independentes, conectados por APIs, ideais para escalabilidade em grandes sistemas.",
-                    "code": "",
-                    "interview_question": "Quais as vantagens de uma arquitetura de microserviços?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Arquitetura em Camadas",
-            "description": "Organização funcional.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Camadas separam apresentação (controller), negócios (service) e dados (repository). Reduz acoplamento, facilitando testes e manutenção em APIs.",
-                    "code": "@Service\npublic class ProdutoService {\n    @Autowired\n    private ProdutoRepository repository;\n    public List<Produto> listar() { return repository.findAll(); }\n}",
-                    "interview_question": "Como a arquitetura em camadas beneficia um projeto?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender arquitetura.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Draw.io (diagramas), C4 Model (documentação), Martin Fowler (artigos) e Udemy (cursos) para estudar arquiteturas de sistemas.",
-                    "code": "",
-                    "interview_question": "Como você documentaria a arquitetura de um sistema?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "Arquitetura de software define como os componentes de um sistema são organizados e como interagem. Ela busca escalabilidade, manutenibilidade e eficiência.",
+          "code": "",
+          "interview_question": "Explique com suas palavras o que é arquitetura de software."
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Arquitetura Monolítica",
+      "description": "Modelo tradicional.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em sistemas monolíticos, todos os módulos (front-end, back-end e regras de negócio) ficam em um único projeto. É simples de iniciar, mas difícil de escalar e manter em times grandes.",
+          "code": "",
+          "interview_question": "Quais as vantagens e desvantagens de uma arquitetura monolítica?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Arquitetura de Microserviços",
+      "description": "Modelo distribuído.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Microserviços dividem a aplicação em serviços independentes que se comunicam via APIs. Cada serviço pode ser escalado e implantado separadamente, aumentando flexibilidade.",
+          "code": "",
+          "interview_question": "Quais as principais vantagens de microserviços em comparação com monólitos?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Camadas de Arquitetura",
+      "description": "Separação de responsabilidades.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma arquitetura típica tem camadas: apresentação (UI), negócio (regras), persistência (banco de dados). Isso melhora organização e testabilidade.",
+          "code": "",
+          "interview_question": "Por que separar responsabilidades em camadas ajuda no design de software?"
+        }
+      ]
+    }
+  ]
 }
+    

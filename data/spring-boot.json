@@ -1,78 +1,54 @@
 {
-    "title": "Spring Boot",
-    "description": "Spring Boot é um framework Java que simplifica o desenvolvimento de APIs e sistemas backend, amplamente usado em aplicações empresariais.",
-    "subsections": [
+  "title": "Spring Boot",
+  "description": "Framework que simplifica a criação de aplicações Java modernas.",
+  "subsections": [
+    {
+      "subtitle": "O que é Spring Boot?",
+      "description": "Definição e objetivo.",
+      "examples": [
         {
-            "subtitle": "Introdução ao Spring Boot",
-            "description": "Como o framework funciona.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Spring Boot usa starters (ex.: spring-boot-starter-web) para agrupar dependências e configura servidores embutidos como Tomcat. Isso agiliza a criação de APIs REST (Representational State Transfer), reduzindo configurações manuais.",
-                    "code": "<dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-web</artifactId>\n</dependency>",
-                    "interview_question": "Por que o Spring Boot é preferido para desenvolver APIs em Java?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Injeção de Dependências e Anotações",
-            "description": "Como configurar componentes.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "DI (Dependency Injection) fornece objetos automaticamente com @Autowired, reduzindo acoplamento. Anotações como @RestController, @Service e @Repository definem papéis, facilitando manutenção e testes.",
-                    "code": "@RestController\npublic class ProdutoController {\n    @Autowired\n    private ProdutoService service;\n    @GetMapping(\"/produtos\")\n    public List<Produto> listar() { return service.listar(); }\n}",
-                    "interview_question": "Como a injeção de dependências melhora a testabilidade do código?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Conexão com Banco de Dados",
-            "description": "Integração com bancos relacionais.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use o starter spring-boot-starter-data-jpa e configure a conexão no application.properties. O JPA (Java Persistence API) mapeia objetos para tabelas, simplificando operações em bancos como MySQL.",
-                    "code": "# application.properties\nspring.datasource.url=jdbc:mysql://localhost:3306/banco\nspring.datasource.username=root\nspring.datasource.password=senha\n@Entity\npublic class Produto {\n    @Id\n    private Long id;\n}",
-                    "interview_question": "Como você configuraria uma conexão com MySQL no Spring Boot?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Validação e Tratamento de Erros",
-            "description": "Entradas válidas e gerenciamento de erros.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use @Valid para validar entradas, como campos obrigatórios. @ControllerAdvice captura exceções, retornando erros claros como 404, melhorando a experiência do cliente da API.",
-                    "code": "@RestController\npublic class ProdutoController {\n    @PostMapping(\"/produtos\")\n    public Produto criar(@Valid @RequestBody Produto produto) {\n        return service.salvar(produto);\n    }\n}\n@ControllerAdvice\npublic class ErrorHandler {\n    @ExceptionHandler(NotFoundException.class)\n    public ResponseEntity<String> handle(NotFoundException ex) {\n        return new ResponseEntity<>(\"Não encontrado\", HttpStatus.NOT_FOUND);\n    }\n}",
-                    "interview_question": "Como você trataria um erro de recurso não encontrado em uma API Spring Boot?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Ciclo de Vida e Configuração",
-            "description": "Inicialização da aplicação.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Spring Boot lê application.properties, inicializa o contexto com DI e levanta o servidor. Configurações como porta ou profiles ajustam o comportamento para diferentes ambientes.",
-                    "code": "# application.properties\nserver.port=8081",
-                    "interview_question": "O que acontece quando você executa uma aplicação Spring Boot?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender Spring Boot.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Spring Initializr (projetos), Spring Guides (tutoriais), Baeldung (artigos) e Postman (testes de API) para dominar o framework.",
-                    "code": "",
-                    "interview_question": "Quais ferramentas você usaria para testar uma API Spring Boot?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "Spring Boot é um framework que facilita a criação de aplicações Java prontas para produção. Ele elimina a necessidade de configurações extensas do Spring, fornecendo convenções, autoconfiguração e servidor embutido.",
+          "code": "",
+          "interview_question": "Explique o que é Spring Boot e por que ele é usado."
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Inversão de Controle e Injeção de Dependência",
+      "description": "Principais conceitos do Spring.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "IoC significa que o container gerencia a criação de objetos. Injeção de dependência permite trocar implementações facilmente e reduz acoplamento entre classes.",
+          "code": "@Service class PedidoService {\n  private final Repo repo;\n  PedidoService(Repo repo){ this.repo = repo; }\n}",
+          "interview_question": "Explique o conceito de Injeção de Dependência no Spring."
+        }
+      ]
+    },
+    {
+      "subtitle": "Anotações Principais",
+      "description": "Facilitam a configuração.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "@RestController expõe endpoints. @Service define regra de negócio. @Repository integra com banco. @Autowired injeta dependências.",
+          "code": "@RestController\nclass Hello {\n  @GetMapping(\"/hi\") String hi(){ return \"oi\"; }\n}",
+          "interview_question": "Cite três anotações comuns no Spring Boot e sua função."
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Data JPA",
+      "description": "Integração com bancos de dados.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Spring Data JPA cria repositórios automáticos a partir de interfaces. Permite consultas com pouco código e integra com bancos relacionais via Hibernate.",
+          "code": "interface UserRepo extends JpaRepository<User,Long> {\n  Optional<User> findByEmail(String email);\n}",
+          "interview_question": "Como o Spring Data JPA facilita o acesso a dados?"
+        }
+      ]
+    }
+  ]
 }

@@ -1,66 +1,54 @@
 {
-    "title": "APIs (REST e GraphQL)",
-    "description": "APIs (Application Programming Interfaces) conectam sistemas, essenciais para comunicação em aplicações backend.",
-    "subsections": [
+  "title": "APIs e Web Services",
+  "description": "Conceitos básicos de comunicação entre sistemas.",
+  "subsections": [
+    {
+      "subtitle": "O que é uma API?",
+      "description": "Definição geral.",
+      "examples": [
         {
-            "subtitle": "Fundamentos de APIs",
-            "description": "Como APIs funcionam.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "APIs (Application Programming Interfaces) definem regras para troca de dados via HTTP (Hypertext Transfer Protocol), retornando JSON (JavaScript Object Notation). Conectam frontend a backend, como em apps de e-commerce.",
-                    "code": "GET /produtos\n[\n    {\"id\": 1, \"nome\": \"Notebook\"}\n]",
-                    "interview_question": "O que é uma API e para que ela serve?"
-                }
-            ]
-        },
-        {
-            "subtitle": "REST e GraphQL",
-            "description": "Tipos de APIs.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "REST (Representational State Transfer) usa endpoints fixos (ex.: /produtos) e métodos HTTP (GET, POST). GraphQL permite ao cliente selecionar dados específicos, reduzindo overfetching em APIs complexas.",
-                    "code": "query {\n  produtos {\n    nome\n  }\n}\n// Resposta\n{\"data\": {\"produtos\": [{\"nome\": \"Notebook\"}] }}",
-                    "interview_question": "Qual a diferença entre REST e GraphQL?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Códigos de Status HTTP",
-            "description": "Interpretação de respostas.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Códigos HTTP indicam resultados: 2xx (sucesso, ex.: 200 OK), 4xx (erro cliente, ex.: 404 Not Found), 5xx (erro servidor). Orientam clientes em APIs, garantindo clareza.",
-                    "code": "HTTP/1.1 404 Not Found\n{\"error\": \"Produto não encontrado\"}",
-                    "interview_question": "O que significa o código HTTP 404 em uma API?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Consumo e Teste de APIs",
-            "description": "Interação e validação de APIs.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Consuma APIs com RestTemplate ou WebClient em Java. Teste com RestAssured ou Postman, verificando status e JSON, essencial para garantir funcionalidade.",
-                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}",
-                    "interview_question": "Como você testaria uma API REST em um projeto?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender APIs.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Postman (testes), Swagger (documentação), GraphQL Playground (GraphQL) e REST API Tutorial (guias) para praticar desenvolvimento de APIs.",
-                    "code": "",
-                    "interview_question": "Quais ferramentas você usaria para documentar uma API?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "API é um conjunto de regras que permite que diferentes softwares se comuniquem. No contexto web, geralmente significa expor e consumir dados via HTTP.",
+          "code": "",
+          "interview_question": "O que é uma API?"
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "REST",
+      "description": "Estilo arquitetural mais usado.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "REST usa HTTP e recursos identificados por URLs. Métodos HTTP representam operações: GET consulta, POST cria, PUT atualiza, DELETE remove.",
+          "code": "GET /usuarios/1",
+          "interview_question": "Explique o funcionamento básico de uma API REST."
+        }
+      ]
+    },
+    {
+      "subtitle": "SOAP",
+      "description": "Alternativa mais antiga.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "SOAP usa XML e protocolos rígidos. É comum em sistemas legados ou quando há necessidade de contratos fortes e segurança avançada.",
+          "code": "",
+          "interview_question": "Qual a principal diferença entre REST e SOAP?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Status Codes",
+      "description": "Retornos HTTP.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "200 OK indica sucesso, 201 Created recurso criado, 400 erro do cliente, 500 erro do servidor. O uso correto facilita debug e integração.",
+          "code": "HTTP/1.1 201 Created",
+          "interview_question": "Cite 3 códigos de status HTTP e seus significados."
+        }
+      ]
+    }
+  ]
 }
