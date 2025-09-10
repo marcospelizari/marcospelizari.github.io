@@ -1,66 +1,54 @@
 {
-    "title": "Contêineres e DevOps",
-    "description": "Docker e CI/CD (Continuous Integration/Continuous Deployment) modernizam a implantação de aplicações backend, essenciais para ambientes escaláveis.",
-    "subsections": [
+  "title": "Docker e DevOps",
+  "description": "Conceitos básicos de containers e práticas DevOps.",
+  "subsections": [
+    {
+      "subtitle": "O que é Docker?",
+      "description": "Definição inicial.",
+      "examples": [
         {
-            "subtitle": "Fundamentos de Docker",
-            "description": "Uso de contêineres.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Docker empacota aplicações e dependências em contêineres, garantindo consistência em qualquer ambiente. Um Dockerfile define a imagem, simplificando deploys em servidores.",
-                    "code": "FROM openjdk:17\nCOPY target/meu-app.jar meu-app.jar\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-jar\", \"meu-app.jar\"]\ndocker build -t meu-app .\ndocker run -p 8080:8080 meu-app",
-                    "interview_question": "O que é um contêiner Docker e para que ele serve?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Docker Compose",
-            "description": "Gerenciamento de múltiplos contêineres.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Docker Compose define serviços, como app e banco, em um arquivo YAML (YAML Ain't Markup Language). Facilita ambientes de desenvolvimento com docker-compose up.",
-                    "code": "version: '3.8'\nservices:\n  app:\n    image: meu-app\n    ports:\n      - \"8080:8080\"\n  db:\n    image: mysql:8\n    ports:\n      - \"3306:3306\"",
-                    "interview_question": "Como o Docker Compose ajuda no desenvolvimento local?"
-                }
-            ]
-        },
-        {
-            "subtitle": "CI/CD",
-            "description": "Automação de implantação.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "CI/CD (Continuous Integration/Continuous Deployment) automatiza testes e deploys com pipelines, como GitHub Actions. Garante entregas rápidas e confiáveis em produção.",
-                    "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v3\n      - run: mvn clean package\n      - run: docker build -t meu-app .",
-                    "interview_question": "O que é CI/CD e como ele funciona em um projeto?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Introdução ao Kubernetes",
-            "description": "Orquestração de contêineres.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Kubernetes orquestra contêineres, gerenciando escalabilidade e distribuição. Pods agrupam contêineres, como app e banco, e estou aprendendo para projetos escaláveis.",
-                    "code": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: meu-app\nspec:\n  containers:\n  - name: app\n    image: meu-app:latest\n    ports:\n    - containerPort: 8080",
-                    "interview_question": "Qual é o papel do Kubernetes em um ambiente de produção?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender DevOps.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Docker Hub (imagens), Play with Docker (prática), GitHub Actions (CI/CD) e Katacoda (tutoriais) para explorar Docker e DevOps.",
-                    "code": "",
-                    "interview_question": "Quais ferramentas DevOps você já explorou?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "Docker é uma plataforma que empacota aplicações e suas dependências em containers. Isso garante que o software rode da mesma forma em qualquer ambiente.",
+          "code": "docker run hello-world",
+          "interview_question": "Explique o que é Docker e sua principal vantagem."
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Imagem vs Container",
+      "description": "Diferença fundamental.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma imagem é como um modelo imutável (snapshot do ambiente). Um container é uma instância em execução dessa imagem. Várias instâncias podem ser criadas a partir da mesma imagem.",
+          "code": "docker build -t minha-app .\ndocker run minha-app",
+          "interview_question": "Qual a diferença entre imagem e container?"
+        }
+      ]
+    },
+    {
+      "subtitle": "DevOps",
+      "description": "Cultura e práticas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "DevOps é uma cultura que une desenvolvimento e operações para entregar software de forma contínua e confiável. Envolve automação, CI/CD, monitoramento e colaboração entre times.",
+          "code": "",
+          "interview_question": "O que é DevOps e por que ele é importante?"
+        }
+      ]
+    },
+    {
+      "subtitle": "CI/CD",
+      "description": "Integração e entrega contínuas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "CI (Continuous Integration) automatiza testes a cada commit. CD (Continuous Delivery/Deployment) automatiza a entrega em produção. Isso acelera releases e reduz erros.",
+          "code": "stages: [build, test, deploy]",
+          "interview_question": "Explique a diferença entre CI e CD."
+        }
+      ]
+    }
+  ]
 }

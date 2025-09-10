@@ -1,78 +1,42 @@
 {
-    "title": "Testes",
-    "description": "Testes garantem a qualidade do código, cobrindo unitários, integração e validação de APIs em projetos backend.",
-    "subsections": [
+  "title": "Testes em Java",
+  "description": "Boas práticas de testes automatizados.",
+  "subsections": [
+    {
+      "subtitle": "O que são Testes Automatizados?",
+      "description": "Definição geral.",
+      "examples": [
         {
-            "subtitle": "Testes Unitários e Asserções",
-            "description": "Teste de partes isoladas.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Testes unitários verificam métodos isoladamente com JUnit, usando asserções como assertEquals. TDD (Test-Driven Development) escreve testes antes, garantindo código confiável.",
-                    "code": "@Test\nvoid testSomar() {\n    Calculadora calc = new Calculadora();\n    assertEquals(5, calc.somar(2, 3));\n}",
-                    "interview_question": "O que é TDD e como ele beneficia o desenvolvimento?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Testes de Integração",
-            "description": "Teste de interações entre componentes.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Testes de integração verificam fluxos entre serviços e bancos com @SpringBootTest. Asseguram que componentes funcionem juntos, como em fluxos de API.",
-                    "code": "@SpringBootTest\nclass ProdutoServiceTest {\n    @Autowired\n    private ProdutoService service;\n    @Test\n    void testSalvar() {\n        Produto p = new Produto(\"Notebook\", 5000);\n        assertNotNull(service.salvar(p).getId());\n    }\n}",
-                    "interview_question": "Qual a diferença entre testes unitários e de integração?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Mocking",
-            "description": "Simulação de dependências.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Mocking simula dependências, como bancos ou APIs (Application Programming Interfaces), com Mockito, testando unidades isoladamente. Agiliza testes em sistemas complexos.",
-                    "code": "@Test\nvoid testSalvar() {\n    ProdutoRepository repo = Mockito.mock(ProdutoRepository.class);\n    ProdutoService service = new ProdutoService(repo);\n    service.salvar(new Produto(\"Celular\", 2000));\n    Mockito.verify(repo).save(any());\n}",
-                    "interview_question": "Por que usar mocking em testes unitários?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Testes de API e Carga",
-            "description": "Validação de APIs e performance.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "RestAssured testa APIs, verificando status e JSON. JMeter simula múltiplas requisições para testes de carga, garantindo escalabilidade em APIs públicas.",
-                    "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}",
-                    "interview_question": "Como você testaria a performance de uma API?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Cobertura de Testes",
-            "description": "Medição da qualidade dos testes.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Cobertura mede o percentual de código testado com JaCoCo. Mire 80%+, priorizando cenários críticos, para garantir confiança no código.",
-                    "code": "",
-                    "interview_question": "O que significa cobertura de testes e qual é um bom percentual?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Recursos para Prática",
-            "description": "Ferramentas para aprender testes.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use JUnit (tutoriais), Mockito (mocking), Baeldung (artigos) e Testcontainers (integração) para praticar testes robustos.",
-                    "code": "",
-                    "interview_question": "Quais ferramentas você usou para escrever testes em Java?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "São programas que verificam automaticamente se outras partes do código funcionam como esperado. Eles reduzem erros manuais e aumentam a confiança no software.",
+          "code": "",
+          "interview_question": "Explique com suas palavras o que são testes automatizados."
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Testes Unitários",
+      "description": "Validam unidades isoladas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Testes unitários verificam métodos ou classes isoladamente. Usam frameworks como JUnit e mocks para simular dependências.",
+          "code": "@Test void soma(){ assertEquals(4, Calc.soma(2,2)); }",
+          "interview_question": "Qual a principal vantagem de testes unitários?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de Integração",
+      "description": "Integração de módulos.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Validam se diferentes módulos funcionam juntos. Exemplo: serviço acessando banco real em ambiente de teste.",
+          "code": "@SpringBootTest class UserTest {}",
+          "interview_question": "Qual a diferença entre teste unitário e de integração?"
+        }
+      ]
+    }
+  ]
 }
