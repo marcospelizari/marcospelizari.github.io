@@ -1,0 +1,111 @@
+{
+  "title": "Docker e DevOps",
+  "description": "Conceitos básicos e práticas modernas de containers e DevOps, com exemplos para aplicações Spring Boot.",
+  "version": "Docker 26.x, Kubernetes 1.31",
+  "subsections": [
+    {
+      "subtitle": "O que é Docker?",
+      "description": "Definição inicial de containers.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Docker é uma plataforma que usa containers para empacotar aplicações e dependências, garantindo consistência entre ambientes (desenvolvimento, teste, produção). Simplifica implantação e testes locais.",
+          "code": "docker run -d -p 8080:8080 spring-app\n# Executa container de uma app Spring Boot na porta 8080",
+          "interview_question": "Como o Docker garante consistência entre ambientes?",
+          "references": ["https://docs.docker.com/get-started/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Imagem vs Container",
+      "description": "Diferença entre modelos e instâncias.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma imagem Docker é um modelo imutável com o código e dependências da aplicação. Um container é uma instância executável dessa imagem, podendo rodar múltiplos containers de uma mesma imagem.",
+          "code": "# Dockerfile para Spring Boot\nFROM openjdk:21\nCOPY target/app.jar app.jar\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n# Comandos\n docker build -t minha-app .\n docker run -d minha-app",
+          "interview_question": "Como criar uma imagem Docker para uma aplicação Java?",
+          "references": ["https://docs.docker.com/engine/reference/builder/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Docker Compose",
+      "description": "Orquestração de múltiplos containers.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Docker Compose gerencia múltiplos containers (ex.: app Spring Boot + banco de dados) com um arquivo YAML. Facilita testes locais e ambientes de desenvolvimento.",
+          "code": "# docker-compose.yml\nversion: '3.8'\nservices:\n  app:\n    image: minha-app\n    ports:\n      - \"8080:8080\"\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_USER: user\n      POSTGRES_PASSWORD: pass\n# Inicia com: docker-compose up",
+          "interview_question": "Como o Docker Compose ajuda no desenvolvimento local de uma app Spring Boot?",
+          "references": ["https://docs.docker.com/compose/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "DevOps",
+      "description": "Cultura e práticas para entrega contínua.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "DevOps combina desenvolvimento (Dev) e operações (Ops) para acelerar entregas com automação, colaboração e monitoramento. Inclui práticas como CI/CD, IaC e observabilidade.",
+          "code": "# Exemplo de pipeline CI/CD (pseudo-código)\nbuild: mvn clean package\ntest: mvn test\ndeploy: docker push minha-app",
+          "interview_question": "Como a cultura DevOps melhora a colaboração entre times?",
+          "references": ["https://aws.amazon.com/devops/what-is-devops/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "CI/CD",
+      "description": "Integração e entrega contínuas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "CI (Continuous Integration) executa testes automaticamente a cada commit. CD (Continuous Delivery/Deployment) automatiza a entrega ou implantação em produção, reduzindo erros e acelerando releases.",
+          "code": "# .github/workflows/ci.yml (GitHub Actions)\nname: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: mvn clean test",
+          "interview_question": "Qual a diferença entre Continuous Delivery e Continuous Deployment?",
+          "references": ["https://docs.github.com/en/actions"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Kubernetes (Básico)",
+      "description": "Orquestração de containers em escala.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Kubernetes orquestra containers em clusters, gerenciando escalabilidade, disponibilidade e implantação. Pods são unidades mínimas que contêm containers, como uma app Spring Boot.",
+          "code": "# Exemplo de pod Kubernetes\napiVersion: v1\nkind: Pod\nmetadata:\n  name: spring-app\nspec:\n  containers:\n  - name: app\n    image: minha-app:latest\n    ports:\n    - containerPort: 8080",
+          "interview_question": "Como o Kubernetes diferencia-se do Docker Compose?",
+          "references": ["https://kubernetes.io/docs/concepts/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Monitoramento e Logging",
+      "description": "Observabilidade em aplicações.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Monitoramento (ex.: Prometheus) coleta métricas de performance. Logging (ex.: ELK Stack) rastreia eventos e erros. Essencial para diagnosticar problemas em produção.",
+          "code": "# Configuração Prometheus (prometheus.yml)\nscrape_configs:\n  - job_name: 'spring-app'\n    static_configs:\n    - targets: ['app:8080']\n# Habilita actuator no Spring Boot\nmanagement.endpoints.web.exposure.include=health,metrics",
+          "interview_question": "Por que monitoramento é crítico em arquiteturas de microserviços?",
+          "references": ["https://prometheus.io/docs/introduction/overview/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Infraestrutura como Código (IaC)",
+      "description": "Automação de infraestrutura.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "IaC define infraestrutura (ex.: servidores, redes) em código, usando ferramentas como Terraform. Garante consistência e repetibilidade na implantação de ambientes.",
+          "code": "# Terraform para criar um container ECS\nresource \"aws_ecs_task_definition\" \"app\" {\n  family = \"spring-app\"\n  container_definitions = jsonencode([{\n    name = \"app\"\n    image = \"minha-app:latest\"\n  }])\n}",
+          "interview_question": "Como o IaC melhora a implantação de aplicações em cloud?",
+          "references": ["https://www.terraform.io/docs"]
+        }
+      ]
+    }
+  ]
+}

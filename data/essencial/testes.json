@@ -1,0 +1,110 @@
+{
+  "title": "Testes em Java",
+  "description": "Boas práticas de testes automatizados, com foco em JUnit 5 e Mockito para aplicações Java.",
+  "version": "JUnit 5.10, Mockito 5.x",
+  "subsections": [
+    {
+      "subtitle": "O que são Testes Automatizados?",
+      "description": "Definição geral de testes automatizados.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Testes automatizados são programas que verificam o comportamento do código sem intervenção manual. Reduzem erros, aumentam a confiança e facilitam refatorações em projetos.",
+          "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass ExemploTest {\n  @Test\n  void verificaCondicao() {\n    assertTrue(true); // Exemplo simples\n  }\n}",
+          "interview_question": "Por que testes automatizados são essenciais em projetos ágeis?",
+          "references": ["https://junit.org/junit5/docs/current/user-guide/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes Unitários",
+      "description": "Validação de unidades isoladas do código.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Testes unitários verificam métodos ou classes isoladamente, usando frameworks como JUnit 5. Geralmente testam lógica de negócios sem dependências externas.",
+          "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  @DisplayName(\"Testa soma de dois números\")\n  void testSoma() {\n    Calc calc = new Calc();\n    assertEquals(4, calc.soma(2, 2));\n  }\n}\nclass Calc {\n  int soma(int a, int b) { return a + b; }\n}",
+          "interview_question": "Qual a diferença entre testar uma unidade e testar um sistema inteiro?",
+          "references": ["https://junit.org/junit5/docs/current/user-guide/#writing-tests"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Mocking com Mockito",
+      "description": "Simulação de dependências em testes unitários com Mockito.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Mocking é a técnica de criar objetos simulados (mocks) para substituir dependências reais em testes unitários, permitindo isolar a unidade testada. Com Mockito, você cria mocks, define comportamentos (ex.: retorno de métodos) e verifica interações (ex.: chamadas de métodos). Isso é essencial para testar lógica de negócios sem depender de bancos de dados, APIs ou outros sistemas externos.",
+          "code": "import org.junit.jupiter.api.Test;\nimport org.mockito.Mockito;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\nclass UserServiceTest {\n  @Test\n  void testGetUserName() {\n    // Arrange: Criar mock do repositório\n    UserRepository repo = Mockito.mock(UserRepository.class);\n    when(repo.findNameById(1L)).thenReturn(\"João\");\n    UserService service = new UserService(repo);\n\n    // Act: Chamar método do serviço\n    String name = service.getUserName(1L);\n\n    // Assert: Verificar resultado e interação\n    assertEquals(\"João\", name);\n    verify(repo).findNameById(1L); // Verifica se o método foi chamado\n  }\n}\ninterface UserRepository {\n  String findNameById(Long id);\n}\nclass UserService {\n  private UserRepository repo;\n  UserService(UserRepository repo) { this.repo = repo; }\n  String getUserName(Long id) { return repo.findNameById(id); }\n}",
+          "interview_question": "O que é mocking e como o Mockito facilita testes unitários?",
+          "references": ["https://site.mockito.org/", "https://junit.org/junit5/docs/current/user-guide/#writing-tests-mocking"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de Integração",
+      "description": "Validação da integração entre módulos.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Testes de integração verificam se módulos (ex.: serviço e banco) funcionam juntos. No Spring Boot, usam @SpringBootTest para carregar o contexto da aplicação.",
+          "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.beans.factory.annotation.Autowired;\n\n@SpringBootTest\nclass UserServiceTest {\n  @Autowired\n  private UserService service;\n  @Test\n  void testFindUser() {\n    // Testa integração com banco real\n    assertNotNull(service.findById(1L));\n  }\n}",
+          "interview_question": "Quando usar testes de integração em vez de unitários?",
+          "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de API (End-to-End)",
+      "description": "Testes de APIs REST em aplicações.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Testes de API verificam endpoints REST, simulando requisições HTTP. Usam ferramentas como TestRestTemplate ou MockMvc no Spring Boot para testar respostas.",
+          "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.boot.test.web.client.TestRestTemplate;\n\n@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)\nclass ApiTest {\n  @Autowired\n  private TestRestTemplate restTemplate;\n  @Test\n  void testGetUser() {\n    String response = restTemplate.getForObject(\"/api/users/1\", String.class);\n    assertTrue(response.contains(\"user\"));\n  }\n}",
+          "interview_question": "Como testar uma API REST de forma automatizada?",
+          "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Cobertura de Testes",
+      "description": "Métricas para avaliar a qualidade dos testes.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Cobertura mede a porcentagem do código testado (linhas, branches). Ferramentas como JaCoCo ajudam a identificar áreas não cobertas, mas cobertura alta não garante qualidade.",
+          "code": "// Configuração no Maven (pom.xml)\n<plugin>\n  <groupId>org.jacoco</groupId>\n  <artifactId>jacoco-maven-plugin</artifactId>\n  <version>0.8.11</version>\n</plugin>",
+          "interview_question": "O que significa ter 80% de cobertura de testes?",
+          "references": ["https://www.jacoco.org/jacoco/trunk/doc/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Boas Práticas (AAA e TDD)",
+      "description": "Padrões para escrever testes eficazes.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O padrão AAA (Arrange, Act, Assert) organiza testes em preparação, execução e verificação. TDD (Test-Driven Development) envolve escrever testes antes do código, garantindo design orientado a testes.",
+          "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  void testSoma() {\n    // Arrange\n    Calc calc = new Calc();\n    // Act\n    int result = calc.soma(2, 3);\n    // Assert\n    assertEquals(5, result);\n  }\n}",
+          "interview_question": "Como o TDD impacta o desenvolvimento de software?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes Parametrizados",
+      "description": "Testes com múltiplos casos de entrada.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Testes parametrizados (JUnit 5) permitem executar o mesmo teste com diferentes entradas, reduzindo duplicação de código e cobrindo mais casos.",
+          "code": "import org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.CsvSource;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @ParameterizedTest\n  @CsvSource({\"2, 2, 4\", \"3, 3, 6\", \"0, 5, 5\"})\n  void testSoma(int a, int b, int expected) {\n    Calc calc = new Calc();\n    assertEquals(expected, calc.soma(a, b));\n  }\n}",
+          "interview_question": "Quando usar testes parametrizados em vez de testes individuais?",
+          "references": ["https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests"]
+        }
+      ]
+    }
+  ]
+}

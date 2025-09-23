@@ -1,0 +1,137 @@
+{
+  "title": "Spring Boot",
+  "description": "Framework que simplifica a criação de aplicações Java modernas, com foco em APIs REST e integração com bancos de dados.",
+  "version": "Spring Boot 3.3.x",
+  "subsections": [
+    {
+      "subtitle": "O que é Spring Boot?",
+      "description": "Definição e objetivo do framework.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Spring Boot é uma extensão do Spring que simplifica o desenvolvimento com autoconfiguração, servidor embutido (ex.: Tomcat) e convenções padrão. Ideal para criar APIs REST e microserviços rapidamente.",
+          "code": "import org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n\n@SpringBootApplication\npublic class Application {\n  public static void main(String[] args) {\n    SpringApplication.run(Application.class, args);\n  }\n}",
+          "interview_question": "Por que o Spring Boot é preferido para desenvolver APIs modernas?",
+          "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Inversão de Controle e Injeção de Dependência",
+      "description": "Fundamentos do gerenciamento de dependências no Spring.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Inversão de Controle (IoC) delega a criação e gerenciamento de objetos ao container Spring. Injeção de Dependência (DI) fornece objetos necessários a uma classe, reduzindo acoplamento. A injeção por construtor é preferida por ser explícita e testável.",
+          "code": "import org.springframework.stereotype.Service;\n\n@Service\nclass PedidoService {\n  private final PedidoRepository repo;\n\n  public PedidoService(PedidoRepository repo) {\n    this.repo = repo;\n  }\n  public String processar() { return repo.salvar(); }\n}\ninterface PedidoRepository {\n  String salvar();\n}",
+          "interview_question": "Qual a vantagem de usar injeção de dependência por construtor em vez de @Autowired?",
+          "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-dependency-injection"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Anotações Principais",
+      "description": "Anotações para configurar componentes e endpoints.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "@SpringBootApplication habilita autoconfiguração. @RestController define controladores REST. @Service marca serviços de negócio. @Repository cria repositórios de dados. @Autowired injeta dependências automaticamente.",
+          "code": "import org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class HelloController {\n  @GetMapping(\"/hi\")\n  public String hi() {\n    return \"Oi\";\n  }\n}",
+          "interview_question": "Qual a função de @RestController e como ele difere de @Controller?",
+          "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-controller"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring MVC",
+      "description": "Modelo Model-View-Controller para APIs REST.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Spring MVC organiza aplicações em controladores (processam requisições), modelos (dados) e visões (respostas). Em APIs REST, a visão é tipicamente JSON retornado por @RestController.",
+          "code": "import org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class UserController {\n  @GetMapping(\"/users/{id}\")\n  public User getUser(@PathVariable Long id) {\n    return new User(id, \"João\");\n  }\n}\nrecord User(Long id, String nome) {}",
+          "interview_question": "Como o Spring MVC organiza o fluxo de uma requisição REST?",
+          "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Data JPA",
+      "description": "Integração simplificada com bancos relacionais.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Spring Data JPA usa interfaces (ex.: JpaRepository) para criar repositórios automáticos, reduzindo código boilerplate. Suporta consultas derivadas, JPQL e integração com Hibernate.",
+          "code": "import org.springframework.data.jpa.repository.JpaRepository;\nimport jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class User {\n  @Id\n  private Long id;\n  private String email;\n  // Getters e setters\n}\n\ninterface UserRepository extends JpaRepository<User, Long> {\n  Optional<User> findByEmail(String email);\n}",
+          "interview_question": "Como criar uma consulta personalizada com Spring Data JPA?",
+          "references": ["https://docs.spring.io/spring-data/jpa/docs/current/reference/html/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Configuração de Propriedades",
+      "description": "Configuração da aplicação via propriedades.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O arquivo application.properties (ou .yml) configura aspectos como banco de dados, portas e variáveis personalizadas. @Value e @ConfigurationProperties mapeiam propriedades para código Java.",
+          "code": "# application.properties\nspring.datasource.url=jdbc:h2:mem:testdb\nspring.datasource.username=sa\n\n# Código Java\n@Component\npublic class Config {\n  @Value(\"${spring.datasource.url}\")\n  private String dbUrl;\n  public String getDbUrl() { return dbUrl; }\n}",
+          "interview_question": "Como configurar um banco de dados em memória com Spring Boot?",
+          "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes com Spring Boot",
+      "description": "Testes unitários e de integração com Spring.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Spring Boot facilita testes com @SpringBootTest (integração) e MockMvc (testes de API). Mocks com Mockito isolam dependências para testes unitários.",
+          "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.test.web.servlet.MockMvc;\n\n@SpringBootTest\n@AutoConfigureMockMvc\nclass UserControllerTest {\n  @Autowired\n  private MockMvc mockMvc;\n\n  @Test\n  void testGetUser() throws Exception {\n    mockMvc.perform(get(\"/users/1\"))\n           .andExpect(status().isOk())\n           .andExpect(jsonPath(\"$.nome\").value(\"João\"));\n  }\n}",
+          "interview_question": "Como testar um endpoint REST com MockMvc no Spring Boot?",
+          "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Validação de Dados",
+      "description": "Validação de entradas com Bean Validation.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Bean Validation usa anotações como @NotNull e @Size para validar dados de entrada. @Valid ativa a validação em controladores, garantindo dados corretos antes do processamento.",
+          "code": "import jakarta.validation.constraints.NotNull;\nimport jakarta.validation.constraints.Size;\nimport org.springframework.web.bind.annotation.PostMapping;\nimport org.springframework.web.bind.annotation.RequestBody;\nimport org.springframework.web.bind.annotation.RestController;\nimport jakarta.validation.Valid;\n\n@RestController\npublic class UserController {\n  @PostMapping(\"/users\")\n  public User create(@Valid @RequestBody User user) {\n    return user;\n  }\n}\nrecord User(@NotNull Long id, @Size(min=2) String nome) {}",
+          "interview_question": "Como garantir que entradas de um endpoint são válidas?",
+          "references": ["https://beanvalidation.org/2.0/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Tratamento de Exceções",
+      "description": "Gerenciamento de erros em APIs REST.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "@ControllerAdvice captura exceções globais em APIs REST, retornando respostas padronizadas. @ExceptionHandler define tratamento para exceções específicas.",
+          "code": "import org.springframework.http.HttpStatus;\nimport org.springframework.web.bind.annotation.ControllerAdvice;\nimport org.springframework.web.bind.annotation.ExceptionHandler;\nimport org.springframework.web.bind.annotation.ResponseStatus;\n\n@ControllerAdvice\npublic class GlobalExceptionHandler {\n  @ExceptionHandler(IllegalArgumentException.class)\n  @ResponseStatus(HttpStatus.BAD_REQUEST)\n  public String handleIllegalArgument(Exception e) {\n    return \"Erro: \" + e.getMessage();\n  }\n}",
+          "interview_question": "Como centralizar o tratamento de erros em uma API Spring Boot?",
+          "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-controller-advice"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Security (Básico)",
+      "description": "Segurança básica para APIs.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Spring Security protege endpoints com autenticação e autorização. Configurações básicas incluem proteger rotas e configurar usuários em memória para testes.",
+          "code": "import org.springframework.context.annotation.Bean;\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\nimport org.springframework.security.core.userdetails.User;\nimport org.springframework.security.core.userdetails.UserDetailsService;\nimport org.springframework.security.provisioning.InMemoryUserDetailsManager;\n\n@Configuration\npublic class SecurityConfig {\n  @Bean\n  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {\n    http.authorizeHttpRequests(auth -> auth\n      .requestMatchers(\"/public/**\").permitAll()\n      .anyRequest().authenticated());\n    return http.build();\n  }\n}",
+          "interview_question": "Como proteger um endpoint com Spring Security?",
+          "references": ["https://docs.spring.io/spring-security/reference/"]
+        }
+      ]
+    }
+  ]
+}
