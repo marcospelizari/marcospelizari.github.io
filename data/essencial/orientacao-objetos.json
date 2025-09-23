@@ -1,0 +1,144 @@
+{
+  "title": "Orientação a Objetos",
+  "description": "Princípios e práticas de POO em Java, atualizados para Java 21 (LTS).",
+  "version": "Java 21",
+  "subsections": [
+    {
+      "subtitle": "O que é Programação Orientada a Objetos (POO)?",
+      "description": "Definição e propósito da POO.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "POO organiza código em objetos que combinam dados (atributos) e comportamentos (métodos), modelando entidades do mundo real. Facilita reutilização, manutenção e modularidade.",
+          "code": "class Carro {\n  String modelo;\n  void acelerar() { System.out.println(\"Vruum!\"); }\n}",
+          "interview_question": "Por que a POO é amplamente usada em linguagens como Java?",
+          "references": ["https://docs.oracle.com/en/java/javase/21/docs/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Pilares da OOP",
+      "description": "Encapsulamento, herança, polimorfismo e abstração.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Encapsulamento protege dados com acesso controlado. Herança promove reutilização e especialização. Polimorfismo permite tratar objetos de forma uniforme. Abstração simplifica complexidade, focando no essencial.",
+          "code": "class Animal {\n  void som() {}\n}\nclass Cachorro extends Animal {\n  @Override void som() { System.out.println(\"Au\"); }\n}",
+          "interview_question": "Como os pilares da POO ajudam na manutenção de código?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Construtores",
+      "description": "Inicialização de objetos com construtores.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Construtores inicializam objetos, definindo valores iniciais para atributos. Podem ser sobrecarregados para diferentes cenários, com o default (sem parâmetros) sendo opcional.",
+          "code": "class Carro {\n  String modelo;\n  Carro(String modelo) { this.modelo = modelo; }\n  Carro() { this.modelo = \"Default\"; }\n}",
+          "interview_question": "O que acontece se um construtor não for definido em uma classe?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Getters e Setters",
+      "description": "Implementação prática de encapsulamento.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Getters acessam atributos privados de forma controlada. Setters validam e atualizam valores, garantindo encapsulamento e integridade dos dados.",
+          "code": "class Pessoa {\n  private int idade;\n  public int getIdade() { return idade; }\n  public void setIdade(int idade) { if (idade > 0) this.idade = idade; }\n}",
+          "interview_question": "Por que getters e setters são preferidos a atributos públicos?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Classe Abstrata vs Interface",
+      "description": "Diferenças entre abstrações em Java.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Classes abstratas permitem métodos implementados e abstratos, com herança única. Interfaces definem contratos, suportando múltipla implementação e default methods (Java 8+).",
+          "code": "abstract class Forma {\n  abstract double area();\n}\ninterface Desenhavel {\n  default void desenhar() { System.out.println(\"Desenhando\"); }\n}",
+          "interview_question": "Como default methods em interfaces mudam o uso de classes abstratas?",
+          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Interface.html"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Overloading vs Overriding",
+      "description": "Formas de polimorfismo em Java.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Overloading cria métodos com mesmo nome, mas assinaturas diferentes na mesma classe. Overriding redefine métodos herdados em subclasses, usando @Override para clareza.",
+          "code": "class Calc {\n  int soma(int a, int b) { return a + b; }\n  double soma(double a, double b) { return a + b; }\n}\nclass Filho extends Calc {\n  @Override int soma(int a, int b) { return a + b + 1; }\n}",
+          "interview_question": "Como o compilador diferencia métodos sobrecarregados?"
+        }
+      ]
+    },
+    {
+      "subtitle": "This e Super",
+      "description": "Referência a instância atual e superclasse.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "This acessa atributos e métodos da instância atual, evitando conflitos com parâmetros. Super chama construtores ou métodos da superclasse, útil em herança.",
+          "code": "class Pai {\n  void metodo() { System.out.println(\"Pai\"); }\n}\nclass Filho extends Pai {\n  int id;\n  Filho(int id) { super(); this.id = id; }\n  @Override void metodo() { super.metodo(); }\n}",
+          "interview_question": "Como usar super para chamar um construtor da superclasse?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Composição vs Herança",
+      "description": "Modelagem de relações 'é um' e 'tem um'.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Herança ('é um') é ideal para hierarquias claras, mas pode levar a acoplamento. Composição ('tem um') usa objetos internos, oferecendo flexibilidade e reutilização.",
+          "code": "class Motor {\n  void ligar() { System.out.println(\"Ligado\"); }\n}\nclass Carro {\n  Motor motor = new Motor();\n  void iniciar() { motor.ligar(); }\n}",
+          "interview_question": "Por que composição é considerada mais flexível que herança?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Imutabilidade e Record",
+      "description": "Objetos imutáveis e uso de records.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Imutabilidade impede alterações após criação, garantindo segurança em concorrência. Records (Java 16+) simplificam classes imutáveis com construtores, getters e métodos toString/equals automáticos.",
+          "code": "public record Usuario(String nome, int idade) {\n  public Usuario {\n    if (idade < 0) throw new IllegalArgumentException(\"Idade inválida\");\n  }\n}",
+          "interview_question": "Como records simplificam a criação de classes imutáveis?",
+          "references": ["https://openjdk.java.net/jeps/395"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Sealed Classes",
+      "description": "Controle de herança com classes seladas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Sealed classes (Java 17) restringem quais classes podem estendê-las, garantindo modelagem precisa de hierarquias. Usam 'sealed' e 'permits' para limitar subclasses.",
+          "code": "sealed interface Forma permits Circulo, Quadrado {\n  double area();\n}\nfinal class Circulo implements Forma {\n  double raio;\n  public double area() { return Math.PI * raio * raio; }\n}",
+          "interview_question": "Como sealed classes ajudam na modelagem de domínios?",
+          "references": ["https://openjdk.java.net/jeps/409"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Pattern Matching",
+      "description": "Simplificação de verificações de tipo.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Pattern matching (Java 16+) simplifica instanceof com vinculação automática de variáveis, reduzindo código boilerplate em verificações de tipo.",
+          "code": "Object obj = \"Texto\";\nif (obj instanceof String s) {\n  System.out.println(s.toUpperCase());\n}",
+          "interview_question": "Como pattern matching melhora a legibilidade do código?",
+          "references": ["https://openjdk.java.net/jeps/394"]
+        }
+      ]
+    }
+  ]
+}

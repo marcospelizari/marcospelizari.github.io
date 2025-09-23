@@ -1,0 +1,111 @@
+{
+  "title": "Arquitetura de Sistemas",
+  "description": "Conceitos básicos e modernos de design de software, com exemplos práticos para iniciantes.",
+  "version": "Spring Boot 3.3.x",
+  "subsections": [
+    {
+      "subtitle": "O que é Arquitetura de Software?",
+      "description": "Definição inicial e objetivos.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Arquitetura de software define a estrutura, organização e interação dos componentes de um sistema. Foca em escalabilidade, manutenibilidade, desempenho e testabilidade, guiando decisões de design.",
+          "code": "// Exemplo de estrutura em Spring Boot\nsrc/\n  main/\n    java/\n      controller/  // Apresentação\n      service/     // Negócio\n      repository/  // Persistência",
+          "interview_question": "Por que a arquitetura de software é importante em projetos grandes?",
+          "references": ["https://martinfowler.com/architecture/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Arquitetura Monolítica",
+      "description": "Modelo tradicional de aplicação única.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em monolitos, todos os componentes (UI, negócio, dados) estão em um único projeto. É fácil de desenvolver e implantar para pequenos sistemas, mas pode ser difícil de escalar ou manter em projetos complexos.",
+          "code": "@SpringBootApplication\npublic class App {\n  public static void main(String[] args) {\n    SpringApplication.run(App.class, args);\n  }\n}\n// Monolito com controlador, serviço e repositório no mesmo JAR",
+          "interview_question": "Quais cenários favorecem o uso de uma arquitetura monolítica?",
+          "references": ["https://martinfowler.com/articles/microservices.html#Monoliths"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Arquitetura de Microserviços",
+      "description": "Modelo distribuído com serviços independentes.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Microserviços dividem a aplicação em serviços independentes que se comunicam via APIs (ex.: REST). Cada serviço tem seu próprio banco de dados e é implantado separadamente, ideal para escalabilidade e times distribuídos.",
+          "code": "// Serviço de Usuários (Spring Boot)\n@RestController\n@RequestMapping(\"/users\")\npublic class UserController {\n  @GetMapping(\"/{id}\")\n  public User getUser(@PathVariable Long id) { ... }\n}\n// Serviço separado para Pedidos com outra porta",
+          "interview_question": "Quais os desafios de implementar microserviços em comparação com monolitos?",
+          "references": ["https://microservices.io/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Camadas de Arquitetura",
+      "description": "Separação de responsabilidades em camadas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Arquiteturas em camadas separam responsabilidades: apresentação (controladores), negócio (serviços) e persistência (repositorios). Isso promove modularidade, testabilidade e manutenção.",
+          "code": "@RestController\npublic class UserController {\n  private final UserService service;\n  public UserController(UserService service) { this.service = service; }\n}\n@Service\nclass UserService {\n  private final UserRepository repo;\n  public UserService(UserRepository repo) { this.repo = repo; }\n}\n@Repository\ninterface UserRepository extends JpaRepository<User, Long> {}",
+          "interview_question": "Como a separação em camadas facilita a manutenção de um sistema?",
+          "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Padrões Arquiteturais",
+      "description": "Padrões comuns para estruturar sistemas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Padrões como MVC (Model-View-Controller) organizam código em camadas lógicas. Domain-Driven Design (DDD) foca em modelar o domínio do negócio. Event-Driven Architecture usa eventos para comunicação assíncrona.",
+          "code": "// MVC no Spring Boot\n@RestController\npublic class UserController { // Controller\n  @GetMapping(\"/users\")\n  public List<User> getAll() { ... } // Model\n}\n// Event-Driven (exemplo pseudo-código)\n@EventListener\npublic void handleOrderCreated(OrderCreatedEvent event) { ... }",
+          "interview_question": "Como o padrão MVC se aplica em aplicações Spring Boot?",
+          "references": ["https://www.martinfowler.com/eaaCatalog/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "API Gateway",
+      "description": "Ponto central para microserviços.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma API Gateway roteia requisições para microserviços, agregando chamadas, autenticando e balanceando carga. Exemplo: Spring Cloud Gateway ou AWS API Gateway.",
+          "code": "# Configuração em application.yml (Spring Cloud Gateway)\ngateway:\n  routes:\n  - id: user-service\n    uri: http://user-service:8080\n    predicates:\n    - Path=/users/**",
+          "interview_question": "Qual o papel de uma API Gateway em arquiteturas de microserviços?",
+          "references": ["https://spring.io/projects/spring-cloud-gateway"]
+        }
+      ]
+    },
+    {
+      "subtitle": "CQRS",
+      "description": "Separação de comandos e consultas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "CQRS (Command Query Responsibility Segregation) separa operações de escrita (comandos) e leitura (consultas), permitindo otimizações específicas para cada uma, como bancos diferentes.",
+          "code": "// Comando (escrita)\npublic class CreateUserCommand {\n  String nome;\n  String email;\n}\n// Consulta (leitura)\npublic class UserQuery {\n  List<User> findByName(String name);\n}",
+          "interview_question": "Como o CQRS pode melhorar a escalabilidade de um sistema?",
+          "references": ["https://martinfowler.com/bliki/CQRS.html"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Clean Architecture",
+      "description": "Organização centrada no domínio.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Clean Architecture organiza o código em camadas concêntricas, com o domínio (regras de negócio) no centro e infraestrutura (banco, API) na borda. Promove testabilidade e independência de frameworks.",
+          "code": "// Entidade (domínio)\npublic class User {\n  private Long id;\n  private String nome;\n  public void updateName(String nome) { this.nome = nome; }\n}\n// Use Case (negócio)\npublic class UserUseCase {\n  public User createUser(String nome) { ... }\n}",
+          "interview_question": "Por que a Clean Architecture enfatiza a independência de frameworks?",
+          "references": ["https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"]
+        }
+      ]
+    }
+  ]
+}

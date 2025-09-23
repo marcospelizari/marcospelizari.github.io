@@ -1,0 +1,143 @@
+{
+  "title": "Controle de Versão (Git)",
+  "description": "Conceitos básicos de versionamento com Git para entrevistas, atualizados para práticas modernas (Git 2.43).",
+  "version": "Git 2.43",
+  "subsections": [
+    {
+      "subtitle": "O que é Git?",
+      "description": "Definição e propósito do Git.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Git é um sistema de controle de versão distribuído que rastreia mudanças no código, permitindo colaboração, histórico detalhado e reversão de alterações. É amplamente usado para gerenciar projetos de software.",
+          "code": "git init   # Inicia um novo repositório\ngit status # Mostra o estado atual dos arquivos",
+          "interview_question": "Por que o Git é essencial para equipes de desenvolvimento?",
+          "references": ["https://git-scm.com/doc"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Fluxo Básico: Clone, Commit e Push",
+      "description": "Comandos iniciais para versionamento.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Clone copia um repositório remoto para o local. Commit registra mudanças no histórico local com uma mensagem descritiva. Push envia os commits para o repositório remoto.",
+          "code": "git clone <url>              # Clona repositório\ngit add .                   # Adiciona todos os arquivos modificados\ngit commit -m \"feat: add login\" # Commit com mensagem padronizada\ngit push origin main        # Envia para o remoto",
+          "interview_question": "O que acontece quando você faz um push sem commitar mudanças?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Branch e Merge",
+      "description": "Trabalho paralelo e integração de código.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Branches isolam mudanças (ex.: novas features). Merge combina essas mudanças na branch principal. Use git switch para criar e alternar branches de forma moderna.",
+          "code": "git switch -c nova-feature # Cria e alterna para nova branch\ngit add .                 # Adiciona mudanças\ngit commit -m \"nova funcionalidade\"\ngit switch main           # Volta para main\ngit merge nova-feature    # Integra mudanças",
+          "interview_question": "Como resolver conflitos de merge em um projeto?",
+          "references": ["https://git-scm.com/docs/git-merge"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Merge vs Rebase",
+      "description": "Formas de integrar histórico.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Merge cria um commit de junção, preservando o histórico de ambas as branches. Rebase reescreve o histórico para uma linha linear, mas pode ser arriscado em branches compartilhadas.",
+          "code": "git switch feature         # Alterna para branch feature\ngit merge main            # Mescla main em feature\ngit rebase main           # Rebase feature sobre main",
+          "interview_question": "Por que rebase pode causar problemas em equipes?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Pull e Fetch",
+      "description": "Sincronizando com repositório remoto.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Fetch baixa mudanças remotas sem integrá-las, permitindo revisão. Pull combina fetch e merge para sincronizar rapidamente. Use pull com --rebase para linearidade.",
+          "code": "git fetch origin          # Baixa mudanças sem mesclar\ngit pull origin main      # Baixa e mescla mudanças",
+          "interview_question": "Quando usar git fetch em vez de git pull?"
+        }
+      ]
+    },
+    {
+      "subtitle": ".gitignore",
+      "description": "Ignorando arquivos desnecessários.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O .gitignore especifica arquivos ou pastas a serem ignorados (ex.: logs, binários, credenciais). Mantém o repositório limpo e evita commits indesejados.",
+          "code": "*.log\nnode_modules/\n.env\n# Adiciona ao .gitignore\ngit add .gitignore\ngit commit -m \"add .gitignore\"",
+          "interview_question": "O que acontece se um arquivo já rastreado for adicionado ao .gitignore?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Status, Diff e Restore",
+      "description": "Inspecionando e revertendo mudanças locais.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Git status verifica o estado dos arquivos. Git diff mostra diferenças detalhadas. Git restore (Git 2.23+) reverte mudanças não commitadas em arquivos específicos.",
+          "code": "git status                # Mostra estado dos arquivos\ngit diff arquivo.java     # Mostra mudanças no arquivo\ngit restore arquivo.java  # Reverte mudanças não commitadas",
+          "interview_question": "Como usar git diff para revisar mudanças antes de um commit?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Revert e Reset",
+      "description": "Desfazendo alterações de forma segura.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Revert cria um commit que anula outro, ideal para repositórios compartilhados. Reset (ex.: --soft ou --hard) altera o histórico local, útil para ajustes antes de push.",
+          "code": "git revert HEAD           # Cria commit que anula o último\ngit reset --soft HEAD~1   # Volta um commit, mantendo mudanças",
+          "interview_question": "Qual a diferença entre git reset --soft e --hard?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Git Stash",
+      "description": "Salvando mudanças temporariamente.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Stash salva mudanças não commitadas em uma pilha temporária, permitindo alternar branches sem perder trabalho. Use pop ou apply para recuperar as mudanças.",
+          "code": "git stash                 # Salva mudanças temporariamente\ngit switch main           # Alterna para main\ngit stash pop             # Recupera mudanças salvas",
+          "interview_question": "Como git stash ajuda em fluxos de trabalho dinâmicos?",
+          "references": ["https://git-scm.com/docs/git-stash"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Git Log e Blame",
+      "description": "Inspecionando histórico e autoria.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Git log mostra o histórico de commits com detalhes como autor e mensagem. Git blame identifica quem alterou cada linha de um arquivo, útil para auditoria.",
+          "code": "git log --oneline         # Mostra histórico resumido\ngit blame arquivo.java    # Mostra autoria por linha",
+          "interview_question": "Como usar git blame para investigar bugs?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Pull Requests",
+      "description": "Colaboração em plataformas como GitHub.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Pull Requests (PRs) propõem mudanças de uma branch para outra, permitindo revisão e aprovação por pares. São centrais em fluxos colaborativos em plataformas como GitHub ou GitLab.",
+          "code": "git push origin feature   # Envia branch para remoto\n# Cria PR na plataforma (ex.: GitHub)\ngit pull origin main      # Sincroniza após aprovação",
+          "interview_question": "Qual a importância de pull requests em projetos colaborativos?",
+          "references": ["https://docs.github.com/en/pull-requests"]
+        }
+      ]
+    }
+  ]
+}

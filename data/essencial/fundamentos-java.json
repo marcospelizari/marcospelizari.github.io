@@ -1,0 +1,180 @@
+{
+    "title": "Fundamentos de Java",
+    "description": "Conceitos principais da linguagem e pontos comuns em entrevistas, atualizados para Java 21 (LTS).",
+    "version": "Java 21",
+    "subsections": [
+        {
+            "subtitle": "JVM, JRE e JDK",
+            "description": "Componentes centrais da plataforma Java.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "A JVM (Java Virtual Machine) executa bytecode, garantindo portabilidade. O JRE (Java Runtime Environment) inclui a JVM e bibliotecas para rodar aplicações. O JDK (Java Development Kit) adiciona ferramentas como javac e debugger para desenvolvimento.",
+                    "code": "javac Main.java  // compila para bytecode\njava Main       // executa na JVM",
+                    "interview_question": "Qual a diferença entre JVM, JRE e JDK, e por que o JDK é essencial para desenvolvedores?",
+                    "references": ["https://docs.oracle.com/en/java/javase/21/docs/"]
+                }
+            ]
+        },
+        {
+            "subtitle": "Estruturas de Controle",
+            "description": "Controle de fluxo em Java, incluindo switch expressions modernas.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "If/else lida com condições, switch (incluindo switch expressions do Java 17) organiza casos, e loops (for, while, for-each) permitem repetição. Switch expressions simplificam código com retorno direto de valores.",
+                    "code": "var numero = 2;\nString resultado = switch (numero) {\n    case 1 -> \"Um\";\n    case 2 -> \"Dois\";\n    default -> \"Outro\";\n};",
+                    "interview_question": "Como o switch expression melhora o código em relação ao switch tradicional?",
+                    "references": ["https://openjdk.java.net/jeps/361"]
+                }
+            ]
+        },
+        {
+            "subtitle": "Tipos Primitivos e Wrapper",
+            "description": "Diferença entre tipos primitivos e classes wrapper, com uso de var.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Primitivos (int, double, boolean) são valores simples na stack. Wrappers (Integer, Double, Boolean) são objetos que suportam null e métodos utilitários. Autoboxing/unboxing facilita a conversão.",
+                    "code": "var x = 5; // int inferido\nInteger y = null;\nSystem.out.println(Integer.parseInt(\"10\"));",
+                    "interview_question": "Qual a vantagem de usar var com tipos primitivos e wrappers?",
+                    "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html"]
+                }
+            ]
+        },
+        {
+            "subtitle": "Modificadores de Acesso",
+            "description": "Controle de visibilidade de classes e membros.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Public permite acesso universal, protected limita a pacote e subclasses, default (package-private) restringe ao pacote, e private ao escopo da classe. Encapsulamento é garantido com private.",
+                    "code": "public class Exemplo {\n  public int a;\n  protected int b;\n  int c;\n  private int d;\n}",
+                    "interview_question": "Como os modificadores de acesso ajudam no encapsulamento?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Palavra-chave static",
+            "description": "Uso de variáveis e métodos estáticos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Static associa membros à classe, não a instâncias. Ideal para constantes, utilitários ou contadores globais, mas deve ser usado com cuidado para evitar acoplamento.",
+                    "code": "class Util {\n  public static final double PI = 3.14;\n  public static int soma(int a, int b) { return a + b; }\n}",
+                    "interview_question": "Por que o uso excessivo de static pode ser problemático em testes unitários?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Strings e Imutabilidade",
+            "description": "Comportamento de Strings, incluindo Text Blocks.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Strings são imutáveis para segurança e eficiência. Text Blocks (Java 15+) simplificam strings multilinhas. StringBuilder é preferido para manipulação intensiva.",
+                    "code": "String s = \"Oi\";\nString multi = \"\"\"\n    Olá,\n    Mundo!\n    \"\"\";\nStringBuilder sb = new StringBuilder().append(\"teste\");",
+                    "interview_question": "Qual a vantagem de usar Text Blocks para strings multilinhas?",
+                    "references": ["https://openjdk.java.net/jeps/378"]
+                }
+            ]
+        },
+        {
+            "subtitle": "Tratamento de Exceções",
+            "description": "Mecanismo de erro controlado.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Checked exceptions (ex.: IOException) exigem tratamento ou declaração. Unchecked (ex.: NullPointerException) indicam erros de programação. Try-with-resources (Java 7) simplifica gerenciamento de recursos.",
+                    "code": "try (var reader = new BufferedReader(new FileReader(\"file.txt\"))) {\n  String line = reader.readLine();\n} catch (IOException e) {\n  System.out.println(\"Erro: \" + e.getMessage());\n}",
+                    "interview_question": "O que é try-with-resources e quando usá-lo?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Coleções Básicas",
+            "description": "Estruturas de dados mais usadas, com métodos modernos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "List (ordem, duplicados), Set (unicidade), Map (chave-valor). Métodos como List.of() e Map.of() (Java 9) criam coleções imutáveis de forma concisa.",
+                    "code": "var lista = List.of(\"a\", \"b\", \"c\");\nvar mapa = Map.of(1, \"um\", 2, \"dois\");",
+                    "interview_question": "Qual a vantagem de usar coleções imutáveis como List.of()?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Arrays e Estruturas Básicas",
+            "description": "Uso de arrays para armazenamento fixo.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Arrays têm tamanho fixo e são eficientes, mas não redimensionáveis. Diferem de ArrayList por serem primitivos e não suportarem genéricos diretamente.",
+                    "code": "int[] nums = {1, 2, 3};\nfor(var n : nums) {\n  System.out.println(n);\n}",
+                    "interview_question": "Por que usar arrays em vez de ArrayList em cenários de performance?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Métodos e Parâmetros",
+            "description": "Definição de métodos e sobrecarga.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Métodos encapsulam lógica, com sobrecarga para flexibilidade. Varargs (Java 5) permite número variável de argumentos.",
+                    "code": "public static int soma(int... nums) {\n  int total = 0;\n  for(var n : nums) total += n;\n  return total;\n}",
+                    "interview_question": "O que são varargs e como usá-los em métodos?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Operadores e Expressões",
+            "description": "Operações básicas e precedência.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Operadores aritméticos, relacionais e lógicos formam expressões. Parênteses controlam precedência para evitar ambiguidades.",
+                    "code": "var a = 5 + 3 * 2; // 11\nboolean cond = (a > 0) && (a < 10); // true",
+                    "interview_question": "Como evitar erros comuns em expressões com precedência de operadores?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Herança Básica",
+            "description": "Introdução à herança para reutilização de código.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Herança com 'extends' permite reutilização e polimorfismo. Subclasses podem sobrescrever métodos com @Override. Classes 'sealed' (Java 17) restringem herança.",
+                    "code": "sealed class Animal permits Cachorro {\n  void som() { System.out.println(\"Som genérico\"); }\n}\nfinal class Cachorro extends Animal {\n  @Override void som() { System.out.println(\"Au au\"); }\n}",
+                    "interview_question": "O que são classes sealed e como elas limitam herança?",
+                    "references": ["https://openjdk.java.net/jeps/409"]
+                }
+            ]
+        },
+        {
+            "subtitle": "Optional",
+            "description": "Uso de Optional para lidar com valores nulos.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Optional (Java 8) evita NullPointerException encapsulando valores que podem ser nulos. Métodos como orElse() e ifPresent() simplificam lógica.",
+                    "code": "Optional<String> nome = Optional.ofNullable(null);\nString resultado = nome.orElse(\"Desconhecido\");\nSystem.out.println(resultado); // Desconhecido",
+                    "interview_question": "Como Optional melhora a segurança de código em relação a null?"
+                }
+            ]
+        },
+        {
+            "subtitle": "Lambda e Stream API",
+            "description": "Programação funcional com lambdas e streams.",
+            "examples": [
+                {
+                    "title": "Explicação",
+                    "explanation": "Lambdas (Java 8) permitem funções anônimas. Stream API processa coleções de forma funcional, com operações como filter() e map().",
+                    "code": "var lista = List.of(1, 2, 3, 4);\nlista.stream()\n     .filter(n -> n % 2 == 0)\n     .forEach(System.out::println); // 2, 4",
+                    "interview_question": "Como a Stream API melhora a legibilidade e eficiência do código?"
+                }
+            ]
+        }
+    ]
+}

@@ -1,34 +1,54 @@
 /* css/styles.css */
+:root {
+    --primary-color: #1E90FF;
+    --secondary-color: #222222;
+    --text-color: #ffffff;
+    --muted-color: #ffffff; /* Mantido como referência, mas será sobrescrito */
+    --code-bg: #2d2d2d;
+    --border-color: #333;
+}
+
 body {
     background-color: #000000;
-    padding-top: 70px; /* Space for fixed navbar */
+    padding-top: 70px;
     font-family: Arial, sans-serif;
     line-height: 1.6;
+    color: var(--text-color);
+}
+
+/* Navbar */
+.navbar {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 /* Content area */
 #content .card {
-    border: 1px solid #333;
+    border: 1px solid var(--border-color);
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
 /* Headings and text */
-h1, h2, h3, p {
-    color: #ffffff;
+h1, h2, h3, h4, p {
+    color: var(--text-color);
 }
 
 h2 {
-    border-bottom: 3px solid #1E90FF;
+    border-bottom: 3px solid var(--primary-color);
 }
 
 h3 {
-    color: #1E90FF;
+    color: var(--primary-color);
+}
+
+h4 {
+    font-size: 1.1rem;
+    color: var(--primary-color);
 }
 
 /* Subsections (accordion items) */
 .section {
     margin-bottom: 10px;
-    border: 1px solid #333;
+    border: 1px solid var(--border-color);
     border-radius: 8px;
     transition: all 0.3s ease;
 }
@@ -39,42 +59,63 @@ h3 {
 }
 
 .accordion-button:not(.collapsed) {
-    background-color: #1E90FF;
-    color: #ffffff;
+    background-color: var(--primary-color);
+    color: var(--text-color);
 }
 
 /* Examples */
 .example {
-    background-color: #222222;
-    border-left: 4px solid #1E90FF;
+    background-color: var(--secondary-color);
+    border-left: 4px solid var(--primary-color);
+    border-radius: 4px;
+    padding: 1rem;
 }
 
-/* Code blocks */
-#content pre {
-    background-color: #2d2d2d;
-    color: #d4d4d4;
+/* Code blocks (Prism.js compatible) */
+#content .code-block {
+    margin: 10px 0;
+}
+
+#content .code-block pre, #content .code-block code {
+    background-color: var(--code-bg);
+    color: var(--muted-color);
     padding: 15px;
     border-radius: 4px;
-    font-size: 0.9rem;
+    font-size: 1rem;
+    line-height: 1.5;
     overflow-x: auto;
-    border: 1px solid #444;
+    border: none;
+    white-space: pre;
+    word-break: break-all;
+    display: block;
+    height: auto;
 }
 
-/* Responses */
-.example p {
-    margin: 5px 0;
-    font-size: 0.95em;
-    color: #e0e0e0;
+/* References list */
+.references-list {
+    margin-top: 5px;
+    padding-left: 20px;
+    font-size: 0.9rem;
 }
 
-.example p:contains('Resposta Ideal') {
-    border-left: 2px solid #1E90FF;
-    padding-left: 10px;
+.references-list li {
+    margin-bottom: 5px;
 }
 
-.example p:contains('Resposta Simples') {
-    border-left: 2px solid #FFD700;
-    padding-left: 10px;
+/* Forçar visibilidade do text-muted */
+.text-muted {
+    color: #ffffff !important; /* Força a cor branca */
+}
+
+/* Search input */
+#searchInput {
+    background-color: var(--secondary-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+}
+
+#searchInput::placeholder {
+    color: var(--muted-color);
 }
 
 /* Back-to-top button */
@@ -89,7 +130,7 @@ h3 {
     font-size: 1.2rem;
     text-align: center;
     line-height: 50px;
-    background-color: #1E90FF;
+    background-color: var(--primary-color);
 }
 
 #topBtn:hover {
@@ -104,23 +145,37 @@ h3 {
 
 #loadingText {
     font-size: 0.9rem;
+    color: var(--muted-color);
 }
 
 /* Responsive adjustments */
 @media (max-width: 600px) {
     h1 {
-        font-size: 2em;
+        font-size: 1.8em;
     }
 
     h2 {
-        font-size: 1.5em;
+        font-size: 1.4em;
     }
 
-    #content pre {
-        font-size: 0.85em;
+    h3 {
+        font-size: 1.2em;
+    }
+
+    #content .code-block pre, #content .code-block code {
+        font-size: 0.9rem;
     }
 
     p, .example p {
+        font-size: 0.85em;
+    }
+
+    #searchInput {
         font-size: 0.9em;
+    }
+
+    .references-list {
+        font-size: 0.85rem;
+        padding-left: 15px;
     }
 }

@@ -1,0 +1,111 @@
+{
+  "title": "APIs e Web Services",
+  "description": "Conceitos básicos e avançados de comunicação entre sistemas, com foco em REST e práticas modernas.",
+  "version": "HTTP/1.1, OpenAPI 3.1",
+  "subsections": [
+    {
+      "subtitle": "O que é uma API?",
+      "description": "Definição geral de APIs.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma API (Application Programming Interface) define regras para que softwares se comuniquem, expondo funcionalidades e dados. No web, usa protocolos como HTTP para requisições e respostas, facilitando integrações entre sistemas.",
+          "code": "curl -X GET https://api.exemplo.com/usuarios/1\n// Exemplo de chamada HTTP para uma API",
+          "interview_question": "Como uma API facilita a integração entre um frontend e um backend?",
+          "references": ["https://developer.mozilla.org/en-US/docs/Glossary/API"]
+        }
+      ]
+    },
+    {
+      "subtitle": "REST",
+      "description": "Estilo arquitetural para APIs stateless.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "REST (Representational State Transfer) usa HTTP para manipular recursos via URLs. É stateless, com métodos como GET (leitura), POST (criação), PUT/PATCH (atualização) e DELETE (remoção). Princípios incluem HATEOAS para links auto-descritivos.",
+          "code": "GET /usuarios/1\nPOST /usuarios\n{ \"nome\": \"João\", \"email\": \"joao@email.com\" }\n// Payload JSON para criação",
+          "interview_question": "Explique os princípios REST e como eles promovem escalabilidade.",
+          "references": ["https://restfulapi.net/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "SOAP",
+      "description": "Protocolo baseado em XML para serviços web.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "SOAP (Simple Object Access Protocol) é um protocolo XML rígido para troca de mensagens estruturadas, com suporte a WS-Security. É usado em sistemas legados ou corporativos que exigem contratos formais, mas é mais verboso que REST.",
+          "code": "<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Body>\n    <getUser>\n      <id>1</id>\n    </getUser>\n  </soap:Body>\n</soap:Envelope>\n// Exemplo de envelope SOAP",
+          "interview_question": "Quando usar SOAP em vez de REST em um projeto?",
+          "references": ["https://www.w3.org/TR/soap/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Status Codes",
+      "description": "Códigos de resposta HTTP para comunicação clara.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Códigos HTTP indicam o resultado de uma requisição: 2xx (sucesso, ex.: 200 OK, 201 Created), 4xx (erro do cliente, ex.: 400 Bad Request, 401 Unauthorized), 5xx (erro do servidor, ex.: 500 Internal Server Error). Usá-los corretamente melhora a depuração.",
+          "code": "HTTP/1.1 201 Created\nLocation: /usuarios/1\n// Resposta para criação de recurso",
+          "interview_question": "Cite exemplos de códigos 2xx, 4xx e 5xx e quando usá-los.",
+          "references": ["https://httpstatuses.com/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "GraphQL",
+      "description": "Alternativa flexível ao REST para consultas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "GraphQL permite que clientes solicitem exatamente os dados necessários em uma única consulta, reduzindo over/under-fetching. Usa um schema único para definir tipos e resolvers, ideal para apps móveis ou com dados complexos.",
+          "code": "query {\n  user(id: 1) {\n    nome\n    email\n    posts {\n      title\n    }\n  }\n}\n// Consulta GraphQL para usuário e posts",
+          "interview_question": "Como GraphQL resolve problemas comuns do REST?",
+          "references": ["https://graphql.org/learn/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Autenticação e Autorização",
+      "description": "Segurança em APIs.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Autenticação verifica identidade (ex.: JWT tokens), enquanto autorização controla acesso (ex.: roles). JWT é stateless e compacto; OAuth 2.0 gerencia fluxos de terceiros. Use HTTPS para proteger tokens.",
+          "code": "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n// Header com JWT token em requisição HTTP",
+          "interview_question": "Explique a diferença entre JWT e OAuth 2.0 em APIs.",
+          "references": ["https://jwt.io/introduction/", "https://oauth.net/2/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Documentação de APIs",
+      "description": "Geração automática de documentação.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Ferramentas como Swagger/OpenAPI geram docs interativas a partir de anotações no código (ex.: @ApiOperation no Spring). Facilita testes e integração por clientes.",
+          "code": "import io.swagger.v3.oas.annotations.Operation;\n\n@GetMapping(\"/users\")\n@Operation(summary = \"Lista usuários\")\npublic List<User> getUsers() {\n  return userService.findAll();\n}\n// Anotação OpenAPI no Spring",
+          "interview_question": "Por que documentar APIs é importante e como o Swagger ajuda?",
+          "references": ["https://swagger.io/specification/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "WebSockets",
+      "description": "Comunicação em tempo real.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "WebSockets estabelecem conexões bidirecionais persistentes para atualizações em tempo real (ex.: chat, notificações), contrastando com o request-response do HTTP. Use com STOMP no Spring para simplicidade.",
+          "code": "ws://exemplo.com/chat\n// URI WebSocket para conexão em tempo real",
+          "interview_question": "Quando usar WebSockets em vez de polling HTTP?",
+          "references": ["https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"]
+        }
+      ]
+    }
+  ]
+}

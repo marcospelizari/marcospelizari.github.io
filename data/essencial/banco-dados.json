@@ -1,0 +1,143 @@
+{
+  "title": "Banco de Dados",
+  "description": "Conceitos essenciais para trabalhar com bancos relacionais e NoSQL, atualizados para práticas modernas.",
+  "version": "SQL ANSI, MongoDB 7.0",
+  "subsections": [
+    {
+      "subtitle": "Modelo Relacional e SQL",
+      "description": "Organização dos dados em tabelas e uso de SQL.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O modelo relacional organiza dados em tabelas com linhas e colunas, conectadas por chaves. SQL é usado para consultas (SELECT), manipulação (INSERT, UPDATE, DELETE) e definição de esquemas (CREATE, ALTER).",
+          "code": "SELECT nome, idade FROM usuarios WHERE idade > 18;\n-- Filtra usuários maiores de 18 anos",
+          "interview_question": "Como o modelo relacional organiza dados e qual o papel do SQL?",
+          "references": ["https://www.postgresql.org/docs/current/sql.html"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Chaves Primária e Estrangeira",
+      "description": "Garantia de integridade em relacionamentos.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Chave primária (PK) identifica unicamente cada registro. Chave estrangeira (FK) estabelece relação entre tabelas, garantindo integridade referencial.",
+          "code": "CREATE TABLE Pedido (\n  id SERIAL PRIMARY KEY,\n  usuario_id INT REFERENCES Usuario(id)\n  -- FK referencia tabela Usuario\n);",
+          "interview_question": "Por que chaves estrangeiras são importantes para integridade?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Normalização",
+      "description": "Organização para evitar redundância.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Normalização organiza dados em tabelas separadas para eliminar redundância e inconsistências. As formas normais (1NF, 2NF, 3NF) guiam esse processo.",
+          "code": "CREATE TABLE Endereco (\n  id SERIAL PRIMARY KEY,\n  usuario_id INT REFERENCES Usuario(id),\n  rua VARCHAR(100)\n  -- Separa endereços para evitar redundância\n);",
+          "interview_question": "O que é a terceira forma normal (3NF) e por que aplicá-la?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Transações",
+      "description": "Operações atômicas para consistência.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Transações garantem que um conjunto de operações seja executado atomicamente (COMMIT para sucesso, ROLLBACK para falha). Seguem propriedades ACID para consistência.",
+          "code": "BEGIN;\nINSERT INTO conta (id, saldo) VALUES (1, 100);\nUPDATE conta SET saldo = saldo - 50 WHERE id = 1;\nCOMMIT;\n-- Garante atomicidade",
+          "interview_question": "Como transações evitam inconsistências em transferências bancárias?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Joins",
+      "description": "Combinando dados de múltiplas tabelas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Joins unem tabelas por chaves relacionadas. INNER JOIN retorna apenas correspondências; LEFT JOIN inclui todos os registros da tabela à esquerda; RIGHT e FULL JOIN têm usos específicos.",
+          "code": "SELECT u.nome, p.produto\nFROM usuarios u\nINNER JOIN pedidos p ON u.id = p.usuario_id;\n-- Retorna usuários com pedidos",
+          "interview_question": "Qual a diferença entre INNER JOIN e LEFT JOIN?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Índices",
+      "description": "Otimização de desempenho em consultas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Índices aceleram buscas em colunas frequentemente consultadas (ex.: nomes, datas). Criados automaticamente em PKs, mas manuais em outras colunas, com custo em escrita.",
+          "code": "CREATE INDEX idx_nome ON usuarios(nome);\n-- Acelera busca por nome",
+          "interview_question": "Qual o impacto de índices no desempenho de INSERTs?"
+        }
+      ]
+    },
+    {
+      "subtitle": "ACID e BASE",
+      "description": "Propriedades de transações em bancos relacionais e NoSQL.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "ACID (Atomicidade, Consistência, Isolamento, Durabilidade) garante confiabilidade em bancos relacionais. BASE (Basically Available, Soft state, Eventual consistency) prioriza disponibilidade em NoSQL.",
+          "code": "BEGIN;\n-- Operações ACID\nCOMMIT;\n-- Exemplo NoSQL (BASE): Eventual consistency",
+          "interview_question": "Por que bancos NoSQL usam BASE em vez de ACID?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Bancos NoSQL",
+      "description": "Alternativas flexíveis a bancos relacionais.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "NoSQL usa formatos como documentos (MongoDB), key-value (Redis) ou grafos, sem esquema rígido. Ideal para escalabilidade horizontal e dados não estruturados.",
+          "code": "db.usuarios.insertOne({ \"nome\": \"João\", \"pedidos\": [\"p1\", \"p2\"] });\n-- Inserção em MongoDB",
+          "interview_question": "Quais são os principais tipos de bancos NoSQL?",
+          "references": ["https://www.mongodb.com/docs/manual/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "ORM (Object-Relational Mapping)",
+      "description": "Integração de bancos relacionais com Java.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "ORMs como Hibernate/JPA mapeiam objetos Java para tabelas relacionais, simplificando operações de banco com anotações como @Entity e @Id. Permitem persistência sem SQL manual.",
+          "code": "import jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class Usuario {\n  @Id\n  private Long id;\n  private String nome;\n\n  public Long getId() { return id; }\n  public void setId(Long id) { this.id = id; }\n  public String getNome() { return nome; }\n  public void setNome(String nome) { this.nome = nome; }\n}\n// Exemplo de uso\nEntityManager em = ...;\nem.persist(new Usuario(1L, \"João\"));",
+          "interview_question": "Como um ORM como JPA simplifica o acesso a bancos?",
+          "references": ["https://hibernate.org/orm/documentation/"]
+        }
+      ]
+    },
+    {
+      "subtitle": "Views e Stored Procedures",
+      "description": "Abstrações para consultas e lógica no banco.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Views são consultas salvas como tabelas virtuais, simplificando acesso a dados complexos. Stored Procedures encapsulam lógica no banco, melhorando desempenho e segurança.",
+          "code": "CREATE VIEW usuarios_ativos AS\nSELECT * FROM usuarios WHERE ativo = true;\n-- View para usuários ativos",
+          "interview_question": "Quando usar uma view em vez de uma consulta direta?"
+        }
+      ]
+    },
+    {
+      "subtitle": "SQL Injection e Segurança",
+      "description": "Boas práticas para proteger consultas.",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "SQL Injection ocorre quando entrada não validada é usada em consultas, permitindo ataques. Use prepared statements ou parâmetros para evitar vulnerabilidades.",
+          "code": "String sql = \"SELECT * FROM usuarios WHERE nome = ?\";\nPreparedStatement stmt = conn.prepareStatement(sql);\nstmt.setString(1, nome);\n// Evita SQL Injection",
+          "interview_question": "Como prevenir SQL Injection em aplicações Java?",
+          "references": ["https://owasp.org/www-community/attacks/SQL_Injection"]
+        }
+      ]
+    }
+  ]
+}
