@@ -2,6 +2,22 @@
   "title": "Testes em Java",
   "description": "Boas práticas de testes automatizados, com foco em JUnit 5 e Mockito para aplicações Java.",
   "version": "JUnit 5.10, Mockito 5.x",
+  "resumo": [
+    "O que são Testes Automatizados? Testes automatizados são como um assistente pessoal para seu código: eles executam verificações automáticas para garantir que tudo funciona como esperado, sem você precisar testar manualmente a cada mudança. Imagine que você desenvolveu um sistema de e-commerce e quer ter certeza de que o cálculo do frete está correto — com testes automatizados, você cria um programa que checa isso automaticamente, economizando tempo e reduzindo erros. Eles são essenciais em projetos ágeis porque entregas frequentes precisam de validação rápida, permitindo refatorações seguras e integração contínua.",
+    "Por que isso importa para um júnior? Esses testes aumentam a confiança no código e ajudam a identificar falhas antes que cheguem ao usuário. Por exemplo, se você altera uma função de soma, um teste automatizado pode alertar se algo quebrou. Ferramentas como JUnit 5 são o ponto de partida, com anotações como @Test para definir testes e assertions como assertEquals para comparar resultados.",
+    "O que são Testes Unitários? Testes unitários são como ensaios individuais para cada parte do seu código, focando em unidades isoladas, como um método ou classe. Pense em uma calculadora: você quer testar se a função soma(2, 2) retorna 4 sem se preocupar com o que acontece depois. Com JUnit 5, você usa @Test e anotações como @DisplayName para nomear testes de forma descritiva, como 'Testa soma de dois números'. Isso é ideal para júniores aprenderem lógica sem se perder em sistemas complexos.",
+    "Como isolamos dependências? Aqui entra o mocking. Imagine que sua calculadora depende de um serviço de preço que busca dados de um banco. Se o banco estiver fora do ar, seu teste falharia mesmo que a soma esteja certa. Mocking cria versões falsas (mocks) dessas dependências, simulando o comportamento esperado. Com Mockito, você usa @Mock para criar o mock, when() para definir retornos (ex.: retornar 10 para um preço) e verify() para checar se métodos foram chamados, isolando a lógica que você escreveu.",
+    "Por que Mockito facilita? Mockito simplifica o processo de criar mocks, economizando tempo ao evitar setups reais, como conectar a um banco. Por exemplo, se você testa um serviço de usuário que busca nomes, pode mockar o repositório para retornar 'João' e verificar se o serviço devolve isso corretamente. Isso torna os testes mais rápidos e confiáveis, um ponto forte para júniores que querem dominar unitários.",
+    "E os Testes de Integração? Enquanto unitários isolam, testes de integração verificam se partes do sistema funcionam juntas, como um serviço e um banco de dados. No Spring Boot, use @SpringBootTest para carregar o contexto e testar interações reais. Pense em um pedido de e-commerce: você quer garantir que o serviço salva no banco e retorna o ID. Esses testes são mais lentos, então use-os para cenários críticos, não para tudo.",
+    "Como testar APIs? Testes de API (end-to-end) simulam requisições HTTP, como um cliente acessando /api/pedidos. Com MockMvc ou TestRestTemplate no Spring Boot, você envia uma requisição GET, checa o status (ex.: 200) e o corpo (ex.: JSON com dados). É como simular um usuário comprando online, garantindo que a API responde corretamente, algo essencial para aplicações web.",
+    "O que é Cobertura de Testes? Cobertura mede o quanto seu código é testado, como o percentual de linhas executadas. Ferramentas como JaCoCo geram relatórios mostrando gaps — por exemplo, se uma condição if não foi testada. Alvo 70-80% como júnior, mas lembre-se: cobertura alta não significa testes bons se os cenários principais forem ignorados.",
+    "Quais são as Boas Práticas? O padrão AAA (Arrange, Act, Assert) organiza testes: prepare o cenário (ex.: criar uma calculadora), execute a ação (chame soma()) e verifique o resultado (assertEquals(4)). TDD (Test-Driven Development) vai além, escrevendo o teste antes do código — por exemplo, teste a soma antes de implementá-la —, guiando o design e reduzindo bugs.",
+    "Como TDD ajuda? TDD força você a pensar no que o código deve fazer antes de escrevê-lo, resultando em designs mais limpos e testáveis. Imagine um serviço de login: você escreve um teste para sucesso e falha, depois implementa. Isso é ótimo para júniores aprenderem a planejar e evitar dívidas técnicas.",
+    "O que são Testes Parametrizados? Testes parametrizados rodam o mesmo teste com entradas diferentes, usando @ParameterizedTest e @CsvSource. Por exemplo, teste soma com (2, 2, 4), (3, 3, 6) e (0, 5, 5) de uma vez, reduzindo repetição. Use isso quando uma função tem vários casos, como validações de entrada.",
+    "Dicas para Júniores. Comece com unitários simples, como testar uma classe Calc com JUnit. Adicione Mockito para mocks e pratique TDD em pequenos projetos. Em equipes, testes automatizados são sua contribuição para deploys seguros — mostre isso em entrevistas destacando cobertura e padrões como AAA.",
+    "Cenários Reais. Em um e-commerce, teste unitário verifica o cálculo de frete, mocking simula o preço do produto, integração checa o banco e API testa o checkout. Combine abordagens para cobrir desde lógica até o usuário final.",
+    "Cuidados. Testes não pegam todos os bugs, mas reduzem riscos. Inclua testes de erro com assertThrows e use @DisplayName para relatórios claros. Equilibre cobertura com qualidade, evitando testes frágeis que quebram por mudanças triviais."
+  ],
   "subsections": [
     {
       "subtitle": "O que são Testes Automatizados?",
@@ -9,7 +25,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Testes automatizados são programas que verificam o comportamento do código sem intervenção manual. Reduzem erros, aumentam a confiança e facilitam refatorações em projetos.",
+          "explanation": "Testes automatizados são essenciais em projetos ágeis porque permitem verificação rápida de mudanças, facilitando iterações frequentes e reduzindo riscos em deploys contínuos.",
           "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass ExemploTest {\n  @Test\n  void verificaCondicao() {\n    assertTrue(true); // Exemplo simples\n  }\n}",
           "interview_question": "Por que testes automatizados são essenciais em projetos ágeis?",
           "references": ["https://junit.org/junit5/docs/current/user-guide/"]
@@ -22,7 +38,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Testes unitários verificam métodos ou classes isoladamente, usando frameworks como JUnit 5. Geralmente testam lógica de negócios sem dependências externas.",
+          "explanation": "Testar uma unidade foca em métodos isolados, enquanto testar um sistema inteiro verifica interações entre componentes, sendo mais complexo e lento.",
           "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  @DisplayName(\"Testa soma de dois números\")\n  void testSoma() {\n    Calc calc = new Calc();\n    assertEquals(4, calc.soma(2, 2));\n  }\n}\nclass Calc {\n  int soma(int a, int b) { return a + b; }\n}",
           "interview_question": "Qual a diferença entre testar uma unidade e testar um sistema inteiro?",
           "references": ["https://junit.org/junit5/docs/current/user-guide/#writing-tests"]
@@ -48,7 +64,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Testes de integração verificam se módulos (ex.: serviço e banco) funcionam juntos. No Spring Boot, usam @SpringBootTest para carregar o contexto da aplicação.",
+          "explanation": "Use testes de integração quando precisa verificar interações reais entre componentes, como serviço e banco, enquanto testes unitários isolam unidades para velocidade e foco em lógica específica.",
           "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.beans.factory.annotation.Autowired;\n\n@SpringBootTest\nclass UserServiceTest {\n  @Autowired\n  private UserService service;\n  @Test\n  void testFindUser() {\n    // Testa integração com banco real\n    assertNotNull(service.findById(1L));\n  }\n}",
           "interview_question": "Quando usar testes de integração em vez de unitários?",
           "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
@@ -61,7 +77,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Testes de API verificam endpoints REST, simulando requisições HTTP. Usam ferramentas como TestRestTemplate ou MockMvc no Spring Boot para testar respostas.",
+          "explanation": "Para testar uma API REST de forma automatizada, use ferramentas como MockMvc ou TestRestTemplate no Spring Boot para simular requisições e verificar respostas, como status HTTP e JSON.",
           "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.boot.test.web.client.TestRestTemplate;\n\n@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)\nclass ApiTest {\n  @Autowired\n  private TestRestTemplate restTemplate;\n  @Test\n  void testGetUser() {\n    String response = restTemplate.getForObject(\"/api/users/1\", String.class);\n    assertTrue(response.contains(\"user\"));\n  }\n}",
           "interview_question": "Como testar uma API REST de forma automatizada?",
           "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
@@ -74,7 +90,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Cobertura mede a porcentagem do código testado (linhas, branches). Ferramentas como JaCoCo ajudam a identificar áreas não cobertas, mas cobertura alta não garante qualidade.",
+          "explanation": "Ter 80% de cobertura de testes significa que 80% do código é executado durante os testes, cobrindo linhas ou branches, mas não garante que os testes sejam eficazes ou cubram todos os cenários.",
           "code": "// Configuração no Maven (pom.xml)\n<plugin>\n  <groupId>org.jacoco</groupId>\n  <artifactId>jacoco-maven-plugin</artifactId>\n  <version>0.8.11</version>\n</plugin>",
           "interview_question": "O que significa ter 80% de cobertura de testes?",
           "references": ["https://www.jacoco.org/jacoco/trunk/doc/"]
@@ -87,7 +103,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "O padrão AAA (Arrange, Act, Assert) organiza testes em preparação, execução e verificação. TDD (Test-Driven Development) envolve escrever testes antes do código, garantindo design orientado a testes.",
+          "explanation": "TDD impacta o desenvolvimento ao escrever testes antes do código, guiando o design, reduzindo bugs e promovendo código testável e modular.",
           "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  void testSoma() {\n    // Arrange\n    Calc calc = new Calc();\n    // Act\n    int result = calc.soma(2, 3);\n    // Assert\n    assertEquals(5, result);\n  }\n}",
           "interview_question": "Como o TDD impacta o desenvolvimento de software?"
         }
@@ -99,7 +115,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Testes parametrizados (JUnit 5) permitem executar o mesmo teste com diferentes entradas, reduzindo duplicação de código e cobrindo mais casos.",
+          "explanation": "Use testes parametrizados quando precisa validar uma função com múltiplos inputs, em vez de testes individuais, reduzindo duplicação e cobrindo mais cenários com menos código.",
           "code": "import org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.CsvSource;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @ParameterizedTest\n  @CsvSource({\"2, 2, 4\", \"3, 3, 6\", \"0, 5, 5\"})\n  void testSoma(int a, int b, int expected) {\n    Calc calc = new Calc();\n    assertEquals(expected, calc.soma(a, b));\n  }\n}",
           "interview_question": "Quando usar testes parametrizados em vez de testes individuais?",
           "references": ["https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests"]

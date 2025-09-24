@@ -2,6 +2,23 @@
   "title": "Banco de Dados",
   "description": "Conceitos essenciais para trabalhar com bancos relacionais e NoSQL, atualizados para práticas modernas.",
   "version": "SQL ANSI, MongoDB 7.0",
+  "resumo": [
+    "Bancos de dados são a espinha dorsal de aplicações, armazenando dados como usuários, pedidos ou transações de forma estruturada e acessível, sendo indispensáveis para desenvolvedores backend. Pense neles como um arquivo organizado que mantém tudo no lugar para sistemas como e-commerce ou redes sociais.",
+    "O modelo relacional organiza informações em tabelas, como gavetas de um armário, com colunas e linhas, usando chaves primárias para identificar registros únicos e chaves estrangeiras para conectar tabelas, como clientes e seus pedidos em um sistema de vendas.",
+    "SQL é a linguagem que abre as portas desse armário: permite criar tabelas, inserir dados, consultar com SELECT e atualizar com UPDATE, sendo uma habilidade básica que todo júnior deve dominar para manipular bancos como MySQL ou PostgreSQL.",
+    "Normalização é como arrumar o armário para evitar bagunça: divide dados em tabelas separadas, seguindo formas como 1NF (atomicidade), 2NF (dependência total) e 3NF (sem transitividade), garantindo consistência e reduzindo redundâncias em projetos reais.",
+    "Transações são como uma corrente forte: garantem que operações complexas, como transferências bancárias, sejam atômicas, seguindo as propriedades ACID (Atomicidade, Consistência, Isolamento, Durabilidade) para evitar erros ou perdas de dados.",
+    "Joins são as pontes entre as gavetas: combinam dados de múltiplas tabelas, como INNER JOIN para matches diretos e LEFT JOIN para incluir tudo da esquerda, sendo essenciais para gerar relatórios ou análises em sistemas como um painel de vendas.",
+    "Índices são como guias rápidos no armário: otimizam consultas em colunas frequentemente pesquisadas, acelerando buscas, mas podem desacelerar inserções, exigindo equilíbrio ao projetar um banco para performance em aplicações dinâmicas.",
+    "Bancos NoSQL, como MongoDB ou Redis, são como caixas flexíveis: oferecem estrutura para dados não estruturados ou escalabilidade horizontal, ideais para aplicações dinâmicas como redes sociais ou big data, onde a rigidez relacional não se aplica.",
+    "ORMs como JPA/Hibernate são tradutores automáticos: mapeiam objetos Java para tabelas com anotações como @Entity, simplificando o acesso a dados e reduzindo a necessidade de SQL manual, uma ponte prática para júniores integrando código e banco.",
+    "Segurança é o cadeado do armário: SQL Injection pode comprometer sistemas se entradas não forem validadas, e o uso de prepared statements é uma prática essencial para proteger aplicações contra ataques maliciosos.",
+    "Como júnior, pratique SQL básico (SELECT, JOIN) e explore ferramentas como MySQL ou MongoDB com exemplos simples, como um cadastro de usuários, além de estudar integração com Java usando Spring Data para projetos reais.",
+    "Em cenários reais, use transações para transferências bancárias, índices para buscas rápidas em logs, e NoSQL para dados variados como perfis de redes sociais. Esses conceitos garantem eficiência e escalabilidade em qualquer sistema.",
+    "Cuidado com o excesso de índices, que podem sobrecarregar inserções, e valide sempre entradas para evitar SQL Injection. Teste consultas em ambientes isolados antes de aplicar em produção, especialmente em bancos críticos.",
+    "Combine bancos relacionais e NoSQL conforme a necessidade: use SQL para dados estruturados como inventário e MongoDB para logs flexíveis. Em entrevistas, destaque como transações e normalização garantem consistência e performance.",
+    "Dominar esses conceitos prepara para desafios de backend, focando em consistência, performance e segurança, que são prioridades em qualquer ambiente de desenvolvimento, desde startups até grandes corporações."
+  ],
   "subsections": [
     {
       "subtitle": "Modelo Relacional e SQL",
@@ -9,7 +26,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "O modelo relacional organiza dados em tabelas com linhas e colunas, conectadas por chaves. SQL é usado para consultas (SELECT), manipulação (INSERT, UPDATE, DELETE) e definição de esquemas (CREATE, ALTER).",
+          "explanation": "O modelo relacional organiza dados em tabelas com linhas e colunas, conectadas por chaves, enquanto SQL manipula esses dados com comandos como SELECT para consultas e INSERT para inserções, sendo a base de sistemas relacionais.",
           "code": "SELECT nome, idade FROM usuarios WHERE idade > 18;\n-- Filtra usuários maiores de 18 anos",
           "interview_question": "Como o modelo relacional organiza dados e qual o papel do SQL?",
           "references": ["https://www.postgresql.org/docs/current/sql.html"]
@@ -22,7 +39,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Chave primária (PK) identifica unicamente cada registro. Chave estrangeira (FK) estabelece relação entre tabelas, garantindo integridade referencial.",
+          "explanation": "Chaves estrangeiras garantem integridade ao vincular registros entre tabelas, como um pedido a um usuário, prevenindo inconsistências com restrições referenciais em sistemas como e-commerce.",
           "code": "CREATE TABLE Pedido (\n  id SERIAL PRIMARY KEY,\n  usuario_id INT REFERENCES Usuario(id)\n  -- FK referencia tabela Usuario\n);",
           "interview_question": "Por que chaves estrangeiras são importantes para integridade?"
         }
@@ -34,7 +51,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Normalização organiza dados em tabelas separadas para eliminar redundância e inconsistências. As formas normais (1NF, 2NF, 3NF) guiam esse processo.",
+          "explanation": "A terceira forma normal (3NF) elimina dependências transitivas, separando dados como endereços de usuários, reduzindo redundância e inconsistências, embora possa exigir joins mais complexos.",
           "code": "CREATE TABLE Endereco (\n  id SERIAL PRIMARY KEY,\n  usuario_id INT REFERENCES Usuario(id),\n  rua VARCHAR(100)\n  -- Separa endereços para evitar redundância\n);",
           "interview_question": "O que é a terceira forma normal (3NF) e por que aplicá-la?"
         }
@@ -46,7 +63,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Transações garantem que um conjunto de operações seja executado atomicamente (COMMIT para sucesso, ROLLBACK para falha). Seguem propriedades ACID para consistência.",
+          "explanation": "Transações evitam inconsistências em transferências bancárias garantindo que todas as operações (ex.: debitar e creditar) sejam concluídas ou revertidas com COMMIT/ROLLBACK, seguindo ACID.",
           "code": "BEGIN;\nINSERT INTO conta (id, saldo) VALUES (1, 100);\nUPDATE conta SET saldo = saldo - 50 WHERE id = 1;\nCOMMIT;\n-- Garante atomicidade",
           "interview_question": "Como transações evitam inconsistências em transferências bancárias?"
         }
@@ -58,7 +75,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Joins unem tabelas por chaves relacionadas. INNER JOIN retorna apenas correspondências; LEFT JOIN inclui todos os registros da tabela à esquerda; RIGHT e FULL JOIN têm usos específicos.",
+          "explanation": "INNER JOIN retorna apenas registros com matches, enquanto LEFT JOIN inclui todos da tabela à esquerda, com nulls na direita, sendo útil para relatórios que precisam de dados opcionais.",
           "code": "SELECT u.nome, p.produto\nFROM usuarios u\nINNER JOIN pedidos p ON u.id = p.usuario_id;\n-- Retorna usuários com pedidos",
           "interview_question": "Qual a diferença entre INNER JOIN e LEFT JOIN?"
         }
@@ -70,7 +87,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Índices aceleram buscas em colunas frequentemente consultadas (ex.: nomes, datas). Criados automaticamente em PKs, mas manuais em outras colunas, com custo em escrita.",
+          "explanation": "Índices aceleram SELECTs em colunas indexadas, mas desaceleram INSERTs ao atualizar estruturas, exigindo um equilíbrio entre performance de leitura e escrita em bancos ativos.",
           "code": "CREATE INDEX idx_nome ON usuarios(nome);\n-- Acelera busca por nome",
           "interview_question": "Qual o impacto de índices no desempenho de INSERTs?"
         }
@@ -82,7 +99,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "ACID (Atomicidade, Consistência, Isolamento, Durabilidade) garante confiabilidade em bancos relacionais. BASE (Basically Available, Soft state, Eventual consistency) prioriza disponibilidade em NoSQL.",
+          "explanation": "ACID garante transações rigorosas em relacionais, enquanto BASE prioriza disponibilidade e consistência eventual em NoSQL, sendo uma escolha para escalabilidade em cenários como redes sociais.",
           "code": "BEGIN;\n-- Operações ACID\nCOMMIT;\n-- Exemplo NoSQL (BASE): Eventual consistency",
           "interview_question": "Por que bancos NoSQL usam BASE em vez de ACID?"
         }
@@ -94,7 +111,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "NoSQL usa formatos como documentos (MongoDB), key-value (Redis) ou grafos, sem esquema rígido. Ideal para escalabilidade horizontal e dados não estruturados.",
+          "explanation": "Tipos de NoSQL incluem documentos (MongoDB), key-value (Redis), colunas (Cassandra) e grafos (Neo4j), cada um otimizado para dados variados, como perfis em redes sociais ou relações complexas.",
           "code": "db.usuarios.insertOne({ \"nome\": \"João\", \"pedidos\": [\"p1\", \"p2\"] });\n-- Inserção em MongoDB",
           "interview_question": "Quais são os principais tipos de bancos NoSQL?",
           "references": ["https://www.mongodb.com/docs/manual/"]
@@ -107,7 +124,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "ORMs como Hibernate/JPA mapeiam objetos Java para tabelas relacionais, simplificando operações de banco com anotações como @Entity e @Id. Permitem persistência sem SQL manual.",
+          "explanation": "ORM como JPA mapeia objetos Java para tabelas, permitindo operações como persist() sem SQL manual, reduzindo boilerplate e facilitando integração com Spring Data em projetos Java.",
           "code": "import jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class Usuario {\n  @Id\n  private Long id;\n  private String nome;\n\n  public Long getId() { return id; }\n  public void setId(Long id) { this.id = id; }\n  public String getNome() { return nome; }\n  public void setNome(String nome) { this.nome = nome; }\n}\n// Exemplo de uso\nEntityManager em = ...;\nem.persist(new Usuario(1L, \"João\"));",
           "interview_question": "Como um ORM como JPA simplifica o acesso a bancos?",
           "references": ["https://hibernate.org/orm/documentation/"]
@@ -120,7 +137,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Views são consultas salvas como tabelas virtuais, simplificando acesso a dados complexos. Stored Procedures encapsulam lógica no banco, melhorando desempenho e segurança.",
+          "explanation": "Views simplificam consultas complexas como tabelas virtuais, melhorando legibilidade e segurança, enquanto stored procedures centralizam lógica no banco, reduzindo tráfego de rede.",
           "code": "CREATE VIEW usuarios_ativos AS\nSELECT * FROM usuarios WHERE ativo = true;\n-- View para usuários ativos",
           "interview_question": "Quando usar uma view em vez de uma consulta direta?"
         }
@@ -132,7 +149,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "SQL Injection ocorre quando entrada não validada é usada em consultas, permitindo ataques. Use prepared statements ou parâmetros para evitar vulnerabilidades.",
+          "explanation": "Previna SQL Injection com prepared statements, que separam SQL de parâmetros, evitando que entradas maliciosas alterem consultas e protegendo sistemas como e-commerce.",
           "code": "String sql = \"SELECT * FROM usuarios WHERE nome = ?\";\nPreparedStatement stmt = conn.prepareStatement(sql);\nstmt.setString(1, nome);\n// Evita SQL Injection",
           "interview_question": "Como prevenir SQL Injection em aplicações Java?",
           "references": ["https://owasp.org/www-community/attacks/SQL_Injection"]

@@ -45,6 +45,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <h2 class="card-title text-white border-bottom border-primary pb-2">${data.title}</h2>
                     <p class="card-text text-white">${data.description}</p>
                     ${data.version ? `<p class="text-muted small">Versão: ${data.version}</p>` : ''}
+                    ${data.resumo ? `
+                        <div class="resumo mb-4 p-3 rounded bg-secondary">
+                            ${data.resumo.map(paragrafo => `<p class="text-light">${paragrafo}</p>`).join('')}
+                        </div>
+                    ` : ''}
                     <div class="accordion" id="topicAccordion">
                         ${data.subsections.map((subsection, index) => `
                             <div class="accordion-item bg-dark border-0 section">
@@ -127,4 +132,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Back-to-top button (removido como solicitado)
+// Back-to-top button
+function topFunction() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Show/hide back-to-top button
+window.onscroll = function () {
+    const topBtn = document.getElementById('topBtn');
+    if (document.body.scrollTop > 100 || document.documentElement.scrollTop > 100) {
+        topBtn.style.display = 'block';
+    } else {
+        topBtn.style.display = 'none';
+    }
+};
