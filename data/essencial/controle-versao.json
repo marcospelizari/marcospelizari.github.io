@@ -2,6 +2,28 @@
   "title": "Controle de Versão (Git)",
   "description": "Conceitos básicos de versionamento com Git para entrevistas, atualizados para práticas modernas (Git 2.43).",
   "version": "Git 2.43",
+  "resumo": [
+    "Git é como um diário detalhado para o seu código: um sistema de controle de versão distribuído que rastreia cada mudança, permitindo colaboração entre desenvolvedores e recuperação de versões antigas. Imagine que você está construindo um site e quer salvar cada etapa — o Git guarda tudo, facilitando trabalho em equipe e correções.",
+    "Diferente de sistemas centralizados, cada desenvolvedor tem uma cópia completa do repositório local com Git. Isso é como ter um backup pessoal: você pode trabalhar offline, testar mudanças e sincronizar depois, uma vantagem enorme em projetos como e-commerce com equipes globais.",
+    "O comando 'git init' cria um novo repositório local, como abrir um caderno novo, enquanto 'git clone' copia um repositório remoto para seu computador, preparando você para editar um projeto existente, como um app de vendas.",
+    "Tudo começa com 'git add', que adiciona arquivos modificados ao staging area — pense nisso como marcar páginas para revisão. Depois, 'git commit' salva essas mudanças no histórico com uma mensagem, como 'feat: add login', registrando seu progresso.",
+    "'Git push' envia seus commits para o repositório remoto, compartilhando com a equipe, enquanto 'git pull' traz mudanças de outros, sincronizando o código. É como enviar e receber atualizações de um documento colaborativo.",
+    "Branches são como ramificações de uma árvore: criam linhas paralelas no histórico para desenvolver features ou corrigir bugs sem mexer no código principal. Use 'git switch -c nova-feature' para criar e alternar, ideal para uma nova página de cadastro.",
+    "Merge junta mudanças de uma branch em outra, criando um commit de junção que mostra o histórico paralelo — perfeito para combinar um recurso de login com o main. É como fundir duas versões de um relatório.",
+    "Rebase reescreve o histórico para ficar linear, movendo commits de uma branch sobre outra, como reescrever um capítulo para fluir melhor. É mais limpo, mas cuidado em equipes, pois pode conflitar com trabalho compartilhado.",
+    "'Git fetch' baixa mudanças remotas sem mesclá-las, como espiar atualizações antes de decidir — útil para revisar. Já 'git pull' faz fetch e merge de uma vez, ótimo para sincronizar rápido, como atualizar um projeto antes de começar.",
+    "O arquivo .gitignore é como uma lista de itens a ignorar na mala: define padrões, como '*.log' ou 'node_modules/', para evitar que arquivos temporários ou secretos entrem no repositório, mantendo-o limpo e seguro.",
+    "'Git status' mostra o estado dos arquivos, como uma checklist, e 'git diff' exibe diferenças linha a linha, ajudando a checar ajustes antes de commitar — essencial para evitar erros em um sistema de pedidos.",
+    "'Git revert' cria um novo commit que anula um anterior, preservando o histórico, como apagar um erro e registrar a correção. É seguro para repositórios compartilhados, como desfazer um bug em produção.",
+    "'Git reset' move o ponteiro HEAD para desfazer commits localmente: --soft mantém mudanças para reuso, enquanto --hard apaga tudo, resetando como se nunca tivesse acontecido — use com cuidado em projetos locais.",
+    "'Git stash' salva mudanças temporárias em uma pilha, como guardar anotações antes de mudar de tarefa. É útil para pausar um ajuste de layout e voltar ao main para uma correção urgente, recuperando depois com 'git stash pop'.",
+    "'Git log' exibe o histórico de commits, com --oneline para um resumo, e 'git blame' mostra quem alterou cada linha, como um detetive rastreando erros em um arquivo de configuração.",
+    "Pull Requests (PRs) são como propostas de revisão em plataformas como GitHub: você envia uma branch, a equipe discute e aprova antes da merge, garantindo qualidade, como revisar um novo recurso de checkout.",
+    "Use mensagens claras no estilo Conventional Commits ('feat: add user page'), crie branches por feature e revise PRs com colegas. Isso mantém o projeto organizado e alinhado, essencial para júniores em equipes.",
+    "Em um e-commerce, branches isolam uma nova página de pagamento, merge integra ao main, e PRs garantem revisão. Git rastreia quem adicionou o botão de compra e quando, facilitando colaboração.",
+    "Comece com um repositório simples, pratique clone, commit e push, e simule branches para features. Em entrevistas, explique fluxos como merge e resolução de conflitos para mostrar domínio.",
+    "Evite rebase em branches compartilhadas e use .gitignore para proteger dados sensíveis. Teste comandos como reset em repositórios locais antes de aplicar em projetos reais."
+  ],
   "subsections": [
     {
       "subtitle": "O que é Git?",
@@ -9,7 +31,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Git é um sistema de controle de versão distribuído que rastreia mudanças no código, permitindo colaboração, histórico detalhado e reversão de alterações. É amplamente usado para gerenciar projetos de software.",
+          "explanation": "Git é essencial para equipes porque rastreia mudanças, permite colaboração paralela e suporta recuperação de versões, centralizando o controle de código em projetos distribuídos.",
           "code": "git init   # Inicia um novo repositório\ngit status # Mostra o estado atual dos arquivos",
           "interview_question": "Por que o Git é essencial para equipes de desenvolvimento?",
           "references": ["https://git-scm.com/doc"]
@@ -22,7 +44,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Clone copia um repositório remoto para o local. Commit registra mudanças no histórico local com uma mensagem descritiva. Push envia os commits para o repositório remoto.",
+          "explanation": "Sem commitar, um push não envia nada ao remoto, pois só transfere commits. Você verá uma mensagem de branch atualizado, sem alterações enviadas, indicando que o staging area está vazio.",
           "code": "git clone <url>              # Clona repositório\ngit add .                   # Adiciona todos os arquivos modificados\ngit commit -m \"feat: add login\" # Commit com mensagem padronizada\ngit push origin main        # Envia para o remoto",
           "interview_question": "O que acontece quando você faz um push sem commitar mudanças?"
         }
@@ -34,7 +56,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Branches isolam mudanças (ex.: novas features). Merge combina essas mudanças na branch principal. Use git switch para criar e alternar branches de forma moderna.",
+          "explanation": "Resolva conflitos editando os arquivos (marcados com <<<<<<< e >>>>>>>), escolhendo ou combinando mudanças. Use 'git add' nos resolvidos e 'git commit' para finalizar, integrando o trabalho de forma segura.",
           "code": "git switch -c nova-feature # Cria e alterna para nova branch\ngit add .                 # Adiciona mudanças\ngit commit -m \"nova funcionalidade\"\ngit switch main           # Volta para main\ngit merge nova-feature    # Integra mudanças",
           "interview_question": "Como resolver conflitos de merge em um projeto?",
           "references": ["https://git-scm.com/docs/git-merge"]
@@ -47,7 +69,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Merge cria um commit de junção, preservando o histórico de ambas as branches. Rebase reescreve o histórico para uma linha linear, mas pode ser arriscado em branches compartilhadas.",
+          "explanation": "Rebase causa problemas em equipes ao reescrever o histórico, criando novos commits que podem conflitar com mudanças remotas, gerando confusão ou perda de trabalho se não for coordenado.",
           "code": "git switch feature         # Alterna para branch feature\ngit merge main            # Mescla main em feature\ngit rebase main           # Rebase feature sobre main",
           "interview_question": "Por que rebase pode causar problemas em equipes?"
         }
@@ -59,7 +81,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Fetch baixa mudanças remotas sem integrá-las, permitindo revisão. Pull combina fetch e merge para sincronizar rapidamente. Use pull com --rebase para linearidade.",
+          "explanation": "Use 'git fetch' para revisar mudanças remotas antes de integrá-las, evitando merges automáticos. Use 'git pull' para sincronizar rápido, confiando que as mudanças podem ser mescladas sem conflitos.",
           "code": "git fetch origin          # Baixa mudanças sem mesclar\ngit pull origin main      # Baixa e mescla mudanças",
           "interview_question": "Quando usar git fetch em vez de git pull?"
         }
@@ -71,7 +93,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "O .gitignore especifica arquivos ou pastas a serem ignorados (ex.: logs, binários, credenciais). Mantém o repositório limpo e evita commits indesejados.",
+          "explanation": "Se um arquivo rastreado for adicionado ao .gitignore, ele continua monitorado. Use 'git rm --cached <arquivo>' para removê-lo do rastreamento antes de ignorá-lo, garantindo exclusão do repositório.",
           "code": "*.log\nnode_modules/\n.env\n# Adiciona ao .gitignore\ngit add .gitignore\ngit commit -m \"add .gitignore\"",
           "interview_question": "O que acontece se um arquivo já rastreado for adicionado ao .gitignore?"
         }
@@ -83,7 +105,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Git status verifica o estado dos arquivos. Git diff mostra diferenças detalhadas. Git restore (Git 2.23+) reverte mudanças não commitadas em arquivos específicos.",
+          "explanation": "Use 'git diff' para comparar mudanças no staging area ou entre commits e o working directory, revisando com 'git diff' ou 'git diff --staged' antes de commitar, garantindo ajustes precisos.",
           "code": "git status                # Mostra estado dos arquivos\ngit diff arquivo.java     # Mostra mudanças no arquivo\ngit restore arquivo.java  # Reverte mudanças não commitadas",
           "interview_question": "Como usar git diff para revisar mudanças antes de um commit?"
         }
@@ -95,7 +117,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Revert cria um commit que anula outro, ideal para repositórios compartilhados. Reset (ex.: --soft ou --hard) altera o histórico local, útil para ajustes antes de push.",
+          "explanation": "'Git reset --soft' desfaz o commit mantendo mudanças no staging, para reuso. 'Git reset --hard' remove commit e mudanças, resetando completamente — escolha com base no que quer preservar.",
           "code": "git revert HEAD           # Cria commit que anula o último\ngit reset --soft HEAD~1   # Volta um commit, mantendo mudanças",
           "interview_question": "Qual a diferença entre git reset --soft e --hard?"
         }
@@ -107,7 +129,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Stash salva mudanças não commitadas em uma pilha temporária, permitindo alternar branches sem perder trabalho. Use pop ou apply para recuperar as mudanças.",
+          "explanation": "'Git stash' salva mudanças não commitadas, permitindo alternar branches para tarefas urgentes e recuperar com 'git stash pop', ideal para fluxos dinâmicos como corrigir bugs em paralelo.",
           "code": "git stash                 # Salva mudanças temporariamente\ngit switch main           # Alterna para main\ngit stash pop             # Recupera mudanças salvas",
           "interview_question": "Como git stash ajuda em fluxos de trabalho dinâmicos?",
           "references": ["https://git-scm.com/docs/git-stash"]
@@ -120,7 +142,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Git log mostra o histórico de commits com detalhes como autor e mensagem. Git blame identifica quem alterou cada linha de um arquivo, útil para auditoria.",
+          "explanation": "Use 'git blame arquivo.java' para rastrear bugs, mostrando quem alterou cada linha com data e commit, ajudando a identificar a origem de um erro em um arquivo de código.",
           "code": "git log --oneline         # Mostra histórico resumido\ngit blame arquivo.java    # Mostra autoria por linha",
           "interview_question": "Como usar git blame para investigar bugs?"
         }
@@ -132,7 +154,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Pull Requests (PRs) propõem mudanças de uma branch para outra, permitindo revisão e aprovação por pares. São centrais em fluxos colaborativos em plataformas como GitHub ou GitLab.",
+          "explanation": "Pull Requests são importantes porque permitem revisão de código, discussões e aprovações antes da integração, garantindo qualidade e alinhamento em projetos colaborativos como um app de equipe.",
           "code": "git push origin feature   # Envia branch para remoto\n# Cria PR na plataforma (ex.: GitHub)\ngit pull origin main      # Sincroniza após aprovação",
           "interview_question": "Qual a importância de pull requests em projetos colaborativos?",
           "references": ["https://docs.github.com/en/pull-requests"]
