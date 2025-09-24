@@ -2,6 +2,23 @@
   "title": "Orientação a Objetos",
   "description": "Princípios e práticas de POO em Java, atualizados para Java 21 (LTS).",
   "version": "Java 21",
+  "resumo": [
+    "Programação Orientada a Objetos (POO) organiza o código como peças de um quebra-cabeça: combina dados (atributos) e ações (métodos) em objetos para modelar o mundo real, facilitando desenvolvimento em Java. É amplamente usada porque promove reutilização, manutenção e modularidade, ideal para sistemas complexos como um banco de dados de clientes.",
+    "Os pilares da POO — encapsulamento, herança, polimorfismo e abstração — formam a base de um design robusto. Encapsulamento protege dados com acesso controlado, como um cofre, enquanto herança é como uma árvore genealógica, permitindo que classes filhas herdem de pais, mas com cuidado para evitar hierarquias profundas.",
+    "Polimorfismo trata objetos de tipos diferentes como iguais, como uma lista de 'Animal' com 'Cachorro' e 'Gato', oferecendo flexibilidade para adicionar novos tipos sem mudar o código existente. Abstração simplifica o complexo, focando no essencial com classes abstratas ou interfaces, como definir um contrato para um serviço sem detalhes.",
+    "Construtores são como guias de montagem: inicializam objetos com valores iniciais, com um padrão sem parâmetros criado automaticamente se não definido. Getters e setters controlam acesso a atributos privados, permitindo validação — por exemplo, checar se uma idade é positiva antes de salvar.",
+    "Classes abstratas são como blueprints parciais: permitem métodos implementados e abstratos para herança única, enquanto interfaces definem contratos com múltipla implementação. Default methods (Java 8+) adicionam comportamento às interfaces sem quebrar código, como um método extra para desenhar formas.",
+    "Overloading cria métodos com o mesmo nome mas parâmetros diferentes, como 'soma(int a, int b)' e 'soma(double a, double b)', enquanto overriding redefine métodos herdados, como um 'Cachorro' sobrescrevendo o som de 'Animal'. 'This' diferencia atributos de parâmetros, e 'super' chama a superclasse, como um link na árvore genealógica.",
+    "Composição modela relações 'tem um', como um 'Carro' com 'Motor', oferecendo mais flexibilidade que herança ('é um') ao evitar acoplamento rígido. Imutabilidade impede mudanças após criação, melhorando segurança em concorrência, e records (Java 16+) simplificam isso com getters automáticos.",
+    "Sealed classes (Java 17) são como clubes exclusivos: restringem herança a classes específicas, como 'Forma' permitindo apenas 'Circulo' e 'Quadrado', ajudando a modelar domínios controlados, como tipos de transações em um banco.",
+    "Pattern matching (Java 16+) é como um atalho inteligente: combina verificação de tipo (instanceof) com declaração de variável em uma linha, reduzindo boilerplate como casts explícitos, tornando o código mais limpo para manipular objetos diversos.",
+    "POO em Java segue boas práticas como os princípios SOLID — Single Responsibility, Open-Closed, e outros — que criam código escalável. Para júniores, dominar POO é essencial em entrevistas, especialmente para frameworks como Spring, onde objetos modelam entidades e serviços.",
+    "Pratique criando classes simples, como uma 'Pessoa' com nome, idade e métodos get/set, para internalizar conceitos. Experimente herança com 'Animal' e 'Cachorro' para entender polimorfismo antes de avançar.",
+    "Em cenários reais, use composição para um sistema de pedidos com 'Item' e 'Carrinho', ou sealed classes para tipos de pagamento (cartão, boleto). POO ajuda a organizar lógica complexa em módulos reutilizáveis.",
+    "Cuidado com herança profunda, que pode levar a acoplamento excessivo e dificultar manutenção. Prefira composição quando possível, e use imutabilidade em dados sensíveis, como senhas, para evitar alterações acidentais.",
+    "Combine POO com programação funcional (lambdas, streams) para código moderno. Por exemplo, use uma lista de 'Pessoa' com Stream API para filtrar maiores de idade, integrando abordagens para eficiência.",
+    "Em entrevistas, destaque encapsulamento com getters/setters e explique como polimorfismo facilita extensões. Mostre entendimento prático com exemplos, como uma hierarquia de formas geométricas."
+  ],
   "subsections": [
     {
       "subtitle": "O que é Programação Orientada a Objetos (POO)?",
@@ -9,7 +26,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "POO organiza código em objetos que combinam dados (atributos) e comportamentos (métodos), modelando entidades do mundo real. Facilita reutilização, manutenção e modularidade.",
+          "explanation": "POO é amplamente usada em Java porque organiza o código em objetos que combinam dados e comportamento, facilitando reutilização, manutenção e modelagem de problemas reais como sistemas de gestão.",
           "code": "class Carro {\n  String modelo;\n  void acelerar() { System.out.println(\"Vruum!\"); }\n}",
           "interview_question": "Por que a POO é amplamente usada em linguagens como Java?",
           "references": ["https://docs.oracle.com/en/java/javase/21/docs/"]
@@ -22,7 +39,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Encapsulamento protege dados com acesso controlado. Herança promove reutilização e especialização. Polimorfismo permite tratar objetos de forma uniforme. Abstração simplifica complexidade, focando no essencial.",
+          "explanation": "Os pilares da POO ajudam na manutenção ao promover encapsulamento (proteção de dados), herança (reutilização), polimorfismo (flexibilidade) e abstração (simplificação), tornando o sistema mais modular e fácil de alterar.",
           "code": "class Animal {\n  void som() {}\n}\nclass Cachorro extends Animal {\n  @Override void som() { System.out.println(\"Au\"); }\n}",
           "interview_question": "Como os pilares da POO ajudam na manutenção de código?"
         }
@@ -34,7 +51,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Construtores inicializam objetos, definindo valores iniciais para atributos. Podem ser sobrecarregados para diferentes cenários, com o default (sem parâmetros) sendo opcional.",
+          "explanation": "Se nenhum construtor for definido, Java cria um padrão sem parâmetros que inicializa atributos com valores default (ex.: 0 para int). Construtores personalizados garantem valores iniciais obrigatórios, como modelo de carro.",
           "code": "class Carro {\n  String modelo;\n  Carro(String modelo) { this.modelo = modelo; }\n  Carro() { this.modelo = \"Default\"; }\n}",
           "interview_question": "O que acontece se um construtor não for definido em uma classe?"
         }
@@ -46,7 +63,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Getters acessam atributos privados de forma controlada. Setters validam e atualizam valores, garantindo encapsulamento e integridade dos dados.",
+          "explanation": "Getters e setters são preferidos porque permitem validação (ex.: idade > 0), controle de acesso e encapsulamento, escondendo a implementação interna e protegendo dados sensíveis.",
           "code": "class Pessoa {\n  private int idade;\n  public int getIdade() { return idade; }\n  public void setIdade(int idade) { if (idade > 0) this.idade = idade; }\n}",
           "interview_question": "Por que getters e setters são preferidos a atributos públicos?"
         }
@@ -58,7 +75,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Classes abstratas permitem métodos implementados e abstratos, com herança única. Interfaces definem contratos, suportando múltipla implementação e default methods (Java 8+).",
+          "explanation": "Default methods (Java 8+) em interfaces adicionam comportamento sem quebrar classes existentes, reduzindo a necessidade de classes abstratas para implementação parcial, como um método padrão para desenhar.",
           "code": "abstract class Forma {\n  abstract double area();\n}\ninterface Desenhavel {\n  default void desenhar() { System.out.println(\"Desenhando\"); }\n}",
           "interview_question": "Como default methods em interfaces mudam o uso de classes abstratas?",
           "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Interface.html"]
@@ -71,7 +88,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Overloading cria métodos com mesmo nome, mas assinaturas diferentes na mesma classe. Overriding redefine métodos herdados em subclasses, usando @Override para clareza.",
+          "explanation": "O compilador diferencia métodos sobrecarregados pela assinatura (número/tipo de parâmetros), permitindo múltiplas versões na mesma classe, como 'soma(int)' e 'soma(double)'.",
           "code": "class Calc {\n  int soma(int a, int b) { return a + b; }\n  double soma(double a, double b) { return a + b; }\n}\nclass Filho extends Calc {\n  @Override int soma(int a, int b) { return a + b + 1; }\n}",
           "interview_question": "Como o compilador diferencia métodos sobrecarregados?"
         }
@@ -83,7 +100,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "This acessa atributos e métodos da instância atual, evitando conflitos com parâmetros. Super chama construtores ou métodos da superclasse, útil em herança.",
+          "explanation": "Use 'super()' no construtor da subclasse para chamar o construtor da superclasse, inicializando atributos herdados corretamente, como garantir que um 'Filho' herde dados de 'Pai'.",
           "code": "class Pai {\n  void metodo() { System.out.println(\"Pai\"); }\n}\nclass Filho extends Pai {\n  int id;\n  Filho(int id) { super(); this.id = id; }\n  @Override void metodo() { super.metodo(); }\n}",
           "interview_question": "Como usar super para chamar um construtor da superclasse?"
         }
@@ -95,7 +112,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Herança ('é um') é ideal para hierarquias claras, mas pode levar a acoplamento. Composição ('tem um') usa objetos internos, oferecendo flexibilidade e reutilização.",
+          "explanation": "Composição é mais flexível que herança porque permite trocar componentes (ex.: trocar Motor) sem alterar a classe, evitando acoplamento rígido e problemas de herança profunda.",
           "code": "class Motor {\n  void ligar() { System.out.println(\"Ligado\"); }\n}\nclass Carro {\n  Motor motor = new Motor();\n  void iniciar() { motor.ligar(); }\n}",
           "interview_question": "Por que composição é considerada mais flexível que herança?"
         }
@@ -107,7 +124,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Imutabilidade impede alterações após criação, garantindo segurança em concorrência. Records (Java 16+) simplificam classes imutáveis com construtores, getters e métodos toString/equals automáticos.",
+          "explanation": "Records simplificam classes imutáveis gerando automaticamente construtores, getters, equals() e toString(), reduzindo boilerplate em comparação com classes tradicionais, como uma classe 'Usuario'.",
           "code": "public record Usuario(String nome, int idade) {\n  public Usuario {\n    if (idade < 0) throw new IllegalArgumentException(\"Idade inválida\");\n  }\n}",
           "interview_question": "Como records simplificam a criação de classes imutáveis?",
           "references": ["https://openjdk.java.net/jeps/395"]
@@ -120,7 +137,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Sealed classes (Java 17) restringem quais classes podem estendê-las, garantindo modelagem precisa de hierarquias. Usam 'sealed' e 'permits' para limitar subclasses.",
+          "explanation": "Sealed classes ajudam na modelagem de domínios ao restringir herança a classes específicas (ex.: 'Circulo', 'Quadrado'), prevenindo extensões inesperadas e controlando hierarquias.",
           "code": "sealed interface Forma permits Circulo, Quadrado {\n  double area();\n}\nfinal class Circulo implements Forma {\n  double raio;\n  public double area() { return Math.PI * raio * raio; }\n}",
           "interview_question": "Como sealed classes ajudam na modelagem de domínios?",
           "references": ["https://openjdk.java.net/jeps/409"]
@@ -133,7 +150,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Pattern matching (Java 16+) simplifica instanceof com vinculação automática de variáveis, reduzindo código boilerplate em verificações de tipo.",
+          "explanation": "Pattern matching melhora a legibilidade combinando instanceof com declaração de variável em uma linha, reduzindo boilerplate como casts explícitos, facilitando manipulação de objetos diversos.",
           "code": "Object obj = \"Texto\";\nif (obj instanceof String s) {\n  System.out.println(s.toUpperCase());\n}",
           "interview_question": "Como pattern matching melhora a legibilidade do código?",
           "references": ["https://openjdk.java.net/jeps/394"]

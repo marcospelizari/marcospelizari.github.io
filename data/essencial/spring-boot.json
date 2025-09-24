@@ -2,6 +2,23 @@
   "title": "Spring Boot",
   "description": "Framework que simplifica a criação de aplicações Java modernas, com foco em APIs REST e integração com bancos de dados.",
   "version": "Spring Boot 3.3.x",
+  "resumo": [
+    "Spring Boot é como um motor turbo para aplicações Java: uma extensão do Spring que simplifica o desenvolvimento com autoconfiguração, servidor embutido como Tomcat, e convenções padrão que eliminam configurações manuais, permitindo que júniores criem APIs REST e microserviços de forma rápida e eficiente. Ele se destaca por acelerar o ciclo de desenvolvimento, oferecendo um ponto de partida ideal para projetos modernos como um sistema de e-commerce ou uma API de gestão de usuários, onde a agilidade é essencial.",
+    "O coração do Spring Boot está na Inversão de Controle (IoC) e na Injeção de Dependência (DI), que funcionam como um mapa bem desenhado: o container Spring gerencia a criação e conexão de objetos, enquanto a DI fornece dependências a classes, reduzindo acoplamento e facilitando testes, especialmente quando se opta pela injeção por construtor, que torna as dependências explícitas e mais fáceis de mockar em cenários como serviços de pedidos.",
+    "Anotações são as ferramentas principais que moldam o framework, funcionando como etiquetas que definem o papel de cada componente: @SpringBootApplication ativa a autoconfiguração, @RestController cria endpoints REST, @Service marca serviços de negócio, e @Repository define repositórios, enquanto @Autowired injeta dependências automaticamente, embora seu uso excessivo possa impactar performance se não gerenciado com cuidado em aplicações grandes.",
+    "Spring MVC organiza o fluxo como um diretor de orquestra: separa controladores para processar requisições, modelos para gerenciar dados, e visões para formatar respostas, sendo amplamente usado em APIs REST onde a visão é geralmente um JSON retornado por @RestController, ideal para construir endpoints de usuários ou produtos em um sistema de vendas online.",
+    "Spring Data JPA atua como uma ponte mágica entre código e banco de dados: usa interfaces como JpaRepository para criar repositórios automáticos, suportando consultas derivadas, JPQL e integração com Hibernate, o que permite a júniores implementar persistência de dados, como salvar e buscar usuários, sem escrever SQL manual, simplificando a integração com bancos relacionais.",
+    "A configuração de propriedades é como ajustar o painel de controle de um carro: o arquivo application.properties ou .yml define aspectos como URL de banco de dados, portas do servidor e variáveis personalizadas, mapeadas para o código via @Value ou @ConfigurationProperties, oferecendo flexibilidade para adaptar a aplicação a diferentes ambientes, como desenvolvimento ou produção.",
+    "Testes com Spring Boot são como ensaios antes da estreia: a anotação @SpringBootTest habilita testes de integração, enquanto MockMvc simula requisições de API e Mockito isola dependências para testes unitários, permitindo que júniores verifiquem a funcionalidade de endpoints, como um método GET para listar pedidos, garantindo qualidade antes do deploy.",
+    "Validação de dados funciona como um filtro de segurança: usa anotações como @NotNull e @Size no Bean Validation para garantir que entradas de endpoints sejam corretas, com @Valid ativando a validação em controladores, essencial para proteger sistemas contra dados inválidos, como um cadastro de cliente com nome muito curto.",
+    "O tratamento de exceções é como um plano de contingência: @ControllerAdvice captura erros globais em APIs REST, retornando respostas padronizadas, enquanto @ExceptionHandler lida com exceções específicas, oferecendo uma experiência de usuário consistente mesmo em falhas, como um erro de validação em uma API de login.",
+    "Spring Security é o guarda da porta: protege endpoints com autenticação e autorização, configurando rotas seguras e usuários em memória para testes, sendo uma camada crítica para aplicações como e-commerce, onde proteger dados de usuários e transações é uma prioridade absoluta.",
+    "Em cenários reais, Spring Boot brilha em microserviços, como um serviço de autenticação ou catálogo de produtos, onde a autoconfiguração e o MVC aceleram o desenvolvimento, enquanto Data JPA e segurança garantem integração e proteção, sendo amplamente adotado em arquiteturas distribuídas.",
+    "Para júniores, pratique criando uma API simples com um controlador REST e um repositório JPA, explorando anotações como @GetMapping e @Entity, e experimente testes com MockMvc para entender o fluxo completo, começando com projetos pequenos antes de escalar para sistemas complexos.",
+    "Cuidado com o uso excessivo de @Autowired, que pode dificultar testes e impactar performance; prefira injeção por construtor para maior controle, e sempre valide entradas com @Valid para evitar erros downstream, especialmente em APIs públicas.",
+    "Combine Spring Boot com ferramentas como Docker para deploy e monitore desempenho com Actuator, integrando boas práticas como logs estruturados e documentação com OpenAPI, o que prepara para desafios reais em equipes de desenvolvimento.",
+    "Em entrevistas, destaque como Spring Boot simplifica configuração e acelera desenvolvimento, explicando o uso de IoC, MVC e segurança com exemplos práticos, como um endpoint protegido ou uma consulta JPA, demonstrando domínio do framework."
+  ],
   "subsections": [
     {
       "subtitle": "O que é Spring Boot?",
@@ -9,7 +26,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Spring Boot é uma extensão do Spring que simplifica o desenvolvimento com autoconfiguração, servidor embutido (ex.: Tomcat) e convenções padrão. Ideal para criar APIs REST e microserviços rapidamente.",
+          "explanation": "Spring Boot é preferido para APIs modernas porque oferece autoconfiguração, servidor embutido e convenções padrão, acelerando o desenvolvimento de microserviços e APIs REST, como uma API de e-commerce, sem configuração manual excessiva.",
           "code": "import org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n\n@SpringBootApplication\npublic class Application {\n  public static void main(String[] args) {\n    SpringApplication.run(Application.class, args);\n  }\n}",
           "interview_question": "Por que o Spring Boot é preferido para desenvolver APIs modernas?",
           "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/"]
@@ -22,7 +39,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Inversão de Controle (IoC) delega a criação e gerenciamento de objetos ao container Spring. Injeção de Dependência (DI) fornece objetos necessários a uma classe, reduzindo acoplamento. A injeção por construtor é preferida por ser explícita e testável.",
+          "explanation": "A injeção por construtor é vantajosa sobre @Autowired porque torna as dependências explícitas, facilita testes ao permitir mocks diretos, e evita problemas de inicialização parcial, sendo ideal para serviços como PedidoService.",
           "code": "import org.springframework.stereotype.Service;\n\n@Service\nclass PedidoService {\n  private final PedidoRepository repo;\n\n  public PedidoService(PedidoRepository repo) {\n    this.repo = repo;\n  }\n  public String processar() { return repo.salvar(); }\n}\ninterface PedidoRepository {\n  String salvar();\n}",
           "interview_question": "Qual a vantagem de usar injeção de dependência por construtor em vez de @Autowired?",
           "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-dependency-injection"]
@@ -35,7 +52,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "@SpringBootApplication habilita autoconfiguração. @RestController define controladores REST. @Service marca serviços de negócio. @Repository cria repositórios de dados. @Autowired injeta dependências automaticamente.",
+          "explanation": "@RestController difere de @Controller porque retorna dados diretamente como JSON, adequado para APIs, enquanto @Controller é usado com visões em aplicações web tradicionais, sendo essencial para endpoints REST.",
           "code": "import org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class HelloController {\n  @GetMapping(\"/hi\")\n  public String hi() {\n    return \"Oi\";\n  }\n}",
           "interview_question": "Qual a função de @RestController e como ele difere de @Controller?",
           "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-controller"]
@@ -48,7 +65,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Spring MVC organiza aplicações em controladores (processam requisições), modelos (dados) e visões (respostas). Em APIs REST, a visão é tipicamente JSON retornado por @RestController.",
+          "explanation": "Spring MVC organiza o fluxo com controladores processando requisições, modelos gerenciando dados e visões retornando JSON em APIs REST, facilitando o desenvolvimento de endpoints como /users/{id} em um sistema de gestão.",
           "code": "import org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class UserController {\n  @GetMapping(\"/users/{id}\")\n  public User getUser(@PathVariable Long id) {\n    return new User(id, \"João\");\n  }\n}\nrecord User(Long id, String nome) {}",
           "interview_question": "Como o Spring MVC organiza o fluxo de uma requisição REST?",
           "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc"]
@@ -61,7 +78,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Spring Data JPA usa interfaces (ex.: JpaRepository) para criar repositórios automáticos, reduzindo código boilerplate. Suporta consultas derivadas, JPQL e integração com Hibernate.",
+          "explanation": "Uma consulta personalizada em Spring Data JPA pode ser criada com métodos derivados como findByEmail ou usando @Query com JPQL, permitindo buscas específicas, como encontrar usuários por e-mail em um repositório.",
           "code": "import org.springframework.data.jpa.repository.JpaRepository;\nimport jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class User {\n  @Id\n  private Long id;\n  private String email;\n  // Getters e setters\n}\n\ninterface UserRepository extends JpaRepository<User, Long> {\n  Optional<User> findByEmail(String email);\n}",
           "interview_question": "Como criar uma consulta personalizada com Spring Data JPA?",
           "references": ["https://docs.spring.io/spring-data/jpa/docs/current/reference/html/"]
@@ -74,7 +91,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "O arquivo application.properties (ou .yml) configura aspectos como banco de dados, portas e variáveis personalizadas. @Value e @ConfigurationProperties mapeiam propriedades para código Java.",
+          "explanation": "Para configurar um banco em memória, use spring.datasource.url=jdbc:h2:mem:testdb em application.properties, permitindo testes rápidos sem configurar um banco externo, ideal para desenvolvimento local.",
           "code": "# application.properties\nspring.datasource.url=jdbc:h2:mem:testdb\nspring.datasource.username=sa\n\n# Código Java\n@Component\npublic class Config {\n  @Value(\"${spring.datasource.url}\")\n  private String dbUrl;\n  public String getDbUrl() { return dbUrl; }\n}",
           "interview_question": "Como configurar um banco de dados em memória com Spring Boot?",
           "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html"]
@@ -87,7 +104,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Spring Boot facilita testes com @SpringBootTest (integração) e MockMvc (testes de API). Mocks com Mockito isolam dependências para testes unitários.",
+          "explanation": "Testar um endpoint REST com MockMvc simula requisições HTTP, verificando status e resposta, como um GET /users/1, enquanto @SpringBootTest testa a integração completa, garantindo robustez em APIs reais.",
           "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.test.web.servlet.MockMvc;\n\n@SpringBootTest\n@AutoConfigureMockMvc\nclass UserControllerTest {\n  @Autowired\n  private MockMvc mockMvc;\n\n  @Test\n  void testGetUser() throws Exception {\n    mockMvc.perform(get(\"/users/1\"))\n           .andExpect(status().isOk())\n           .andExpect(jsonPath(\"$.nome\").value(\"João\"));\n  }\n}",
           "interview_question": "Como testar um endpoint REST com MockMvc no Spring Boot?",
           "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
@@ -100,7 +117,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Bean Validation usa anotações como @NotNull e @Size para validar dados de entrada. @Valid ativa a validação em controladores, garantindo dados corretos antes do processamento.",
+          "explanation": "Garantir entradas válidas com @NotNull e @Size no Bean Validation, ativado por @Valid em controladores, previne erros downstream, como nomes muito curtos ou IDs nulos em uma API de cadastro.",
           "code": "import jakarta.validation.constraints.NotNull;\nimport jakarta.validation.constraints.Size;\nimport org.springframework.web.bind.annotation.PostMapping;\nimport org.springframework.web.bind.annotation.RequestBody;\nimport org.springframework.web.bind.annotation.RestController;\nimport jakarta.validation.Valid;\n\n@RestController\npublic class UserController {\n  @PostMapping(\"/users\")\n  public User create(@Valid @RequestBody User user) {\n    return user;\n  }\n}\nrecord User(@NotNull Long id, @Size(min=2) String nome) {}",
           "interview_question": "Como garantir que entradas de um endpoint são válidas?",
           "references": ["https://beanvalidation.org/2.0/"]
@@ -113,7 +130,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "@ControllerAdvice captura exceções globais em APIs REST, retornando respostas padronizadas. @ExceptionHandler define tratamento para exceções específicas.",
+          "explanation": "@ControllerAdvice centraliza o tratamento de erros, retornando respostas consistentes com @ExceptionHandler, como BAD_REQUEST para IllegalArgumentException, melhorando a experiência em APIs como uma interface de login.",
           "code": "import org.springframework.http.HttpStatus;\nimport org.springframework.web.bind.annotation.ControllerAdvice;\nimport org.springframework.web.bind.annotation.ExceptionHandler;\nimport org.springframework.web.bind.annotation.ResponseStatus;\n\n@ControllerAdvice\npublic class GlobalExceptionHandler {\n  @ExceptionHandler(IllegalArgumentException.class)\n  @ResponseStatus(HttpStatus.BAD_REQUEST)\n  public String handleIllegalArgument(Exception e) {\n    return \"Erro: \" + e.getMessage();\n  }\n}",
           "interview_question": "Como centralizar o tratamento de erros em uma API Spring Boot?",
           "references": ["https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-controller-advice"]
@@ -126,7 +143,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Spring Security protege endpoints com autenticação e autorização. Configurações básicas incluem proteger rotas e configurar usuários em memória para testes.",
+          "explanation": "Proteger um endpoint com Spring Security envolve configurar authorizeHttpRequests para restringir acesso, como permitir /public/** e exigir autenticação em outros, usando usuários em memória para prototipagem.",
           "code": "import org.springframework.context.annotation.Bean;\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\nimport org.springframework.security.core.userdetails.User;\nimport org.springframework.security.core.userdetails.UserDetailsService;\nimport org.springframework.security.provisioning.InMemoryUserDetailsManager;\n\n@Configuration\npublic class SecurityConfig {\n  @Bean\n  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {\n    http.authorizeHttpRequests(auth -> auth\n      .requestMatchers(\"/public/**\").permitAll()\n      .anyRequest().authenticated());\n    return http.build();\n  }\n}",
           "interview_question": "Como proteger um endpoint com Spring Security?",
           "references": ["https://docs.spring.io/spring-security/reference/"]

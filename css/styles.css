@@ -6,6 +6,7 @@
     --muted-color: #ffffff; /* Mantido como referência, mas será sobrescrito */
     --code-bg: #2d2d2d;
     --border-color: #333;
+    --resumo-bg: #2a2a2a; /* Fundo sutil para o resumo */
 }
 
 body {
@@ -14,6 +15,37 @@ body {
     font-family: Arial, sans-serif;
     line-height: 1.6;
     color: var(--text-color);
+}
+
+/* Container personalizado para ajustar largura e padding */
+.container {
+    max-width: 1900px; /* Aumenta a largura máxima */
+    padding-left: 2rem; /* Padding lateral esquerdo */
+    padding-right: 2rem; /* Padding lateral direito */
+}
+
+@media (max-width: 1200px) {
+    .container {
+        max-width: 1200px; /* Ajuste para telas médias */
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .container {
+        max-width: 960px; /* Ajuste para tablets */
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .container {
+        max-width: 720px; /* Ajuste para telas menores */
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
 }
 
 /* Navbar */
@@ -107,6 +139,21 @@ h4 {
     color: #ffffff !important; /* Força a cor branca */
 }
 
+/* Resumo */
+.resumo {
+    background-color: var(--resumo-bg); /* Fundo mais escuro que o card, mas legível */
+    border-left: 4px solid var(--primary-color); /* Alinha com o estilo .example */
+    border-radius: 4px;
+    padding: 1.5rem; /* Mais espaçamento para leitura confortável */
+    margin-bottom: 1.5rem; /* Espaço antes do accordion */
+}
+
+.resumo p {
+    font-size: 1.1rem; /* Fonte ligeiramente maior para destacar */
+    margin-bottom: 1rem; /* Espaçamento entre parágrafos */
+    line-height: 1.7; /* Melhor legibilidade */
+}
+
 /* Search input */
 #searchInput {
     background-color: var(--secondary-color);
@@ -177,5 +224,14 @@ h4 {
     .references-list {
         font-size: 0.85rem;
         padding-left: 15px;
+    }
+
+    .resumo {
+        padding: 1rem; /* Reduz padding em mobile */
+    }
+
+    .resumo p {
+        font-size: 1rem; /* Ajusta fonte para mobile */
+        margin-bottom: 0.8rem; /* Menos espaço entre parágrafos */
     }
 }
