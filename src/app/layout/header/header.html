@@ -1,0 +1,65 @@
+<header class="fixed top-0 left-0 right-0 z-50 h-header bg-surface/85 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.06)]">
+  <div class="w-full h-full px-space-md lg:px-space-lg flex items-center justify-between gap-space-md">
+    <div class="flex items-center gap-space-sm lg:w-sidebar flex-shrink-0">
+      <button
+        type="button"
+        class="lg:hidden p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg flex"
+        [attr.aria-expanded]="menu.open()"
+        aria-controls="sidebar"
+        [attr.aria-label]="menu.open() ? 'Fechar menu' : 'Abrir menu'"
+        (click)="menu.toggle()"
+      >
+        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">{{ menu.open() ? 'close' : 'menu' }}</span>
+      </button>
+      <a routerLink="/" class="flex items-center gap-space-xs">
+        <span class="w-7 h-7 rounded-lg bg-primary-container/20 border-2 border-primary flex items-center justify-center text-primary">
+          <span class="material-symbols-outlined text-[16px]" aria-hidden="true">code</span>
+        </span>
+        <span class="text-headline-md tracking-tight text-on-surface">Estudos<span class="text-primary">.dev</span></span>
+      </a>
+    </div>
+
+    <div class="hidden sm:block flex-1 max-w-2xl mx-auto">
+      <label class="w-full h-9 px-space-md rounded-xl bg-surface-container-low text-on-surface-variant flex items-center gap-space-sm transition-colors hover:bg-surface-container focus-within:bg-surface-container group shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <span class="material-symbols-outlined text-[18px] text-outline group-focus-within:text-primary" aria-hidden="true">search</span>
+        <input
+          #searchInput
+          type="search"
+          placeholder="Buscar nesta página..."
+          aria-label="Buscar seções do tópico"
+          class="flex-1 min-w-0 bg-transparent text-body-sm text-on-surface placeholder:text-outline outline-none focus-visible:outline-none"
+          [value]="search.query()"
+          (input)="onSearch($event)"
+        />
+        <span class="hidden md:flex items-center gap-1" aria-hidden="true">
+          <kbd class="font-mono text-label-kbd text-outline px-1.5 py-0.5 rounded bg-surface-container-high">Ctrl</kbd>
+          <kbd class="font-mono text-label-kbd text-outline px-1.5 py-0.5 rounded bg-surface-container-high">K</kbd>
+        </span>
+      </label>
+    </div>
+
+    <div class="flex items-center gap-space-xs flex-shrink-0">
+      <a
+        [href]="site.repoUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Repositório no GitHub"
+        title="Repositório no GitHub"
+        class="p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg flex"
+      >
+        <span class="material-symbols-outlined text-[20px]" aria-hidden="true">terminal</span>
+      </a>
+      <button
+        type="button"
+        (click)="theme.toggle()"
+        [attr.aria-label]="theme.theme() === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'"
+        [title]="theme.theme() === 'dark' ? 'Tema claro' : 'Tema escuro'"
+        class="p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg flex"
+      >
+        <span class="material-symbols-outlined text-[20px] text-tertiary" aria-hidden="true">
+          {{ theme.theme() === 'dark' ? 'light_mode' : 'dark_mode' }}
+        </span>
+      </button>
+    </div>
+  </div>
+</header>
