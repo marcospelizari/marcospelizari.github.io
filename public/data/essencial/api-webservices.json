@@ -21,104 +21,194 @@
     {
       "subtitle": "O que é uma API?",
       "description": "Definição geral de APIs.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Uma API facilita a integração entre frontend e backend ao definir uma interface padronizada com HTTP, permitindo que o frontend solicite dados ou ações, como listar usuários, enquanto o backend processa e responde, simplificando o desenvolvimento de aplicações web.",
           "code": "curl -X GET https://api.exemplo.com/usuarios/1\n// Exemplo de chamada HTTP para uma API",
           "interview_question": "Como uma API facilita a integração entre um frontend e um backend?",
-          "references": ["https://developer.mozilla.org/en-US/docs/Glossary/API"]
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Glossary/API"
+          ]
         }
       ]
     },
     {
       "subtitle": "REST",
       "description": "Estilo arquitetural para APIs stateless.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Os princípios REST, como statelessness e uso de recursos via URLs, promovem escalabilidade ao evitar estado no servidor, permitindo que múltiplos clientes acessem a mesma API, como um serviço de produtos, sem sobrecarga de sessão.",
           "code": "GET /usuarios/1\nPOST /usuarios\n{ \"nome\": \"João\", \"email\": \"joao@email.com\" }\n// Payload JSON para criação",
           "interview_question": "Explique os princípios REST e como eles promovem escalabilidade.",
-          "references": ["https://restfulapi.net/"]
+          "references": [
+            "https://restfulapi.net/"
+          ]
         }
       ]
     },
     {
       "subtitle": "SOAP",
       "description": "Protocolo baseado em XML para serviços web.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Use SOAP em vez de REST quando o projeto exige segurança avançada (ex.: WS-Security) ou contratos formais, como em sistemas bancários legados, onde a rigidez e a estrutura XML são mais adequadas que a flexibilidade de REST.",
           "code": "<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Body>\n    <getUser>\n      <id>1</id>\n    </getUser>\n  </soap:Body>\n</soap:Envelope>\n// Exemplo de envelope SOAP",
           "interview_question": "Quando usar SOAP em vez de REST em um projeto?",
-          "references": ["https://www.w3.org/TR/soap/"]
+          "references": [
+            "https://www.w3.org/TR/soap/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Status Codes",
       "description": "Códigos de resposta HTTP para comunicação clara.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Exemplos incluem 200 OK (sucesso em GET), 201 Created (pós-criação), 400 Bad Request (erro de entrada), 401 Unauthorized (sem autenticação), e 500 Internal Server Error (falha do servidor), usados para indicar resultados e guiar depuração em APIs.",
           "code": "HTTP/1.1 201 Created\nLocation: /usuarios/1\n// Resposta para criação de recurso",
           "interview_question": "Cite exemplos de códigos 2xx, 4xx e 5xx e quando usá-los.",
-          "references": ["https://httpstatuses.com/"]
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status"
+          ]
         }
       ]
     },
     {
       "subtitle": "GraphQL",
       "description": "Alternativa flexível ao REST para consultas.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "GraphQL resolve problemas do REST ao permitir consultas específicas, evitando over-fetching (dados extras) e under-fetching (dados insuficientes), sendo ideal para apps móveis onde a eficiência de dados, como em um feed de notícias, é crítica.",
           "code": "query {\n  user(id: 1) {\n    nome\n    email\n    posts {\n      title\n    }\n  }\n}\n// Consulta GraphQL para usuário e posts",
           "interview_question": "Como GraphQL resolve problemas comuns do REST?",
-          "references": ["https://graphql.org/learn/"]
+          "references": [
+            "https://graphql.org/learn/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Autenticação e Autorização",
       "description": "Segurança em APIs.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "JWT é um token stateless para autenticação, enquanto OAuth 2.0 é um framework para autorização com fluxos como acesso de terceiros, sendo JWT mais simples para APIs internas e OAuth ideal para integrações como login via Google.",
           "code": "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n// Header com JWT token em requisição HTTP",
           "interview_question": "Explique a diferença entre JWT e OAuth 2.0 em APIs.",
-          "references": ["https://jwt.io/introduction/", "https://oauth.net/2/"]
+          "references": [
+            "https://jwt.io/introduction/",
+            "https://oauth.net/2/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Documentação de APIs",
       "description": "Geração automática de documentação.",
+      "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Documentar APIs é importante para facilitar uso e manutenção por equipes, e Swagger ajuda gerando docs interativas a partir de anotações, como @Operation, permitindo testes diretos e reduzindo erros de integração.",
           "code": "import io.swagger.v3.oas.annotations.Operation;\n\n@GetMapping(\"/users\")\n@Operation(summary = \"Lista usuários\")\npublic List<User> getUsers() {\n  return userService.findAll();\n}\n// Anotação OpenAPI no Spring",
           "interview_question": "Por que documentar APIs é importante e como o Swagger ajuda?",
-          "references": ["https://swagger.io/specification/"]
+          "references": [
+            "https://swagger.io/specification/"
+          ]
         }
       ]
     },
     {
       "subtitle": "WebSockets",
       "description": "Comunicação em tempo real.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Use WebSockets em vez de polling HTTP quando atualizações em tempo real são necessárias, como chats ou notificações, pois evitam requisições constantes, reduzindo carga no servidor e melhorando a experiência do usuário.",
           "code": "ws://exemplo.com/chat\n// URI WebSocket para conexão em tempo real",
           "interview_question": "Quando usar WebSockets em vez de polling HTTP?",
-          "references": ["https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"]
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Métodos HTTP e Idempotência",
+      "description": "GET, POST, PUT, PATCH e DELETE na prática.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Idempotente é a operação que, repetida, produz o mesmo efeito que uma única execução. GET, PUT e DELETE são idempotentes; POST não é (cada chamada pode criar um novo recurso) e PATCH depende da implementação. Isso importa em retries automáticos: um cliente pode reenviar um PUT com segurança após um timeout, mas reenviar um POST de pagamento pode cobrar duas vezes — por isso APIs de pagamento usam um cabeçalho Idempotency-Key.",
+          "code": "GET    /pedidos/42        -> lê (seguro e idempotente)\nPUT    /pedidos/42        -> substitui o recurso inteiro (idempotente)\nPATCH  /pedidos/42        -> altera campos específicos\nDELETE /pedidos/42        -> remove (idempotente: 2ª chamada retorna 404 ou 204)\nPOST   /pedidos           -> cria (NÃO idempotente)\n\nPOST /pagamentos\nIdempotency-Key: 7f3c2a10-9b1e-4c55-a2d1-55e0c1f9a001",
+          "interview_question": "Quais métodos HTTP são idempotentes e por que isso importa?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Paginação, Filtros e Ordenação",
+      "description": "Retornando grandes coleções de forma eficiente.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Nunca retorne coleções ilimitadas: além de lento, um GET /pedidos pode derrubar a aplicação com OutOfMemoryError. Use parâmetros page, size e sort; o Spring Data converte isso em Pageable automaticamente. Para listas muito grandes ou que mudam com frequência, paginação por cursor (keyset — \"itens após o id X\") é mais eficiente que OFFSET, que degrada em páginas altas.",
+          "code": "// GET /produtos?page=0&size=20&sort=preco,desc&categoria=livros\n@GetMapping(\"/produtos\")\npublic Page<ProdutoResponse> listar(@RequestParam(required = false) String categoria,\n                                    @PageableDefault(size = 20) Pageable pageable) {\n    return repository.findByCategoria(categoria, pageable)\n                     .map(ProdutoResponse::from);\n}",
+          "interview_question": "Como implementar paginação em uma API REST com Spring?",
+          "references": [
+            "https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Erros Padronizados (Problem Details)",
+      "description": "Respostas de erro consistentes com a RFC 9457.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A RFC 9457 (Problem Details, sucessora da RFC 7807) define um formato JSON padrão para erros com os campos type, title, status, detail e instance, além de campos extras. O Spring Boot 3 suporta nativamente via ProblemDetail e spring.mvc.problemdetails.enabled. Clientes passam a tratar erros de forma uniforme e você evita vazar stack traces.",
+          "code": "@RestControllerAdvice\npublic class ApiExceptionHandler {\n    @ExceptionHandler(PedidoNaoEncontradoException.class)\n    ProblemDetail naoEncontrado(PedidoNaoEncontradoException ex) {\n        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());\n        pd.setTitle(\"Pedido não encontrado\");\n        return pd;\n    }\n}\n\n// Resposta (application/problem+json):\n// { \"type\": \"about:blank\", \"title\": \"Pedido não encontrado\",\n//   \"status\": 404, \"detail\": \"Pedido 42 não encontrado\", \"instance\": \"/pedidos/42\" }",
+          "interview_question": "Como padronizar o corpo das respostas de erro de uma API?",
+          "references": [
+            "https://www.rfc-editor.org/rfc/rfc9457",
+            "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "CORS",
+      "description": "Por que o navegador bloqueia chamadas entre origens.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "CORS (Cross-Origin Resource Sharing) é uma política do navegador: um front em https://app.com só pode ler respostas de https://api.com se a API responder com Access-Control-Allow-Origin permitindo essa origem. Para métodos ou cabeçalhos não simples, o navegador envia antes uma requisição OPTIONS (preflight). Postman e chamadas entre servidores não aplicam CORS, por isso o erro aparece só no navegador. Libere apenas as origens conhecidas, nunca \"*\" com credenciais.",
+          "code": "@Configuration\npublic class CorsConfig implements WebMvcConfigurer {\n    @Override\n    public void addCorsMappings(CorsRegistry registry) {\n        registry.addMapping(\"/api/**\")\n                .allowedOrigins(\"https://app.exemplo.com\")\n                .allowedMethods(\"GET\", \"POST\", \"PUT\", \"DELETE\");\n    }\n}",
+          "interview_question": "O que é CORS e por que uma chamada funciona no Postman mas falha no navegador?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS"
+          ]
         }
       ]
     }

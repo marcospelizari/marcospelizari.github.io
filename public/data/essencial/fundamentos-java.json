@@ -29,182 +29,288 @@
     {
       "subtitle": "JVM, JRE e JDK",
       "description": "Componentes centrais da plataforma Java.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "A JVM executa o bytecode, garantindo portabilidade entre sistemas, o JRE fornece o ambiente para rodar apps com bibliotecas, e o JDK adiciona ferramentas como `javac` para desenvolvimento, sendo essencial para criar e depurar código, como uma API de usuários.",
           "code": "javac Main.java  // compila para bytecode\njava Main       // executa na JVM",
           "interview_question": "Qual a diferença entre JVM, JRE e JDK, e por que o JDK é essencial para desenvolvedores?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Estruturas de Controle",
       "description": "Controle de fluxo em Java, incluindo switch expressions modernas.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "O `switch expression` (Java 17) melhora o código ao retornar valores diretamente, eliminando `break` e reduzindo repetição, como em `switch (dia) { case 1 -> \"Segunda\" }`, sendo mais conciso e seguro para decisões complexas.",
           "code": "var numero = 2;\nString resultado = switch (numero) {\n    case 1 -> \"Um\";\n    case 2 -> \"Dois\";\n    default -> \"Outro\";\n};",
           "interview_question": "Como o switch expression melhora o código em relação ao switch tradicional?",
-          "references": ["https://openjdk.java.net/jeps/361"]
+          "references": [
+            "https://openjdk.java.net/jeps/361"
+          ]
         }
       ]
     },
     {
       "subtitle": "Tipos Primitivos e Wrapper",
       "description": "Diferença entre tipos primitivos e classes wrapper, com uso de var.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "O `var` torna o código conciso ao inferir tipos como `int` ou `Integer`, mas exige clareza em tipos complexos para evitar ambiguidades, sendo útil em inicializações simples como `var x = 5`, mas menos em objetos aninhados.",
           "code": "var x = 5; // int inferido\nInteger y = null;\nSystem.out.println(Integer.parseInt(\"10\"));",
           "interview_question": "Qual a vantagem de usar var com tipos primitivos e wrappers?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Modificadores de Acesso",
       "description": "Controle de visibilidade de classes e membros.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "`public` abre acesso global, `protected` permite acesso a pacote e subclasses, `default` restringe ao pacote, e `private` confina à classe, ajudando no encapsulamento ao proteger atributos como `private String nome` em uma classe `Usuario`.",
           "code": "public class Exemplo {\n  public int a;\n  protected int b;\n  int c;\n  private int d;\n}",
           "interview_question": "Como os modificadores de acesso ajudam no encapsulamento?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/class.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/class.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Palavra-chave static",
       "description": "Uso de variáveis e métodos estáticos.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "`static` associa membros à classe, como `Math.PI`, sendo útil para constantes, mas seu uso excessivo dificulta testes ao criar dependência de estado global, como em métodos que alteram variáveis estáticas sem controle.",
           "code": "class Util {\n  public static final double PI = 3.14;\n  public static int soma(int a, int b) { return a + b; }\n}",
           "interview_question": "Por que o uso excessivo de static pode ser problemático em testes unitários?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Math.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Math.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Strings e Imutabilidade",
       "description": "Comportamento de Strings, incluindo Text Blocks.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Text Blocks (Java 15) melhoram legibilidade em strings multilinhas, como \"\"\" Olá\nMundo \"\"\" sem escapes manuais, sendo ideais para HTML ou mensagens de erro, enquanto `StringBuilder` otimiza concatenações em loops.",
           "code": "String s = \"Oi\";\nString multi = \"\"\"\n    Olá,\n    Mundo!\n    \"\"\";\nStringBuilder sb = new StringBuilder().append(\"teste\");",
           "interview_question": "Qual a vantagem de usar Text Blocks para strings multilinhas?",
-          "references": ["https://openjdk.java.net/jeps/378"]
+          "references": [
+            "https://openjdk.java.net/jeps/378"
+          ]
         }
       ]
     },
     {
       "subtitle": "Tratamento de Exceções",
       "description": "Mecanismo de erro controlado.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "`try-with-resources` gerencia recursos como arquivos ou conexões, fechando-os automaticamente, como em `try (BufferedReader br = new BufferedReader(...))`, sendo crucial para evitar vazamentos em sistemas que lidam com I/O intensivo.",
           "code": "try (var reader = new BufferedReader(new FileReader(\"file.txt\"))) {\n  String line = reader.readLine();\n} catch (IOException e) {\n  System.out.println(\"Erro: \" + e.getMessage());\n}",
           "interview_question": "O que é try-with-resources e quando usá-lo?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/AutoCloseable.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/AutoCloseable.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Coleções Básicas",
       "description": "Estruturas de dados mais usadas, com métodos modernos.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Coleções imutáveis como `List.of()` (Java 9) previnem alterações acidentais, como em `var lista = List.of(\"a\", \"b\")`, sendo úteis para dados constantes, como uma lista de países, e aumentando a segurança em código compartilhado.",
           "code": "var lista = List.of(\"a\", \"b\", \"c\");\nvar mapa = Map.of(1, \"um\", 2, \"dois\");",
           "interview_question": "Qual a vantagem de usar coleções imutáveis como List.of()?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Arrays e Estruturas Básicas",
       "description": "Uso de arrays para armazenamento fixo.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Arrays são preferíveis a `ArrayList` em cenários de performance com tamanho fixo, como `int[] nums = {1, 2, 3}`, devido ao menor overhead, sendo ideais para dados como uma tabela de preços estática em um sistema.",
           "code": "int[] nums = {1, 2, 3};\nfor(var n : nums) {\n  System.out.println(n);\n}",
           "interview_question": "Por que usar arrays em vez de ArrayList em cenários de performance?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Arrays.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Arrays.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Métodos e Parâmetros",
       "description": "Definição de métodos e sobrecarga.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Varargs (`int... nums`) permite métodos com número variável de argumentos, como `soma(int... nums)`, simplificando chamadas como `soma(1, 2, 3)`, enquanto sobrecarga cria versões distintas, como `soma(int a)` e `soma(int a, int b)`.",
           "code": "public static int soma(int... nums) {\n  int total = 0;\n  for(var n : nums) total += n;\n  return total;\n}",
           "interview_question": "O que são varargs e como usá-los em métodos?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/reflect/Method.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/reflect/Method.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Operadores e Expressões",
       "description": "Operações básicas e precedência.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Parênteses em expressões, como `(a + b) * c`, forçam a ordem de avaliação, evitando erros devido à precedência (multiplicação antes da soma), sendo essencial em cálculos financeiros ou lógicos complexos.",
           "code": "var a = 5 + 3 * 2; // 11\nboolean cond = (a > 0) && (a < 10); // true",
           "interview_question": "Como evitar erros comuns em expressões com precedência de operadores?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Operator.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Operator.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Herança Básica",
       "description": "Introdução à herança para reutilização de código.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Classes sealed limitam herança com `permits`, como `sealed class Animal permits Cachorro`, controlando hierarquias e evitando extensões indesejadas, sendo útil em sistemas como um catálogo de produtos com tipos definidos.",
           "code": "sealed class Animal permits Cachorro {\n  void som() { System.out.println(\"Som genérico\"); }\n}\nfinal class Cachorro extends Animal {\n  @Override void som() { System.out.println(\"Au au\"); }\n}",
           "interview_question": "O que são classes sealed e como elas limitam herança?",
-          "references": ["https://openjdk.java.net/jeps/409"]
+          "references": [
+            "https://openjdk.java.net/jeps/409"
+          ]
         }
       ]
     },
     {
       "subtitle": "Optional",
       "description": "Uso de Optional para lidar com valores nulos.",
+      "category": "boas-praticas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "`Optional` melhora segurança ao envolver valores nulos, usando `orElse()` para substituir por padrão (ex.: `Optional.ofNullable(null).orElse(\"Desconhecido\")`), reduzindo riscos em manipulações como busca de clientes.",
           "code": "Optional<String> nome = Optional.ofNullable(null);\nString resultado = nome.orElse(\"Desconhecido\");\nSystem.out.println(resultado); // Desconhecido",
           "interview_question": "Como Optional melhora a segurança de código em relação a null?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html"
+          ]
         }
       ]
     },
     {
       "subtitle": "Lambda e Stream API",
       "description": "Programação funcional com lambdas e streams.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "A Stream API melhora legibilidade com operações como `filter()` e `map()`, e eficiência com processamento paralelo, como `lista.stream().parallel().map(n -> n * 2)`, sendo ideal para grandes conjuntos de dados como relatórios financeiros.",
           "code": "var lista = List.of(1, 2, 3, 4);\nlista.stream()\n     .filter(n -> n % 2 == 0)\n     .forEach(System.out::println); // 2, 4",
           "interview_question": "Como a Stream API melhora a legibilidade e eficiência do código?",
-          "references": ["https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Stream.html"]
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Stream.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Exceções Checked vs Unchecked",
+      "description": "Quando o compilador obriga a tratar erros.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Checked exceptions (subclasses de Exception, exceto RuntimeException) precisam ser tratadas ou declaradas com throws; representam falhas externas recuperáveis, como IOException. Unchecked (RuntimeException e filhas) indicam erros de programação ou violações de regra de negócio, como IllegalArgumentException. Em APIs Spring modernas, o padrão é usar exceções unchecked de domínio (ex.: PedidoNaoEncontradoException) e tratá-las de forma centralizada, evitando throws espalhados pelas camadas.",
+          "code": "// Checked: o compilador exige try/catch ou throws\npublic String lerArquivo(Path path) throws IOException {\n    return Files.readString(path);\n}\n\n// Unchecked: exceção de domínio, tratada de forma centralizada\npublic class PedidoNaoEncontradoException extends RuntimeException {\n    public PedidoNaoEncontradoException(Long id) {\n        super(\"Pedido \" + id + \" não encontrado\");\n    }\n}",
+          "interview_question": "Qual a diferença entre exceções checked e unchecked, e quando criar cada uma?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/essential/exceptions/runtime.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "equals() e hashCode()",
+      "description": "O contrato que faz HashMap e HashSet funcionarem.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O contrato diz: objetos iguais por equals() devem ter o mesmo hashCode(). Se só equals() for sobrescrito, dois objetos \"iguais\" podem cair em buckets diferentes de um HashMap/HashSet, gerando duplicatas no Set e buscas que retornam null. Use Objects.equals/Objects.hash ou, para objetos de valor, prefira records, que geram ambos automaticamente com base em todos os componentes.",
+          "code": "public final class Cpf {\n    private final String numero;\n\n    public Cpf(String numero) { this.numero = numero; }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof Cpf outro)) return false;\n        return numero.equals(outro.numero);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(numero);\n    }\n}\n\n// Alternativa moderna: record gera equals/hashCode/toString\npublic record CpfRecord(String numero) {}",
+          "interview_question": "O que acontece se você sobrescrever equals() sem sobrescrever hashCode()?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Generics",
+      "description": "Tipagem segura e reutilizável em coleções e métodos.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Generics permitem que classes e métodos trabalhem com tipos parametrizados, detectando erros em tempo de compilação e eliminando casts. Wildcards controlam a variância: \"? extends T\" aceita T ou subtipos (bom para leitura — producer extends), \"? super T\" aceita T ou supertipos (bom para escrita — consumer super). Em tempo de execução os tipos são apagados (type erasure), por isso não é possível fazer new T() ou instanceof List<String>.",
+          "code": "public static <T extends Comparable<T>> T maior(List<T> itens) {\n    T maior = itens.get(0);\n    for (T item : itens) {\n        if (item.compareTo(maior) > 0) maior = item;\n    }\n    return maior;\n}\n\n// Producer extends: só lê números\ndouble soma(List<? extends Number> numeros) {\n    return numeros.stream().mapToDouble(Number::doubleValue).sum();\n}\n\n// Consumer super: só escreve inteiros\nvoid preencher(List<? super Integer> destino) {\n    destino.add(1);\n    destino.add(2);\n}",
+          "interview_question": "Para que servem os generics e o que significa \"? extends T\"?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/java/generics/index.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Datas com java.time",
+      "description": "API moderna e imutável de datas e horas.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A API java.time (Java 8+) é imutável e thread-safe, separa conceitos claramente — LocalDate (data sem fuso), LocalDateTime (data e hora sem fuso), ZonedDateTime/OffsetDateTime (com fuso) e Instant (ponto na linha do tempo UTC) — e oferece operações legíveis como plusDays. Date e Calendar são mutáveis, confusos (meses começando em 0) e não thread-safe. Em APIs, persista Instant/OffsetDateTime e converta para o fuso do usuário apenas na apresentação.",
+          "code": "LocalDate hoje = LocalDate.now();\nLocalDate vencimento = hoje.plusDays(30);\nlong dias = ChronoUnit.DAYS.between(hoje, vencimento); // 30\n\nInstant agora = Instant.now(); // ideal para persistir eventos\nZonedDateTime emSaoPaulo = agora.atZone(ZoneId.of(\"America/Sao_Paulo\"));\n\nDateTimeFormatter fmt = DateTimeFormatter.ofPattern(\"dd/MM/yyyy\");\nString texto = vencimento.format(fmt);",
+          "interview_question": "Por que usar java.time em vez de Date e Calendar?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/package-summary.html"
+          ]
         }
       ]
     }

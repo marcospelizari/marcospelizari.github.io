@@ -1,30 +1,125 @@
 {
-    "title": "POO — Extra Avançado",
-    "description": "Princípios e padrões além do básico.",
-    "subsections": [
+  "title": "Orientação a Objetos — Avançado",
+  "description": "SOLID aplicado, padrões de projeto e modelagem de domínio além do básico.",
+  "resumo": [
+    "Depois dos pilares, o desafio é projetar classes que continuem fáceis de mudar. SOLID e padrões de projeto são vocabulário comum para discutir essas decisões em entrevistas e code reviews.",
+    "Padrões resolvem problemas recorrentes: Strategy troca algoritmos, Factory encapsula criação, Adapter integra interfaces incompatíveis, Decorator adiciona comportamento e Observer reage a eventos. Usá-los sem necessidade, porém, só adiciona indireção.",
+    "Na modelagem de domínio, objetos de valor imutáveis, invariantes protegidas no construtor e entidades com comportamento (não apenas getters e setters) evitam o modelo anêmico.",
+    "O Spring aplica muitos desses padrões por baixo: injeção de dependência (DIP), proxies (Proxy/Decorator) em @Transactional e templates como JdbcTemplate."
+  ],
+  "subsections": [
+    {
+      "subtitle": "SRP e OCP na Prática",
+      "description": "Responsabilidade única e extensão sem modificação.",
+      "category": "boas-praticas",
+      "examples": [
         {
-            "subtitle": "SOLID na Prática",
-            "description": "Aplicação objetiva.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "SRP evita classes “faz-tudo”. OCP favorece extensões via interfaces. DIP reduz acoplamento via inversão de dependência e injeção.",
-                    "code": "interface Pagamento { void processar(); } class Pix implements Pagamento { public void processar(){} }",
-                    "interview_question": "Dê um exemplo de violação de SRP e como corrigir."
-                }
-            ]
-        },
-        {
-            "subtitle": "Padrões de Projeto",
-            "description": "Criação, estrutura e comportamento.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Strategy para trocar algoritmos em runtime; Factory para criar objetos sem expor construção; Adapter para integrar sistemas legados.",
-                    "code": "",
-                    "interview_question": "Quando usar Strategy ao invés de if-else encadeado?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "Uma classe PedidoService que calcula total, grava no banco, gera PDF e envia e-mail tem quatro motivos para mudar — viola o SRP. Extraia cada responsabilidade para um colaborador e deixe o serviço orquestrar. O OCP aparece quando novas regras entram como novas implementações de uma interface, sem editar código já testado.",
+          "code": "// Antes: classe \"faz-tudo\"\nclass PedidoService {\n    void finalizar(Pedido p) {\n        // calcula total, salva, gera PDF, envia e-mail...\n    }\n}\n\n// Depois: responsabilidades separadas e injetadas\nclass PedidoServiceRefatorado {\n    private final PedidoRepository repository;\n    private final GeradorNotaFiscal notaFiscal;\n    private final Notificador notificador;\n\n    void finalizar(Pedido p) {\n        repository.save(p);\n        notaFiscal.gerar(p);\n        notificador.pedidoFinalizado(p);\n    }\n}",
+          "interview_question": "Dê um exemplo de violação de SRP e como corrigir.",
+          "references": [
+            "https://en.wikipedia.org/wiki/Single-responsibility_principle"
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "LSP, ISP e DIP",
+      "description": "Substituição segura, interfaces enxutas e inversão de dependências.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "LSP diz que um subtipo deve funcionar onde o tipo base é esperado sem surpresas. O exemplo clássico: Quadrado estende Retangulo, mas setLargura altera também a altura, quebrando quem assume que são independentes. Outro sinal de violação: uma subclasse que lança UnsupportedOperationException para um método herdado. DIP inverte as dependências: o domínio define interfaces (ex.: Pagamento) e a infraestrutura as implementa.",
+          "code": "interface Pagamento { void processar(BigDecimal valor); }\n\nclass Pix implements Pagamento {\n    public void processar(BigDecimal valor) { /* chama API do PIX */ }\n}\n\n// Alto nível depende da abstração, não da implementação\nclass Checkout {\n    private final Pagamento pagamento;\n    Checkout(Pagamento pagamento) { this.pagamento = pagamento; }\n}",
+          "interview_question": "Explique o Princípio de Substituição de Liskov com um exemplo de violação.",
+          "references": [
+            "https://en.wikipedia.org/wiki/Liskov_substitution_principle"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Strategy",
+      "description": "Algoritmos intercambiáveis em tempo de execução.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Quando a mesma decisão por tipo se repete em vários lugares ou cresce a cada nova regra. Cada estratégia vira uma classe; com Spring, todas as implementações podem ser injetadas como Map<String, Interface>, indexadas pelo nome do bean, eliminando o switch.",
+          "code": "interface CalculoDesconto {\n    BigDecimal aplicar(BigDecimal valor);\n}\n\n@Component(\"BLACK_FRIDAY\")\nclass DescontoBlackFriday implements CalculoDesconto {\n    public BigDecimal aplicar(BigDecimal v) { return v.multiply(new BigDecimal(\"0.70\")); }\n}\n\n@Component(\"NENHUM\")\nclass SemDesconto implements CalculoDesconto {\n    public BigDecimal aplicar(BigDecimal v) { return v; }\n}\n\n@Service\nclass PrecoService {\n    private final Map<String, CalculoDesconto> estrategias;\n    PrecoService(Map<String, CalculoDesconto> estrategias) { this.estrategias = estrategias; }\n\n    BigDecimal preco(BigDecimal valor, String campanha) {\n        return estrategias.getOrDefault(campanha, estrategias.get(\"NENHUM\")).aplicar(valor);\n    }\n}",
+          "interview_question": "Quando usar Strategy ao invés de if-else encadeado?",
+          "references": [
+            "https://refactoring.guru/design-patterns/strategy"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Factory e Builder",
+      "description": "Encapsulando a criação de objetos.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Factory esconde qual implementação concreta é criada (ex.: escolher o cliente de frete pela transportadora). Builder resolve objetos com muitos parâmetros opcionais: evita construtores telescópicos e chamadas ilegíveis como new Pedido(null, null, true, 3). Para objetos simples, prefira records ou métodos de fábrica estáticos (of, from).",
+          "code": "// Builder\nNotificacao n = Notificacao.builder()\n    .destinatario(\"ana@email.com\")\n    .assunto(\"Pedido enviado\")\n    .prioridade(Prioridade.ALTA)\n    .build();\n\n// Método de fábrica estático\npublic record Dinheiro(BigDecimal valor, Currency moeda) {\n    public static Dinheiro reais(String valor) {\n        return new Dinheiro(new BigDecimal(valor), Currency.getInstance(\"BRL\"));\n    }\n}",
+          "interview_question": "Quando usar Builder em vez de um construtor?",
+          "references": [
+            "https://refactoring.guru/design-patterns/builder"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Adapter e Decorator",
+      "description": "Integrar legados e adicionar comportamento.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Adapter converte uma interface em outra que o cliente espera — ideal para integrar um SDK de terceiros sem espalhar suas classes pelo domínio. Decorator mantém a mesma interface e embrulha o objeto para adicionar comportamento (log, cache, retry) sem alterá-lo. Os proxies do Spring para @Transactional e @Cacheable seguem essa ideia.",
+          "code": "// Adapter: SDK externo atrás de uma interface do domínio\nclass StripeGatewayAdapter implements GatewayPagamento {\n    private final StripeClient stripe;\n    public Recibo cobrar(Pedido p) {\n        var charge = stripe.charges().create(p.totalEmCentavos(), \"brl\");\n        return new Recibo(charge.getId());\n    }\n}\n\n// Decorator: adiciona log mantendo a interface\nclass GatewayComLog implements GatewayPagamento {\n    private final GatewayPagamento delegate;\n    public Recibo cobrar(Pedido p) {\n        log.info(\"Cobrando pedido {}\", p.id());\n        return delegate.cobrar(p);\n    }\n}",
+          "interview_question": "Qual a diferença entre Adapter e Decorator?",
+          "references": [
+            "https://refactoring.guru/design-patterns/adapter",
+            "https://refactoring.guru/design-patterns/decorator"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Observer e Eventos de Domínio",
+      "description": "Reagindo a acontecimentos sem acoplamento.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "No Observer, quem gera o evento não conhece quem reage. No Spring, ApplicationEventPublisher publica um evento e métodos @EventListener reagem; com @TransactionalEventListener a reação só ocorre após o commit, evitando enviar e-mail de um pedido cuja transação falhou. Novos comportamentos entram como novos listeners.",
+          "code": "public record PedidoPago(Long pedidoId) {}\n\n@Service\nclass PagamentoService {\n    private final ApplicationEventPublisher eventos;\n\n    @Transactional\n    void confirmar(Pedido p) {\n        p.marcarComoPago();\n        eventos.publishEvent(new PedidoPago(p.id()));\n    }\n}\n\n@Component\nclass EnvioEmailListener {\n    @TransactionalEventListener\n    void aoPagar(PedidoPago evento) { /* envia e-mail */ }\n}",
+          "interview_question": "Como eventos de domínio reduzem o acoplamento entre módulos?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/core/beans/context-introduction.html#context-functionality-events"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Objetos de Valor e Modelo Rico",
+      "description": "Invariantes protegidas e comportamento no domínio.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Modelo anêmico é quando entidades só têm getters e setters e todas as regras ficam espalhadas em services — nada impede um pedido com total negativo. Em um modelo rico, a entidade protege suas invariantes e expõe comportamento (pedido.cancelar()). Objetos de valor, como Email ou Dinheiro, são imutáveis, validados na criação e comparados por valor — records são perfeitos para isso.",
+          "code": "public record Email(String valor) {\n    public Email {\n        if (valor == null || !valor.contains(\"@\")) {\n            throw new IllegalArgumentException(\"E-mail inválido: \" + valor);\n        }\n    }\n}\n\npublic class Pedido {\n    private StatusPedido status;\n\n    public void cancelar() {\n        if (status == StatusPedido.ENVIADO) {\n            throw new IllegalStateException(\"Pedido já enviado não pode ser cancelado\");\n        }\n        status = StatusPedido.CANCELADO;\n    }\n}",
+          "interview_question": "O que é um modelo de domínio anêmico e por que evitá-lo?",
+          "references": [
+            "https://martinfowler.com/bliki/AnemicDomainModel.html"
+          ]
+        }
+      ]
+    }
+  ]
 }

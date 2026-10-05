@@ -65,23 +65,52 @@
         <button type="button" (click)="content.reload()" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm">Tentar novamente</button>
       </div>
     } @else if (content.hasValue()) {
+      <!-- Filter pill bar -->
+      <div class="flex items-center justify-between gap-space-md p-1.5 rounded-xl bg-surface-container-low shadow-sm">
+        <div class="flex items-center gap-1 overflow-x-auto" role="group" aria-label="Filtrar seções por tipo">
+          @for (filter of filters(); track filter.id) {
+            <button
+              type="button"
+              (click)="category.set(filter.id)"
+              [disabled]="filter.count === 0"
+              [attr.aria-pressed]="category() === filter.id"
+              class="flex items-center gap-1.5 px-space-md py-1.5 rounded-lg text-headline-sm whitespace-nowrap transition-all disabled:text-outline/50 disabled:cursor-not-allowed"
+              [class]="category() === filter.id
+                ? 'bg-surface-container-highest text-primary shadow-sm'
+                : 'text-on-surface-variant enabled:hover:text-on-surface enabled:hover:bg-surface-container-high'"
+            >
+              <span class="material-symbols-outlined text-[18px]" aria-hidden="true">{{ filter.icon }}</span>
+              {{ filter.label }}
+              <span class="font-mono text-label-kbd px-1.5 py-0.5 rounded bg-surface-container">{{ filter.count }}</span>
+            </button>
+          }
+        </div>
+        <span class="hidden md:block px-space-sm text-outline font-mono text-code-inline whitespace-nowrap" aria-live="polite">
+          {{ sections().length }} de {{ filters()[0].count }} seções
+        </span>
+      </div>
+
       <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-xl items-start">
         <div class="xl:col-span-9 flex flex-col gap-space-xl min-w-0">
-          @if (content.value().resumo?.length && !search.query()) {
-            <section id="resumo" class="p-space-lg rounded-xl bg-surface-container-low relative overflow-hidden shadow-md scroll-mt-header-offset">
+          @if (showResumo()) {
+            <details id="resumo" class="group rounded-xl bg-surface-container-low relative overflow-hidden shadow-md scroll-mt-header-offset">
               <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" aria-hidden="true"></div>
-              <div class="flex items-start gap-space-md">
-                <div class="hidden sm:flex w-9 h-9 rounded-lg bg-surface-container-high items-center justify-center text-primary flex-shrink-0">
+              <summary class="flex items-center gap-space-md p-space-lg cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden hover:bg-surface-container transition-colors">
+                <span class="hidden sm:flex w-9 h-9 rounded-lg bg-surface-container-high items-center justify-center text-primary flex-shrink-0">
                   <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
-                </div>
-                <div class="flex flex-col gap-space-sm">
-                  <h2 class="text-headline-sm text-primary uppercase tracking-wide">Resumo</h2>
-                  @for (paragraph of content.value().resumo; track $index) {
-                    <p class="text-body-lg text-on-surface">{{ paragraph }}</p>
-                  }
-                </div>
+                </span>
+                <span class="flex-1 flex flex-col">
+                  <span class="text-headline-sm text-primary uppercase tracking-wide">Resumo</span>
+                  <span class="text-label-ui text-outline">{{ content.value().resumo!.length }} parágrafos · clique para expandir</span>
+                </span>
+                <span class="material-symbols-outlined text-outline transition-transform group-open:rotate-180" aria-hidden="true">expand_more</span>
+              </summary>
+              <div class="flex flex-col gap-space-sm px-space-lg pb-space-lg sm:pl-[calc(var(--spacing-space-lg)+2.25rem+var(--spacing-space-md))]">
+                @for (paragraph of content.value().resumo; track $index) {
+                  <p class="text-body-lg text-on-surface">{{ paragraph }}</p>
+                }
               </div>
-            </section>
+            </details>
           }
 
           @for (item of sections(); track item.index) {
@@ -132,8 +161,12 @@
           } @empty {
             <div class="p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center gap-space-md">
               <span class="material-symbols-outlined text-outline" aria-hidden="true">search_off</span>
-              <p class="flex-1 text-on-surface-variant">Nenhuma seção encontrada para "{{ search.query() }}".</p>
-              <button type="button" (click)="search.query.set('')" class="h-9 px-space-md rounded-xl bg-surface-container-high text-on-surface text-headline-sm hover:bg-surface-bright">Limpar busca</button>
+              <p class="flex-1 text-on-surface-variant">
+                Nenhuma seção encontrada
+                @if (search.query()) { para "{{ search.query() }}" }
+                com o filtro atual.
+              </p>
+              <button type="button" (click)="clearFilters()" class="h-9 px-space-md rounded-xl bg-surface-container-high text-on-surface text-headline-sm hover:bg-surface-bright">Limpar filtros</button>
             </div>
           }
         </div>
@@ -146,7 +179,7 @@
               Nesta Página
             </div>
             <nav aria-label="Nesta página" class="flex flex-col gap-1 text-body-sm">
-              @if (content.value().resumo?.length && !search.query()) {
+              @if (showResumo()) {
                 <button type="button" (click)="scrollTo('resumo')" class="text-left px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">Resumo</button>
               }
               @for (item of sections(); track item.index) {

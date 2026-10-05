@@ -1,42 +1,145 @@
 {
-    "title": "Docker e DevOps — Extra Avançado",
-    "description": "Construção, deploy e estratégias.",
-    "subsections": [
+  "title": "Docker e DevOps — Avançado",
+  "description": "Imagens otimizadas, Kubernetes em produção, estratégias de release e infraestrutura como código.",
+  "version": "Docker 26.x, Kubernetes 1.31",
+  "resumo": [
+    "Em produção, containers precisam ser pequenos, seguros e previsíveis: multi-stage builds, imagens enxutas, usuário não root e scan de vulnerabilidades fazem parte do pipeline.",
+    "No Kubernetes, Deployments, Services, ConfigMaps e Secrets separam execução de configuração; probes e limites de recursos permitem que a plataforma detecte e isole problemas.",
+    "Estratégias de release como rolling update, blue/green e canary reduzem o risco de cada deploy, e GitOps torna o estado do cluster auditável a partir do Git.",
+    "Infraestrutura como código e observabilidade fecham o ciclo: ambientes reprodutíveis e métricas que dizem se o deploy foi bem-sucedido."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Multi-stage Builds e Imagens Enxutas",
+      "description": "Menos tamanho, menos superfície de ataque.",
+      "category": "pratica",
+      "examples": [
         {
-            "subtitle": "Docker Multi-stage e Slim Images",
-            "description": "Otimização de builds.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Multi-stage reduz tamanho e superfície de ataque. Imagens slim melhoram startup e transferência.",
-                    "code": "FROM maven:3.9 AS build\nRUN mvn -q -DskipTests package\nFROM eclipse-temurin:17-jre\nCOPY --from=build target/app.jar app.jar\nENTRYPOINT [\"java\",\"-jar\",\"/app.jar\"]",
-                    "interview_question": "Quais benefícios práticos do multi-stage build?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Kubernetes: Deploy e Configurações",
-            "description": "Operação básica.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Deployments gerenciam réplicas e rollouts; ConfigMap/Secret separam configuração do código. Liveness/Readiness evitam tráfego para pods doentes.",
-                    "code": "readinessProbe: { httpGet: { path: /health, port: 8080 } }",
-                    "interview_question": "Diferença entre readiness e liveness probe?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Estratégias de Release",
-            "description": "Blue/Green e Canary.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Blue/Green alterna tráfego entre versões; Canary libera para uma fração de usuários, reduzindo risco em produção.",
-                    "code": "",
-                    "interview_question": "Quando escolher canary em vez de blue/green?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "O primeiro estágio tem JDK e Maven para compilar; o estágio final copia apenas o JAR para uma imagem só com JRE (ou distroless), reduzindo centenas de megabytes e removendo ferramentas que um atacante poderia usar. Copiar o pom.xml e baixar dependências antes do código-fonte aproveita o cache de camadas: dependências só são baixadas de novo quando o pom muda.",
+          "code": "FROM maven:3.9-eclipse-temurin-21 AS build\nWORKDIR /workspace\nCOPY pom.xml .\nRUN mvn -q dependency:go-offline\nCOPY src src\nRUN mvn -q -DskipTests package\n\nFROM eclipse-temurin:21-jre-alpine\nWORKDIR /app\nRUN addgroup -S app && adduser -S app -G app\nCOPY --from=build /workspace/target/*.jar app.jar\nUSER app\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-XX:MaxRAMPercentage=75\", \"-jar\", \"app.jar\"]",
+          "interview_question": "Quais benefícios práticos do multi-stage build?",
+          "references": [
+            "https://docs.docker.com/build/building/multi-stage/"
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Segurança de Imagens",
+      "description": "Scan de vulnerabilidades e cadeia de suprimentos.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Escaneie imagens no CI com ferramentas como Trivy ou Grype e falhe o pipeline em vulnerabilidades críticas; fixe versões de imagens base e atualize-as regularmente; rode como não root com sistema de arquivos somente leitura quando possível; e assine as imagens (Cosign) para garantir que o cluster só execute artefatos produzidos pelo seu pipeline. Nunca passe segredos como ARG ou ENV no Dockerfile.",
+          "code": "trivy image --severity CRITICAL,HIGH --exit-code 1 ghcr.io/loja/api:1.4.0\n\ncosign sign ghcr.io/loja/api@sha256:3f9a...\ncosign verify --certificate-identity-regexp '.*' \\\n  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n  ghcr.io/loja/api@sha256:3f9a...",
+          "interview_question": "Como garantir que uma imagem enviada para produção é segura?",
+          "references": [
+            "https://github.com/aquasecurity/trivy",
+            "https://docs.sigstore.dev/cosign/signing/overview/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Kubernetes: Deployment, Service e Configuração",
+      "description": "Os objetos básicos de uma aplicação.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Readiness indica se o pod pode receber tráfego: enquanto falha, ele sai do Service (útil no startup e em dependências indisponíveis). Liveness indica se o processo travou: ao falhar, o kubelet reinicia o container — não a vincule a dependências externas, ou uma queda do banco reinicia todos os pods. Startup probes protegem aplicações de inicialização lenta. O Spring Boot expõe ambas em /actuator/health/readiness e /liveness.",
+          "code": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api-pedidos\nspec:\n  replicas: 3\n  selector:\n    matchLabels: { app: api-pedidos }\n  template:\n    metadata:\n      labels: { app: api-pedidos }\n    spec:\n      containers:\n        - name: api\n          image: ghcr.io/loja/api:1.4.0\n          ports: [{ containerPort: 8080 }]\n          envFrom:\n            - configMapRef: { name: api-config }\n            - secretRef: { name: api-secrets }\n          readinessProbe:\n            httpGet: { path: /actuator/health/readiness, port: 8080 }\n          livenessProbe:\n            httpGet: { path: /actuator/health/liveness, port: 8080 }\n            initialDelaySeconds: 30",
+          "interview_question": "Diferença entre readiness e liveness probe?",
+          "references": [
+            "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Recursos e Autoescalonamento",
+      "description": "Requests, limits e HPA.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Requests é o que o scheduler reserva para o pod (garantido); limits é o teto. Exceder o limite de memória mata o container (OOMKilled); exceder o de CPU causa throttling (lentidão). Para Java, alinhe o heap ao limite com MaxRAMPercentage. O HorizontalPodAutoscaler adiciona ou remove réplicas com base em CPU ou métricas customizadas, o que exige aplicações stateless.",
+          "code": "resources:\n  requests: { cpu: \"250m\", memory: \"512Mi\" }\n  limits:   { memory: \"768Mi\" }\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: api-pedidos\nspec:\n  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api-pedidos }\n  minReplicas: 3\n  maxReplicas: 10\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target: { type: Utilization, averageUtilization: 70 }",
+          "interview_question": "Qual a diferença entre requests e limits no Kubernetes?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+            "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Estratégias de Release",
+      "description": "Rolling update, blue/green e canary.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Rolling update (padrão do Deployment) troca pods gradualmente, sem duplicar infraestrutura. Blue/green mantém duas versões completas e alterna todo o tráfego de uma vez — rollback instantâneo, mas custo dobrado durante a troca. Canary envia uma fração pequena do tráfego (ex.: 5%) para a nova versão e aumenta conforme métricas de erro e latência; é preferível quando você quer validar com usuários reais e limitar o impacto de um bug.",
+          "code": "# Rolling update controlado\nstrategy:\n  type: RollingUpdate\n  rollingUpdate:\n    maxUnavailable: 0   # nunca reduz a capacidade\n    maxSurge: 1         # sobe um pod novo por vez\n\n# Canary com Argo Rollouts (resumo)\nsteps:\n  - setWeight: 5\n  - pause: { duration: 10m }\n  - setWeight: 50\n  - pause: { duration: 10m }",
+          "interview_question": "Quando escolher canary em vez de blue/green?",
+          "references": [
+            "https://martinfowler.com/bliki/CanaryRelease.html",
+            "https://martinfowler.com/bliki/BlueGreenDeployment.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "GitOps com Argo CD",
+      "description": "O Git como fonte da verdade do cluster.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em GitOps, o estado desejado do cluster fica versionado em um repositório; um agente dentro do cluster (Argo CD ou Flux) compara continuamente o Git com o cluster e sincroniza as diferenças. O pipeline de CI só atualiza a tag da imagem no repositório de configuração. Ganha-se auditoria (cada deploy é um commit), rollback por git revert e menos credenciais do cluster expostas no CI.",
+          "code": "apiVersion: argoproj.io/v1alpha1\nkind: Application\nmetadata:\n  name: api-pedidos\n  namespace: argocd\nspec:\n  project: default\n  source:\n    repoURL: https://github.com/loja/infra-config.git\n    path: apps/api-pedidos/overlays/producao\n    targetRevision: main\n  destination:\n    server: https://kubernetes.default.svc\n    namespace: pedidos\n  syncPolicy:\n    automated: { prune: true, selfHeal: true }",
+          "interview_question": "O que é GitOps e qual a vantagem sobre aplicar manifests pelo pipeline?",
+          "references": [
+            "https://argo-cd.readthedocs.io/en/stable/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Infraestrutura como Código com Terraform",
+      "description": "Ambientes reprodutíveis e revisáveis.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Terraform descreve a infraestrutura de forma declarativa; terraform plan mostra o que vai mudar antes do apply, permitindo revisar mudanças de infra em Pull Requests. O state mapeia o código aos recursos reais: deve ficar em um backend remoto (S3, GCS) com lock para evitar applies simultâneos, e pode conter segredos, então precisa de acesso restrito e criptografia. Módulos reutilizáveis evitam copiar e colar entre ambientes.",
+          "code": "terraform {\n  backend \"s3\" {\n    bucket         = \"loja-terraform-state\"\n    key            = \"producao/api.tfstate\"\n    region         = \"us-east-1\"\n    dynamodb_table = \"terraform-locks\"\n    encrypt        = true\n  }\n}\n\nmodule \"banco\" {\n  source         = \"./modules/postgres\"\n  ambiente       = \"producao\"\n  instance_class = \"db.t4g.medium\"\n}",
+          "interview_question": "Por que o state do Terraform precisa de cuidado especial?",
+          "references": [
+            "https://developer.hashicorp.com/terraform/language/state"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Gestão de Segredos",
+      "description": "Credenciais fora do código e das imagens.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Secrets do Kubernetes são apenas codificados em Base64 e, por padrão, armazenados sem criptografia no etcd; também não devem ser versionados em texto puro no Git. Em produção, use um cofre (HashiCorp Vault, AWS Secrets Manager) integrado ao cluster via External Secrets Operator, habilite criptografia em repouso, restrinja acesso com RBAC e faça rotação periódica das credenciais.",
+          "code": "apiVersion: external-secrets.io/v1beta1\nkind: ExternalSecret\nmetadata:\n  name: api-secrets\nspec:\n  refreshInterval: 1h\n  secretStoreRef: { name: aws-secrets-manager, kind: ClusterSecretStore }\n  target: { name: api-secrets }\n  data:\n    - secretKey: SPRING_DATASOURCE_PASSWORD\n      remoteRef: { key: producao/api, property: db_password }",
+          "interview_question": "Por que Secrets do Kubernetes sozinhos não são suficientes?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/configuration/secret/",
+            "https://external-secrets.io/latest/"
+          ]
+        }
+      ]
+    }
+  ]
 }

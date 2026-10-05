@@ -22,84 +22,104 @@
     {
       "subtitle": "O que são Testes Automatizados?",
       "description": "Definição geral de testes automatizados.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Testes automatizados são essenciais em projetos ágeis porque permitem verificação rápida de mudanças, facilitando iterações frequentes e reduzindo riscos em deploys contínuos.",
           "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass ExemploTest {\n  @Test\n  void verificaCondicao() {\n    assertTrue(true); // Exemplo simples\n  }\n}",
           "interview_question": "Por que testes automatizados são essenciais em projetos ágeis?",
-          "references": ["https://junit.org/junit5/docs/current/user-guide/"]
+          "references": [
+            "https://junit.org/junit5/docs/current/user-guide/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Testes Unitários",
       "description": "Validação de unidades isoladas do código.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Testar uma unidade foca em métodos isolados, enquanto testar um sistema inteiro verifica interações entre componentes, sendo mais complexo e lento.",
           "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  @DisplayName(\"Testa soma de dois números\")\n  void testSoma() {\n    Calc calc = new Calc();\n    assertEquals(4, calc.soma(2, 2));\n  }\n}\nclass Calc {\n  int soma(int a, int b) { return a + b; }\n}",
           "interview_question": "Qual a diferença entre testar uma unidade e testar um sistema inteiro?",
-          "references": ["https://junit.org/junit5/docs/current/user-guide/#writing-tests"]
+          "references": [
+            "https://junit.org/junit5/docs/current/user-guide/#writing-tests"
+          ]
         }
       ]
     },
     {
       "subtitle": "Mocking com Mockito",
       "description": "Simulação de dependências em testes unitários com Mockito.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Mocking é a técnica de criar objetos simulados (mocks) para substituir dependências reais em testes unitários, permitindo isolar a unidade testada. Com Mockito, você cria mocks, define comportamentos (ex.: retorno de métodos) e verifica interações (ex.: chamadas de métodos). Isso é essencial para testar lógica de negócios sem depender de bancos de dados, APIs ou outros sistemas externos.",
           "code": "import org.junit.jupiter.api.Test;\nimport org.mockito.Mockito;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\nclass UserServiceTest {\n  @Test\n  void testGetUserName() {\n    // Arrange: Criar mock do repositório\n    UserRepository repo = Mockito.mock(UserRepository.class);\n    when(repo.findNameById(1L)).thenReturn(\"João\");\n    UserService service = new UserService(repo);\n\n    // Act: Chamar método do serviço\n    String name = service.getUserName(1L);\n\n    // Assert: Verificar resultado e interação\n    assertEquals(\"João\", name);\n    verify(repo).findNameById(1L); // Verifica se o método foi chamado\n  }\n}\ninterface UserRepository {\n  String findNameById(Long id);\n}\nclass UserService {\n  private UserRepository repo;\n  UserService(UserRepository repo) { this.repo = repo; }\n  String getUserName(Long id) { return repo.findNameById(id); }\n}",
           "interview_question": "O que é mocking e como o Mockito facilita testes unitários?",
-          "references": ["https://site.mockito.org/", "https://junit.org/junit5/docs/current/user-guide/#writing-tests-mocking"]
+          "references": [
+            "https://site.mockito.org/",
+            "https://junit.org/junit5/docs/current/user-guide/#writing-tests-mocking"
+          ]
         }
       ]
     },
     {
       "subtitle": "Testes de Integração",
       "description": "Validação da integração entre módulos.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Use testes de integração quando precisa verificar interações reais entre componentes, como serviço e banco, enquanto testes unitários isolam unidades para velocidade e foco em lógica específica.",
           "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.beans.factory.annotation.Autowired;\n\n@SpringBootTest\nclass UserServiceTest {\n  @Autowired\n  private UserService service;\n  @Test\n  void testFindUser() {\n    // Testa integração com banco real\n    assertNotNull(service.findById(1L));\n  }\n}",
           "interview_question": "Quando usar testes de integração em vez de unitários?",
-          "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
+          "references": [
+            "https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"
+          ]
         }
       ]
     },
     {
       "subtitle": "Testes de API (End-to-End)",
       "description": "Testes de APIs REST em aplicações.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Para testar uma API REST de forma automatizada, use ferramentas como MockMvc ou TestRestTemplate no Spring Boot para simular requisições e verificar respostas, como status HTTP e JSON.",
           "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.boot.test.web.client.TestRestTemplate;\n\n@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)\nclass ApiTest {\n  @Autowired\n  private TestRestTemplate restTemplate;\n  @Test\n  void testGetUser() {\n    String response = restTemplate.getForObject(\"/api/users/1\", String.class);\n    assertTrue(response.contains(\"user\"));\n  }\n}",
           "interview_question": "Como testar uma API REST de forma automatizada?",
-          "references": ["https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"]
+          "references": [
+            "https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"
+          ]
         }
       ]
     },
     {
       "subtitle": "Cobertura de Testes",
       "description": "Métricas para avaliar a qualidade dos testes.",
+      "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Ter 80% de cobertura de testes significa que 80% do código é executado durante os testes, cobrindo linhas ou branches, mas não garante que os testes sejam eficazes ou cubram todos os cenários.",
           "code": "// Configuração no Maven (pom.xml)\n<plugin>\n  <groupId>org.jacoco</groupId>\n  <artifactId>jacoco-maven-plugin</artifactId>\n  <version>0.8.11</version>\n</plugin>",
           "interview_question": "O que significa ter 80% de cobertura de testes?",
-          "references": ["https://www.jacoco.org/jacoco/trunk/doc/"]
+          "references": [
+            "https://www.jacoco.org/jacoco/trunk/doc/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Boas Práticas (AAA e TDD)",
       "description": "Padrões para escrever testes eficazes.",
+      "category": "boas-praticas",
       "examples": [
         {
           "title": "Explicação",
@@ -112,13 +132,64 @@
     {
       "subtitle": "Testes Parametrizados",
       "description": "Testes com múltiplos casos de entrada.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Use testes parametrizados quando precisa validar uma função com múltiplos inputs, em vez de testes individuais, reduzindo duplicação e cobrindo mais cenários com menos código.",
           "code": "import org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.CsvSource;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @ParameterizedTest\n  @CsvSource({\"2, 2, 4\", \"3, 3, 6\", \"0, 5, 5\"})\n  void testSoma(int a, int b, int expected) {\n    Calc calc = new Calc();\n    assertEquals(expected, calc.soma(a, b));\n  }\n}",
           "interview_question": "Quando usar testes parametrizados em vez de testes individuais?",
-          "references": ["https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests"]
+          "references": [
+            "https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Pirâmide de Testes",
+      "description": "Quantos testes de cada tipo escrever.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A pirâmide recomenda muitos testes unitários (rápidos, baratos, isolados), uma quantidade média de testes de integração (componentes reais, como banco e HTTP) e poucos testes end-to-end (lentos e frágeis, mas que validam o fluxo completo). Inverter a pirâmide — muitos E2E e poucos unitários — gera suítes lentas e instáveis, que atrasam o feedback do CI.",
+          "code": "    /\\        E2E: poucos, fluxos críticos (ex.: checkout)\n   /  \\\n  /----\\      Integração: banco, HTTP, mensageria\n /      \\\n/--------\\    Unitários: regras de negócio, muitos e rápidos",
+          "interview_question": "O que é a pirâmide de testes?",
+          "references": [
+            "https://martinfowler.com/articles/practical-test-pyramid.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Asserções Expressivas com AssertJ",
+      "description": "Testes que se leem como especificação.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "AssertJ (incluído no spring-boot-starter-test) usa uma API fluente, encadeável e com mensagens de erro muito mais claras. Permite verificar coleções, exceções e objetos campo a campo de forma legível, deixando o teste mais próximo de uma especificação do comportamento.",
+          "code": "import static org.assertj.core.api.Assertions.*;\n\n@Test\nvoid deveCalcularTotalDoPedido() {\n    Pedido pedido = new Pedido(List.of(item(\"livro\", \"50.00\"), item(\"caneta\", \"5.00\")));\n\n    assertThat(pedido.total()).isEqualByComparingTo(\"55.00\");\n    assertThat(pedido.itens()).hasSize(2)\n                              .extracting(Item::nome)\n                              .containsExactly(\"livro\", \"caneta\");\n}\n\n@Test\nvoid deveRejeitarQuantidadeNegativa() {\n    assertThatThrownBy(() -> new Item(\"livro\", -1))\n        .isInstanceOf(IllegalArgumentException.class)\n        .hasMessageContaining(\"quantidade\");\n}",
+          "interview_question": "Que vantagem o AssertJ oferece sobre assertEquals?",
+          "references": [
+            "https://assertj.github.io/doc/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de Slice no Spring",
+      "description": "@WebMvcTest e @DataJpaTest: só o necessário.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "@SpringBootTest sobe o contexto inteiro da aplicação — completo, porém lento. Os \"slices\" carregam apenas uma camada: @WebMvcTest sobe controllers, filtros e serialização JSON (os services viram mocks com @MockitoBean); @DataJpaTest sobe repositórios e um banco para testar consultas. Slices deixam a suíte mais rápida e os testes mais focados.",
+          "code": "@WebMvcTest(PedidoController.class)\nclass PedidoControllerTest {\n    @Autowired MockMvc mvc;\n    @MockitoBean PedidoService service;\n\n    @Test\n    void deveRetornar404QuandoPedidoNaoExiste() throws Exception {\n        when(service.buscar(42L)).thenThrow(new PedidoNaoEncontradoException(42L));\n\n        mvc.perform(get(\"/pedidos/42\"))\n           .andExpect(status().isNotFound());\n    }\n}",
+          "interview_question": "Qual a diferença entre @SpringBootTest e @WebMvcTest?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html"
+          ]
         }
       ]
     }

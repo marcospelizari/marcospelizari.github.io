@@ -21,104 +21,177 @@
     {
       "subtitle": "O que é Docker?",
       "description": "Definição inicial de containers.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "O Docker garante consistência entre ambientes ao empacotar a aplicação e suas dependências em imagens, replicando o mesmo ambiente de desenvolvimento para teste e produção, como uma app Spring Boot que roda igual em todas as etapas.",
           "code": "docker run -d -p 8080:8080 spring-app\n# Executa container de uma app Spring Boot na porta 8080",
           "interview_question": "Como o Docker garante consistência entre ambientes?",
-          "references": ["https://docs.docker.com/get-started/"]
+          "references": [
+            "https://docs.docker.com/get-started/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Imagem vs Container",
       "description": "Diferença entre modelos e instâncias.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Criar uma imagem Docker para uma app Java envolve escrever um Dockerfile que copia o JAR e define a execução com OpenJDK, construindo com 'docker build' e rodando com 'docker run', permitindo deploy consistente.",
           "code": "# Dockerfile para Spring Boot\nFROM openjdk:21\nCOPY target/app.jar app.jar\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n# Comandos\n docker build -t minha-app .\n docker run -d minha-app",
           "interview_question": "Como criar uma imagem Docker para uma aplicação Java?",
-          "references": ["https://docs.docker.com/engine/reference/builder/"]
+          "references": [
+            "https://docs.docker.com/engine/reference/builder/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Docker Compose",
       "description": "Orquestração de múltiplos containers.",
+      "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Docker Compose ajuda no desenvolvimento local ao gerenciar uma app Spring Boot com um banco PostgreSQL em um único comando 'docker-compose up', simulando um ambiente completo e facilitando testes de integração.",
           "code": "# docker-compose.yml\nversion: '3.8'\nservices:\n  app:\n    image: minha-app\n    ports:\n      - \"8080:8080\"\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_USER: user\n      POSTGRES_PASSWORD: pass\n# Inicia com: docker-compose up",
           "interview_question": "Como o Docker Compose ajuda no desenvolvimento local de uma app Spring Boot?",
-          "references": ["https://docs.docker.com/compose/"]
+          "references": [
+            "https://docs.docker.com/compose/"
+          ]
         }
       ]
     },
     {
       "subtitle": "DevOps",
       "description": "Cultura e práticas para entrega contínua.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "A cultura DevOps melhora a colaboração ao alinhar Dev e Ops com automação e monitoramento, reduzindo silos e acelerando entregas, como em um time que deploya uma app Spring Boot sem conflitos.",
           "code": "# Exemplo de pipeline CI/CD (pseudo-código)\nbuild: mvn clean package\ntest: mvn test\ndeploy: docker push minha-app",
           "interview_question": "Como a cultura DevOps melhora a colaboração entre times?",
-          "references": ["https://aws.amazon.com/devops/what-is-devops/"]
+          "references": [
+            "https://aws.amazon.com/devops/what-is-devops/"
+          ]
         }
       ]
     },
     {
       "subtitle": "CI/CD",
       "description": "Integração e entrega contínuas.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Continuous Delivery prepara o código para deploy manual após testes, enquanto Continuous Deployment automatiza até a produção, sendo CD ideal para apps Spring Boot que precisam de releases frequentes sem intervenção.",
           "code": "# .github/workflows/ci.yml (GitHub Actions)\nname: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: mvn clean test",
           "interview_question": "Qual a diferença entre Continuous Delivery e Continuous Deployment?",
-          "references": ["https://docs.github.com/en/actions"]
+          "references": [
+            "https://docs.github.com/en/actions"
+          ]
         }
       ]
     },
     {
       "subtitle": "Kubernetes (Básico)",
       "description": "Orquestração de containers em escala.",
+      "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Kubernetes difere do Docker Compose ao gerenciar clusters em escala, com pods orquestrados para alta disponibilidade, enquanto Compose é local, sendo Kubernetes mais adequado para deploy de uma app Spring Boot em produção.",
           "code": "# Exemplo de pod Kubernetes\napiVersion: v1\nkind: Pod\nmetadata:\n  name: spring-app\nspec:\n  containers:\n  - name: app\n    image: minha-app:latest\n    ports:\n    - containerPort: 8080",
           "interview_question": "Como o Kubernetes diferencia-se do Docker Compose?",
-          "references": ["https://kubernetes.io/docs/concepts/"]
+          "references": [
+            "https://kubernetes.io/docs/concepts/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Monitoramento e Logging",
       "description": "Observabilidade em aplicações.",
+      "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Monitoramento é crítico em microserviços para rastrear métricas como latência, enquanto logging ajuda a diagnosticar erros, como falhas em uma app Spring Boot, garantindo visibilidade em sistemas distribuídos.",
           "code": "# Configuração Prometheus (prometheus.yml)\nscrape_configs:\n  - job_name: 'spring-app'\n    static_configs:\n    - targets: ['app:8080']\n# Habilita actuator no Spring Boot\nmanagement.endpoints.web.exposure.include=health,metrics",
           "interview_question": "Por que monitoramento é crítico em arquiteturas de microserviços?",
-          "references": ["https://prometheus.io/docs/introduction/overview/"]
+          "references": [
+            "https://prometheus.io/docs/introduction/overview/"
+          ]
         }
       ]
     },
     {
       "subtitle": "Infraestrutura como Código (IaC)",
       "description": "Automação de infraestrutura.",
+      "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "IaC melhora a implantação em cloud ao definir recursos como containers em código com Terraform, assegurando que ambientes sejam replicados consistentemente, como um cluster para uma app Spring Boot.",
           "code": "# Terraform para criar um container ECS\nresource \"aws_ecs_task_definition\" \"app\" {\n  family = \"spring-app\"\n  container_definitions = jsonencode([{\n    name = \"app\"\n    image = \"minha-app:latest\"\n  }])\n}",
           "interview_question": "Como o IaC melhora a implantação de aplicações em cloud?",
-          "references": ["https://www.terraform.io/docs"]
+          "references": [
+            "https://www.terraform.io/docs"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Volumes e Redes",
+      "description": "Persistência de dados e comunicação entre containers.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Containers são efêmeros: ao remover o container, o que foi gravado em seu sistema de arquivos se perde. Volumes gerenciados pelo Docker guardam dados fora do ciclo de vida do container (ideal para bancos). Redes definidas pelo usuário permitem que containers se encontrem pelo nome do serviço — a aplicação acessa o banco em \"db:5432\", não em localhost.",
+          "code": "# docker-compose.yml\nservices:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: secret\n    volumes:\n      - dados-pg:/var/lib/postgresql/data\n  app:\n    image: minha-api:1.0\n    environment:\n      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres\n    depends_on:\n      - db\n\nvolumes:\n  dados-pg:",
+          "interview_question": "Como persistir dados de um banco rodando em container?",
+          "references": [
+            "https://docs.docker.com/engine/storage/volumes/",
+            "https://docs.docker.com/compose/how-tos/networking/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Comandos Essenciais do Docker",
+      "description": "O dia a dia de build, execução e depuração.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Primeiro docker ps -a para ver o status e o código de saída; depois docker logs para ver o erro da aplicação. docker exec abre um shell em um container em execução, e docker inspect mostra variáveis de ambiente, portas e volumes. Erros comuns: porta já em uso, variável de ambiente faltando e aplicação escutando em 127.0.0.1 em vez de 0.0.0.0 dentro do container.",
+          "code": "docker build -t minha-api:1.0 .\ndocker run -d --name api -p 8080:8080 minha-api:1.0\ndocker ps -a                       # status e código de saída\ndocker logs -f api                 # acompanha os logs\ndocker exec -it api sh             # shell dentro do container\ndocker inspect api                 # configuração completa\ndocker image prune                 # remove imagens não usadas",
+          "interview_question": "Quais comandos você usa para depurar um container que não sobe?",
+          "references": [
+            "https://docs.docker.com/reference/cli/docker/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Boas Práticas de Dockerfile",
+      "description": "Imagens menores, rápidas e seguras.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Use imagens base enxutas e com versão fixa (eclipse-temurin:21-jre, nunca latest); ordene as instruções da menos para a mais mutável para aproveitar o cache de camadas; use .dockerignore para não enviar target/ e .git ao build; rode como usuário não root; e não coloque segredos na imagem — eles ficam gravados nas camadas. Multi-stage builds separam a compilação da imagem final.",
+          "code": "FROM eclipse-temurin:21-jre\nWORKDIR /app\nRUN useradd --system app\nCOPY target/app.jar app.jar\nUSER app\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]",
+          "interview_question": "Quais práticas tornam uma imagem Docker menor e mais segura?",
+          "references": [
+            "https://docs.docker.com/build/building/best-practices/"
+          ]
         }
       ]
     }

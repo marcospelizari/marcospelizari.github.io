@@ -47,6 +47,11 @@ export const TOPIC_GROUPS: TopicGroup[] = [
         files: { essencial: 'essencial/docker-devops.json', avancado: 'avancado/docker-devops-avancado.json' },
       },
       {
+        slug: 'ci-cd',
+        label: 'CI/CD',
+        files: { essencial: 'essencial/ci-cd.json', avancado: 'avancado/ci-cd-avancado.json' },
+      },
+      {
         slug: 'controle-versao',
         label: 'Controle de Versão (Git)',
         files: { essencial: 'essencial/controle-versao.json', avancado: 'avancado/controle-versao-avancado.json' },

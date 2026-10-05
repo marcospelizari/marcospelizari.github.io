@@ -1,0 +1,176 @@
+{
+  "title": "CI/CD: Pipelines, Automação e Entrega Contínua",
+  "description": "Integração contínua, entrega e deploy contínuos com GitHub Actions aplicados a projetos Java e Spring Boot.",
+  "version": "GitHub Actions, Spring Boot 3.3.x",
+  "resumo": [
+    "CI/CD é o conjunto de práticas que automatiza o caminho do código até produção. Em vez de integrar e publicar manualmente de tempos em tempos, cada mudança passa por um pipeline que compila, testa e entrega.",
+    "Integração Contínua (CI) significa integrar o código na branch principal várias vezes ao dia, com build e testes automáticos em cada push ou Pull Request — quem quebrou o build descobre em minutos.",
+    "Entrega Contínua (Continuous Delivery) mantém o software sempre pronto para ir a produção, com o deploy final aprovado manualmente; Deploy Contínuo (Continuous Deployment) remove essa aprovação e publica tudo o que passa no pipeline.",
+    "Um pipeline típico de Spring Boot: checkout, build e testes com Maven, análise de qualidade, build da imagem Docker, publicação no registry e deploy em staging e produção.",
+    "Boas práticas tornam o pipeline confiável: builds rápidos com cache, falha rápida, artefatos imutáveis promovidos entre ambientes e segredos gerenciados fora do código."
+  ],
+  "subsections": [
+    {
+      "subtitle": "O que é CI/CD?",
+      "description": "Automação do caminho entre o commit e a produção.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Sem CI/CD, integrações são raras e grandes, os conflitos se acumulam, testes são esquecidos e cada deploy manual é um evento arriscado. Com um pipeline automático, cada mudança é pequena, verificada da mesma forma e pode ser publicada com segurança várias vezes ao dia. O resultado é feedback rápido para o desenvolvedor e menor risco por entrega.",
+          "code": "commit -> push -> [CI: build + testes + qualidade] -> artefato (imagem Docker)\n       -> [CD: deploy staging -> testes -> aprovação?] -> produção",
+          "interview_question": "Qual problema o CI/CD resolve?",
+          "references": [
+            "https://martinfowler.com/articles/continuousIntegration.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Continuous Integration",
+      "description": "Integrar cedo e com frequência.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Não basta ter um servidor de build: CI pressupõe integrar na branch principal pelo menos diariamente, com branches curtas; build e testes automáticos em cada mudança; build rápido (idealmente menos de 10 minutos); e o build quebrado como prioridade do time. Branches que vivem semanas anulam os benefícios, mesmo com um pipeline configurado.",
+          "code": "Checklist de CI:\n[x] Todo push e Pull Request dispara o pipeline\n[x] Build reproduzível (Maven Wrapper, versões fixas)\n[x] Testes unitários e de integração automáticos\n[x] Feedback em menos de 10 minutos\n[x] Main sempre verde; build quebrado é corrigido imediatamente",
+          "interview_question": "Quais práticas definem a Integração Contínua de verdade?",
+          "references": [
+            "https://martinfowler.com/articles/continuousIntegration.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Continuous Delivery vs Continuous Deployment",
+      "description": "Quem aperta o botão final?",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em Continuous Delivery, todo artefato que passa no pipeline está pronto para produção, mas o deploy final depende de uma aprovação manual — comum quando há janelas de release ou requisitos de compliance. Em Continuous Deployment não há aprovação humana: tudo que passa nos testes vai direto para produção, o que exige testes muito confiáveis, monitoramento e rollback automático.",
+          "code": "Continuous Delivery:   CI -> staging (automático) -> [aprovação manual] -> produção\nContinuous Deployment: CI -> staging (automático) -> produção (automático, com rollback)",
+          "interview_question": "Qual a diferença entre Continuous Delivery e Continuous Deployment?",
+          "references": [
+            "https://continuousdelivery.com/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Anatomia de um Pipeline",
+      "description": "Stages, jobs, steps, runners e artefatos.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Um pipeline é dividido em estágios executados em sequência ou em paralelo: checkout do código, build e testes (mvn verify), análise de qualidade e segurança, build e publicação da imagem Docker, deploy em staging, testes de fumaça e promoção para produção. Cada estágio roda em um runner (máquina ou container) e passa adiante artefatos — o JAR ou a imagem — em vez de recompilar.",
+          "code": "1. Checkout          actions/checkout\n2. Build & testes    mvn -B verify (JDK 21)\n3. Qualidade         cobertura (JaCoCo), análise estática, scan de dependências\n4. Imagem            docker build + push para o registry (tag = SHA do commit)\n5. Staging           deploy automático + smoke tests\n6. Produção          aprovação (delivery) ou automático (deployment)",
+          "interview_question": "Quais são os estágios típicos de um pipeline para uma API Spring Boot?",
+          "references": [
+            "https://docs.github.com/en/actions/about-github-actions/understanding-github-actions"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "GitHub Actions na Prática",
+      "description": "Um workflow de CI para Maven.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Workflows são arquivos YAML em .github/workflows. O gatilho (on) define quando rodam; cada job roda em um runner com steps sequenciais. A action setup-java instala o JDK e faz cache do repositório Maven, e mvn -B verify executa compilação, testes e verificações. Jobs diferentes podem rodar em paralelo e depender uns dos outros com needs.",
+          "code": "# .github/workflows/ci.yml\nname: CI\n\non:\n  push:\n    branches: [main]\n  pull_request:\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n\n      - uses: actions/setup-java@v4\n        with:\n          distribution: temurin\n          java-version: '21'\n          cache: maven\n\n      - name: Build e testes\n        run: ./mvnw -B verify",
+          "interview_question": "Como configurar um pipeline de CI para um projeto Maven no GitHub Actions?",
+          "references": [
+            "https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-java-with-maven"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Build da Imagem e Registry",
+      "description": "Publicando um artefato imutável.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "latest é mutável: não diz qual código está rodando e impede rollbacks confiáveis. Tag com o SHA do commit (ou a versão semântica em releases) cria um artefato imutável e rastreável — sabe-se exatamente o que está em cada ambiente. A mesma imagem é então promovida de staging para produção, sem recompilar.",
+          "code": "docker:\n  needs: build\n  runs-on: ubuntu-latest\n  permissions:\n    contents: read\n    packages: write\n  steps:\n    - uses: actions/checkout@v4\n    - uses: docker/login-action@v3\n      with:\n        registry: ghcr.io\n        username: ${{ github.actor }}\n        password: ${{ secrets.GITHUB_TOKEN }}\n    - uses: docker/build-push-action@v6\n      with:\n        push: true\n        tags: ghcr.io/${{ github.repository }}:${{ github.sha }}",
+          "interview_question": "Por que marcar imagens com o SHA do commit em vez de \"latest\"?",
+          "references": [
+            "https://docs.docker.com/build/ci/github-actions/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes e Quality Gates",
+      "description": "Critérios automáticos para aprovar uma mudança.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Quality gate é um conjunto de critérios que o pipeline exige para aprovar uma mudança: todos os testes passando, cobertura mínima no código novo, ausência de bugs e vulnerabilidades críticas na análise estática e dependências sem CVEs graves. Se algum critério falha, o PR não pode ser mergeado. Foque em código novo para não travar projetos legados.",
+          "code": "<!-- pom.xml: falha o build se a cobertura ficar abaixo de 80% -->\n<plugin>\n  <groupId>org.jacoco</groupId>\n  <artifactId>jacoco-maven-plugin</artifactId>\n  <version>0.8.12</version>\n  <executions>\n    <execution><goals><goal>prepare-agent</goal></goals></execution>\n    <execution>\n      <id>check</id>\n      <goals><goal>check</goal></goals>\n      <configuration>\n        <rules>\n          <rule>\n            <limits>\n              <limit><counter>LINE</counter><value>COVEREDRATIO</value><minimum>0.80</minimum></limit>\n            </limits>\n          </rule>\n        </rules>\n      </configuration>\n    </execution>\n  </executions>\n</plugin>",
+          "interview_question": "O que é um quality gate e o que ele deve verificar?",
+          "references": [
+            "https://www.eclemma.org/jacoco/trunk/doc/maven.html",
+            "https://docs.sonarsource.com/sonarqube-server/latest/quality-standards-administration/managing-quality-gates/introduction-to-quality-gates/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Segredos no Pipeline",
+      "description": "Credenciais seguras em GitHub Actions.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Credenciais ficam em GitHub Secrets (do repositório ou de um environment) e são acessadas por ${{ secrets.NOME }}; o GitHub mascara seus valores nos logs. Dê ao GITHUB_TOKEN apenas as permissões necessárias com permissions. Para nuvem, prefira OIDC: o workflow troca um token temporário por credenciais de curta duração, sem chaves de longa duração guardadas no repositório.",
+          "code": "permissions:\n  contents: read\n  id-token: write   # necessário para OIDC\n\nsteps:\n  - uses: aws-actions/configure-aws-credentials@v4\n    with:\n      role-to-assume: arn:aws:iam::123456789012:role/deploy-api\n      aws-region: us-east-1\n  - name: Análise Sonar\n    env:\n      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}\n    run: ./mvnw -B sonar:sonar",
+          "interview_question": "Como usar credenciais em um pipeline sem expô-las?",
+          "references": [
+            "https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions",
+            "https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Ambientes e Promoção",
+      "description": "Dev, staging e produção com o mesmo artefato.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Recompilar para cada ambiente pode gerar binários diferentes (dependências atualizadas, outro compilador), invalidando os testes feitos em staging. O correto é construir uma vez e promover a mesma imagem, mudando apenas a configuração (variáveis de ambiente, profiles). GitHub Environments adicionam regras de proteção, como revisores obrigatórios antes de produção.",
+          "code": "deploy-producao:\n  needs: deploy-staging\n  runs-on: ubuntu-latest\n  environment:\n    name: producao              # exige aprovação configurada no repositório\n    url: https://api.loja.com\n  steps:\n    - run: ./deploy.sh ghcr.io/${{ github.repository }}:${{ github.sha }}",
+          "interview_question": "Por que promover o mesmo artefato entre ambientes em vez de recompilar?",
+          "references": [
+            "https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-deployments/managing-environments-for-deployment"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Boas Práticas de Pipeline",
+      "description": "Rápido, confiável e fácil de manter.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Faça cache de dependências; execute primeiro as verificações mais rápidas (fail fast); paralelize jobs independentes; fixe versões de actions e imagens; mantenha builds idempotentes e reproduzíveis; use os mesmos comandos localmente e no CI (Maven Wrapper); e trate o pipeline como código, revisado em Pull Requests. Um pipeline lento ou instável faz o time contorná-lo.",
+          "code": "Pipeline rápido:\n  - cache do ~/.m2 (setup-java cache: maven)\n  - lint e testes unitários antes de testes de integração\n  - jobs paralelos: testes | análise estática | scan de dependências\n  - concurrency: cancela execuções antigas da mesma branch\n\nconcurrency:\n  group: ci-${{ github.ref }}\n  cancel-in-progress: true",
+          "interview_question": "Quais práticas tornam um pipeline de CI/CD eficiente?",
+          "references": [
+            "https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/caching-dependencies-to-speed-up-workflows"
+          ]
+        }
+      ]
+    }
+  ]
+}

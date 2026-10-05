@@ -1,54 +1,141 @@
 {
-    "title": "Spring Boot — Extra Avançado",
-    "description": "Segurança, dados e microserviços com Spring.",
-    "subsections": [
+  "title": "Spring Boot — Avançado",
+  "description": "Transações, JPA, segurança, resiliência e performance em aplicações Spring.",
+  "version": "Spring Boot 3.3.x",
+  "resumo": [
+    "No nível avançado, entender como o Spring funciona por dentro evita bugs sutis: @Transactional e @Cacheable são implementados por proxies, o que explica por que chamadas internas à mesma classe ignoram essas anotações.",
+    "Com JPA, os maiores problemas de produção vêm de consultas: N+1, carregamento lazy fora da transação e entidades grandes demais. Fetch joins, EntityGraph e projeções em DTO resolvem a maioria.",
+    "Segurança moderna usa Spring Security como Resource Server validando JWTs emitidos por um provedor OAuth2/OIDC, com autorização por escopos e roles.",
+    "Em microserviços, timeouts, retry e circuit breaker (Resilience4j), observabilidade com Micrometer e virtual threads completam o kit para aplicações robustas."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Transações e @Transactional",
+      "description": "Propagação, isolamento e rollback.",
+      "category": "conceitos",
+      "examples": [
         {
-            "subtitle": "Transações e @Transactional",
-            "description": "Limites e propagação.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Delimite escopos transacionais no service. Propagation e Isolation ajustam comportamento frente a chamadas aninhadas e concorrência.",
-                    "code": "@Transactional(isolation=Isolation.READ_COMMITTED, propagation=Propagation.REQUIRED)",
-                    "interview_question": "Por que evitar transações muito longas?"
-                }
-            ]
-        },
-        {
-            "subtitle": "JPA: N+1 e Lazy/Eager",
-            "description": "Armadilhas de ORM.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "N+1 ocorre quando múltiplas consultas são geradas em laços. Resolver com fetch join, EntityGraph ou DTOs específicos.",
-                    "code": "@Query(\"select p from Pedido p join fetch p.itens where p.id=:id\")",
-                    "interview_question": "Como identificar e mitigar N+1?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Spring Security com JWT",
-            "description": "Autenticação e autorização.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "JWT carrega claims assinado e dispensa estado de sessão. Combine com filtros e roles para autorizar rotas.",
-                    "code": "",
-                    "interview_question": "Quais riscos comuns ao usar JWT e como mitigá-los?"
-                }
-            ]
-        },
-        {
-            "subtitle": "Spring Cloud Patterns",
-            "description": "Config, Discovery e Resiliência.",
-            "examples": [
-                {
-                    "title": "Explicação",
-                    "explanation": "Use Config Server para centralizar configs, Service Discovery para localizar serviços e Circuit Breaker/Retry para resiliência.",
-                    "code": "",
-                    "interview_question": "Quando aplicar circuit breaker e retry?"
-                }
-            ]
+          "title": "Explicação",
+          "explanation": "Transações longas seguram conexões do pool e locks no banco, derrubando a concorrência — nunca faça chamadas HTTP externas dentro delas. Por padrão o Spring só faz rollback para exceções unchecked (RuntimeException e Error); para checked é preciso rollbackFor. Propagation define o comportamento em chamadas aninhadas (REQUIRED reaproveita a transação, REQUIRES_NEW abre outra) e readOnly = true otimiza consultas.",
+          "code": "@Service\npublic class TransferenciaService {\n\n    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = SaldoException.class)\n    public void transferir(Long origem, Long destino, BigDecimal valor) throws SaldoException {\n        contas.debitar(origem, valor);\n        contas.creditar(destino, valor);\n    }\n\n    @Transactional(readOnly = true)\n    public Extrato extrato(Long contaId) { /* ... */ }\n\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void registrarAuditoria(String evento) { /* grava mesmo se a transação externa falhar */ }\n}",
+          "interview_question": "Por que evitar transações muito longas e quando o rollback acontece?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative.html"
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "subtitle": "Proxies e Auto-invocação",
+      "description": "Por que @Transactional às vezes \"não funciona\".",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O Spring envolve o bean em um proxy; a lógica transacional roda quando a chamada passa por ele. Uma chamada this.metodo() dentro da mesma classe vai direto ao objeto real e ignora o proxy — o mesmo vale para @Cacheable, @Async e @Retryable. Também não funciona em métodos private. Solução: mover o método para outro bean ou reorganizar a fronteira transacional.",
+          "code": "@Service\npublic class PedidoService {\n    public void processarLote(List<Pedido> pedidos) {\n        pedidos.forEach(this::salvar); // auto-invocação: NÃO passa pelo proxy\n    }\n\n    @Transactional\n    public void salvar(Pedido p) { /* ... */ }\n}\n\n// Correto: o método transacional em outro bean\n@Service\npublic class LoteService {\n    private final PedidoService pedidoService;\n    public void processarLote(List<Pedido> pedidos) {\n        pedidos.forEach(pedidoService::salvar); // passa pelo proxy\n    }\n}",
+          "interview_question": "Por que um método @Transactional chamado de dentro da própria classe não abre transação?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/core/aop/proxying.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "JPA: N+1, Lazy e Eager",
+      "description": "O problema de performance mais comum com Hibernate.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "N+1 ocorre quando uma consulta traz N entidades e o acesso a um relacionamento lazy dispara uma consulta extra para cada uma. Identifique ativando o log de SQL ou estatísticas do Hibernate em testes. Resolva com fetch join, @EntityGraph ou projeções em DTO; deixe relacionamentos LAZY por padrão (inclusive @ManyToOne, que é EAGER por padrão) e evite trocar para EAGER como \"solução\", pois isso carrega dados demais em todas as consultas.",
+          "code": "public interface PedidoRepository extends JpaRepository<Pedido, Long> {\n\n    @Query(\"select p from Pedido p join fetch p.itens where p.cliente.id = :clienteId\")\n    List<Pedido> comItens(@Param(\"clienteId\") Long clienteId);\n\n    @EntityGraph(attributePaths = {\"itens\", \"cliente\"})\n    Optional<Pedido> findDetalhadoById(Long id);\n}\n\n# application.yml (somente em dev/test)\nspring.jpa.properties.hibernate.generate_statistics: true",
+          "interview_question": "Como identificar e mitigar N+1?",
+          "references": [
+            "https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Projeções e Consultas Eficientes",
+      "description": "Buscando só o que a tela precisa.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Para listagens e relatórios, carregar entidades inteiras traz colunas e relacionamentos desnecessários e coloca tudo no contexto de persistência. Projeções baseadas em interface ou records selecionam apenas as colunas usadas, não são gerenciadas pelo Hibernate e reduzem memória e tráfego. Combine com paginação para listas grandes.",
+          "code": "public record ResumoPedido(Long id, String cliente, BigDecimal total) {}\n\npublic interface PedidoRepository extends JpaRepository<Pedido, Long> {\n    @Query(\"\"\"\n        select new com.loja.ResumoPedido(p.id, c.nome, p.total)\n        from Pedido p join p.cliente c\n        where p.status = :status\n        \"\"\")\n    Page<ResumoPedido> resumos(@Param(\"status\") StatusPedido status, Pageable pageable);\n}",
+          "interview_question": "Quando usar projeções em vez de carregar entidades completas?",
+          "references": [
+            "https://docs.spring.io/spring-data/jpa/reference/repositories/projections.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Security com JWT (Resource Server)",
+      "description": "Validando tokens emitidos por um provedor OAuth2.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Riscos: tokens de longa duração vazados, aceitar algoritmos não esperados, não validar emissor e audiência e guardar dados sensíveis no payload (que é apenas codificado em Base64, não criptografado). Mitigações: tokens curtos com refresh token, validação de assinatura, issuer e audience pelo Resource Server do Spring, e autorização por escopo. Prefira um provedor pronto (Keycloak, Auth0, Cognito) a emitir tokens manualmente.",
+          "code": "# application.yml\nspring.security.oauth2.resourceserver.jwt.issuer-uri: https://auth.exemplo.com/realms/loja\n\n// Configuração Java\n@Bean\nSecurityFilterChain api(HttpSecurity http) throws Exception {\n    return http\n        .csrf(csrf -> csrf.disable()) // API stateless com tokens\n        .authorizeHttpRequests(auth -> auth\n            .requestMatchers(HttpMethod.GET, \"/produtos/**\").permitAll()\n            .requestMatchers(\"/admin/**\").hasAuthority(\"SCOPE_admin\")\n            .anyRequest().authenticated())\n        .oauth2ResourceServer(oauth -> oauth.jwt(Customizer.withDefaults()))\n        .build();\n}",
+          "interview_question": "Quais riscos comuns ao usar JWT e como mitigá-los?",
+          "references": [
+            "https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Resiliência com Resilience4j",
+      "description": "Timeout, retry e circuit breaker em chamadas externas.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Retry ajuda em falhas transitórias (timeout pontual, 503), sempre com backoff e limite de tentativas, e apenas em operações idempotentes. Circuit breaker protege contra falhas persistentes: após uma taxa de erro, ele \"abre\" e falha rápido, poupando threads e dando tempo ao serviço remoto de se recuperar, com um fallback quando possível. Sem timeout, nenhum dos dois funciona bem — defina sempre um timeout no cliente HTTP.",
+          "code": "@Service\npublic class FreteClient {\n    @CircuitBreaker(name = \"frete\", fallbackMethod = \"freteFixo\")\n    @Retry(name = \"frete\")\n    public BigDecimal calcular(String cep) {\n        return restClient.get().uri(\"/frete/{cep}\", cep).retrieve().body(BigDecimal.class);\n    }\n\n    private BigDecimal freteFixo(String cep, Throwable erro) {\n        return new BigDecimal(\"19.90\");\n    }\n}\n\n# application.yml\nresilience4j:\n  retry.instances.frete:\n    max-attempts: 3\n    wait-duration: 200ms\n  circuitbreaker.instances.frete:\n    failure-rate-threshold: 50\n    wait-duration-in-open-state: 30s",
+          "interview_question": "Quando aplicar circuit breaker e retry?",
+          "references": [
+            "https://resilience4j.readme.io/docs/getting-started-3"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Processamento Assíncrono e Agendado",
+      "description": "@Async, @Scheduled e virtual threads.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "@Async executa o método em outra thread e precisa de @EnableAsync; configure um executor próprio (o padrão pode não ser adequado) e lembre que exceções em métodos void se perdem sem um handler. @Scheduled roda tarefas periódicas, mas em várias instâncias a tarefa roda em todas — use um lock distribuído (como ShedLock) para executar uma vez. Com virtual threads habilitadas, tarefas bloqueantes ficam baratas.",
+          "code": "@EnableAsync\n@EnableScheduling\n@SpringBootApplication\npublic class Application {}\n\n@Service\nclass RelatorioService {\n    @Async\n    public CompletableFuture<Relatorio> gerar(Long id) {\n        return CompletableFuture.completedFuture(montar(id));\n    }\n\n    @Scheduled(cron = \"0 0 3 * * *\") // todo dia às 3h\n    public void limparCarrinhosAbandonados() { /* ... */ }\n}\n\n# application.yml\nspring.threads.virtual.enabled: true",
+          "interview_question": "Quais cuidados ao usar @Async e @Scheduled?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/integration/scheduling.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Cloud Patterns",
+      "description": "Configuração centralizada, descoberta e gateway.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Spring Cloud Config centraliza configurações por ambiente; Service Discovery (Eureka, ou o DNS do Kubernetes) localiza instâncias dinamicamente; Spring Cloud Gateway concentra roteamento, autenticação e rate limiting; OpenFeign simplifica clientes HTTP declarativos. Em Kubernetes, parte disso já é oferecida pela plataforma (Services, ConfigMaps), então avalie antes de adicionar componentes.",
+          "code": "@FeignClient(name = \"estoque\", url = \"${estoque.url}\")\npublic interface EstoqueClient {\n    @GetMapping(\"/estoque/{sku}\")\n    EstoqueResponse consultar(@PathVariable String sku);\n}",
+          "interview_question": "Quais problemas o Spring Cloud resolve em microserviços?",
+          "references": [
+            "https://spring.io/projects/spring-cloud"
+          ]
+        }
+      ]
+    }
+  ]
 }

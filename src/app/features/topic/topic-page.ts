@@ -1,10 +1,11 @@
-import { Component, computed, effect, inject, input } from '@angular/core';
+import { Component, computed, effect, inject, input, linkedSignal } from '@angular/core';
 import { httpResource } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { CodeBlock } from './code-block/code-block';
 import { SearchService } from '../../core/services/search.service';
-import { StudyContent } from '../../core/models/study-content.model';
+import { Category, StudyContent } from '../../core/models/study-content.model';
+import { CATEGORIES } from '../../core/data/categories';
 import { Level } from '../../core/models/topic.model';
 import { matchesQuery } from '../../core/utils/content.utils';
 import { SITE_CONFIG } from '../../core/config/site.config';
@@ -32,14 +33,44 @@ export class TopicPage {
     return file ? `data/${file}` : undefined;
   });
 
-  /** Subsections matching the search, keeping their original number. */
+  /** Selected pill (null = all); back to "Todos" whenever the topic or level changes. */
+  protected readonly category = linkedSignal<Category | null>(() => {
+    this.slug();
+    this.level();
+    return null;
+  });
+
+  private readonly subsections = computed(() =>
+    this.content.hasValue() ? this.content.value().subsections : [],
+  );
+
+  /** Pill bar entries with section counts; categories absent from the topic have count 0. */
+  protected readonly filters = computed(() => [
+    { id: null, label: 'Todos', icon: 'apps', count: this.subsections().length },
+    ...CATEGORIES.map((c) => ({
+      ...c,
+      count: this.subsections().filter((s) => s.category === c.id).length,
+    })),
+  ]);
+
+  /** Subsections matching the pill and the search, keeping their original number. */
   protected readonly sections = computed(() => {
-    const data = this.content.hasValue() ? this.content.value() : undefined;
+    const category = this.category();
     const query = this.search.query();
-    return (data?.subsections ?? [])
+    return this.subsections()
       .map((subsection, index) => ({ subsection, index }))
+      .filter(({ subsection }) => !category || subsection.category === category)
       .filter(({ subsection }) => matchesQuery(subsection, query));
   });
+
+  /** The resumo is an overview; hide it while the reader narrows the page down. */
+  protected readonly showResumo = computed(
+    () =>
+      this.content.hasValue() &&
+      !!this.content.value().resumo?.length &&
+      !this.category() &&
+      !this.search.query(),
+  );
 
   constructor() {
     const title = inject(Title);
@@ -47,6 +78,11 @@ export class TopicPage {
       const data = this.content.hasValue() ? this.content.value() : undefined;
       title.setTitle(data ? `${data.title} · ${SITE_CONFIG.name}` : SITE_CONFIG.name);
     });
+  }
+
+  protected clearFilters(): void {
+    this.category.set(null);
+    this.search.query.set('');
   }
 
   protected sectionId(index: number): string {
@@ -59,6 +95,8 @@ export class TopicPage {
 
   /** In-page navigation; URL fragments are taken by hash routing. */
   protected scrollTo(id: string): void {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const target = document.getElementById(id);
+    if (target instanceof HTMLDetailsElement) target.open = true;
+    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }

@@ -7,9 +7,13 @@ export interface StudyContent {
   subsections: Subsection[];
 }
 
+/** Section tag, used to filter sections by kind. */
+export type Category = 'conceitos' | 'pratica' | 'boas-praticas' | 'ferramentas';
+
 export interface Subsection {
   subtitle: string;
   description: string;
+  category?: Category;
   examples: Example[];
 }
 

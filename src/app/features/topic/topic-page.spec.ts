@@ -15,6 +15,7 @@ const content: StudyContent = {
     {
       subtitle: 'O que é Git?',
       description: 'Definição.',
+      category: 'conceitos',
       examples: [
         {
           title: 'Explicação',
@@ -28,6 +29,7 @@ const content: StudyContent = {
     {
       subtitle: 'Branch e Merge',
       description: 'Trabalho paralelo.',
+      category: 'pratica',
       examples: [{ title: 'Explicação', explanation: 'Resolva conflitos.' }],
     },
   ],
@@ -54,7 +56,9 @@ describe('TopicPage', () => {
     const el: HTMLElement = fixture.nativeElement;
     expect(el.querySelector('h1')?.textContent).toContain('Controle de Versão (Git)');
     expect(el.textContent).toContain('Git 2.43');
-    expect(el.textContent).toContain('Git é um diário do código.');
+    const resumo = el.querySelector('details#resumo') as HTMLDetailsElement;
+    expect(resumo.open).toBe(false);
+    expect(resumo.textContent).toContain('Git é um diário do código.');
     expect(el.textContent).toContain('Por que o Git é essencial?');
     expect(el.textContent).toContain('<arquivo>');
     expect(el.querySelector('a[href="https://git-scm.com/doc"]')).not.toBeNull();
@@ -77,5 +81,68 @@ describe('TopicPage', () => {
     const { fixture, http } = render('nao-existe', 'essencial');
     expect(fixture.nativeElement.textContent).toContain('Tópico não encontrado');
     http.verify();
+  });
+
+  describe('filter pills', () => {
+    function pill(el: HTMLElement, label: string): HTMLButtonElement {
+      const buttons = Array.from(el.querySelectorAll<HTMLButtonElement>('[aria-label="Filtrar seções por tipo"] button'));
+      return buttons.find((b) => b.textContent!.includes(label))!;
+    }
+
+    async function loaded() {
+      const result = render('controle-versao', 'essencial');
+      result.http.expectOne('data/essencial/controle-versao.json').flush(content);
+      await result.fixture.whenStable();
+      return result;
+    }
+
+    it('shows counts and disables categories the topic does not use', async () => {
+      const { fixture } = await loaded();
+      const el: HTMLElement = fixture.nativeElement;
+      expect(pill(el, 'Todos').textContent).toContain('2');
+      expect(pill(el, 'Todos').getAttribute('aria-pressed')).toBe('true');
+      expect(pill(el, 'Conceitos').textContent).toContain('1');
+      expect(pill(el, 'Ferramentas').disabled).toBe(true);
+    });
+
+    it('shows only the sections of the selected category and hides the resumo', async () => {
+      const { fixture } = await loaded();
+      const el: HTMLElement = fixture.nativeElement;
+      pill(el, 'Prática').click();
+      await fixture.whenStable();
+
+      const sections = el.querySelectorAll('section[id^="secao-"]');
+      expect(sections.length).toBe(1);
+      expect(sections[0].id).toBe('secao-2');
+      expect(el.querySelector('details#resumo')).toBeNull();
+      expect(pill(el, 'Prática').getAttribute('aria-pressed')).toBe('true');
+    });
+
+    it('combines with the search and can clear both', async () => {
+      const { fixture } = await loaded();
+      const el: HTMLElement = fixture.nativeElement;
+      pill(el, 'Conceitos').click();
+      TestBed.inject(SearchService).query.set('conflitos'); // only matches a "pratica" section
+      await fixture.whenStable();
+      expect(el.querySelectorAll('section[id^="secao-"]').length).toBe(0);
+
+      Array.from(el.querySelectorAll('button')).find((b) => b.textContent!.includes('Limpar filtros'))!.click();
+      await fixture.whenStable();
+      expect(el.querySelectorAll('section[id^="secao-"]').length).toBe(2);
+      expect(TestBed.inject(SearchService).query()).toBe('');
+    });
+
+    it('resets to "Todos" when the level changes', async () => {
+      const { fixture, http } = await loaded();
+      pill(fixture.nativeElement, 'Prática').click();
+      await fixture.whenStable();
+
+      fixture.componentRef.setInput('level', 'avancado');
+      TestBed.tick();
+      http.expectOne('data/avancado/controle-versao-avancado.json').flush(content);
+      await fixture.whenStable();
+      expect(pill(fixture.nativeElement, 'Todos').getAttribute('aria-pressed')).toBe('true');
+      expect(fixture.nativeElement.querySelectorAll('section[id^="secao-"]').length).toBe(2);
+    });
   });
 });

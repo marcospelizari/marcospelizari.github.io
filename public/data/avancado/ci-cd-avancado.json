@@ -1,0 +1,143 @@
+{
+  "title": "CI/CD — Avançado",
+  "description": "Estratégias de release, GitOps, segurança da cadeia de suprimentos e métricas DORA.",
+  "version": "GitHub Actions, Argo CD, Kubernetes 1.31",
+  "resumo": [
+    "Com o pipeline básico funcionando, o foco passa a ser reduzir o risco e o tempo de cada entrega: releases progressivas, rollback automático e deploys desacoplados de lançamentos via feature flags.",
+    "GitOps transforma o Git na fonte da verdade da infraestrutura, e pipelines reutilizáveis evitam duplicação entre dezenas de repositórios.",
+    "A segurança da cadeia de suprimentos — scan de dependências e imagens, SBOM e assinatura de artefatos — garante que só código confiável chega a produção.",
+    "As métricas DORA medem o desempenho de entrega do time e mostram onde o processo precisa melhorar."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Métricas DORA",
+      "description": "Medindo a performance de entrega de software.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "As quatro métricas do programa DORA: frequência de deploy, lead time para mudanças (do commit à produção), taxa de falha em mudanças e tempo para restaurar o serviço. As duas primeiras medem velocidade; as duas últimas, estabilidade. Times de alta performance melhoram ambas ao mesmo tempo — entregas pequenas e frequentes são mais rápidas e mais seguras.",
+          "code": "Frequência de deploy:      4,8 deploys/dia\nLead time para mudanças:   28 min (commit -> produção)\nTaxa de falha em mudanças: 3% dos deploys exigem correção\nTempo de restauração:      12 min (detecção -> serviço normalizado)",
+          "interview_question": "Quais são as métricas DORA e o que elas indicam?",
+          "references": [
+            "https://dora.dev/guides/dora-metrics-four-keys/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Pipelines Reutilizáveis",
+      "description": "Um padrão para muitos repositórios.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "No GitHub Actions, reusable workflows (workflow_call) permitem que um repositório central defina o pipeline padrão — build Maven, testes, imagem e scan — e que cada serviço apenas o chame com parâmetros. Composite actions encapsulam sequências de steps. Assim, uma melhoria de segurança é aplicada em todos os serviços de uma vez, com versão fixada por tag.",
+          "code": "# Repositório central: .github/workflows/java-service.yml\non:\n  workflow_call:\n    inputs:\n      java-version: { type: string, default: '21' }\n\n# Em cada serviço: .github/workflows/ci.yml\njobs:\n  pipeline:\n    uses: loja/pipelines/.github/workflows/java-service.yml@v3\n    with:\n      java-version: '21'\n    secrets: inherit",
+          "interview_question": "Como evitar duplicar o mesmo pipeline em dezenas de repositórios?",
+          "references": [
+            "https://docs.github.com/en/actions/sharing-automations/reusing-workflows"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Matrix Builds e Paralelismo",
+      "description": "Testando várias combinações de uma vez.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A matrix executa o mesmo job com combinações de parâmetros — versões de JDK, sistemas operacionais, bancos — em paralelo. É útil para bibliotecas que precisam suportar várias versões ou para dividir uma suíte grande em shards. fail-fast cancela as demais combinações quando uma falha.",
+          "code": "jobs:\n  test:\n    runs-on: ${{ matrix.os }}\n    strategy:\n      fail-fast: true\n      matrix:\n        os: [ubuntu-latest, windows-latest]\n        java: ['17', '21']\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-java@v4\n        with:\n          distribution: temurin\n          java-version: ${{ matrix.java }}\n          cache: maven\n      - run: ./mvnw -B verify",
+          "interview_question": "Para que serve uma matrix strategy?",
+          "references": [
+            "https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Feature Flags",
+      "description": "Separando deploy de lançamento.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma feature flag decide em tempo de execução se uma funcionalidade está ativa. O código vai para produção desligado (deploy) e é ativado depois, para todos ou para uma porcentagem de usuários (lançamento). Isso viabiliza trunk-based development, testes A/B e \"kill switches\" para desligar uma funcionalidade com problema sem novo deploy. Remova flags antigas para não acumular dívida técnica.",
+          "code": "@Service\npublic class CheckoutService {\n    private final FeatureFlags flags;\n\n    public Resultado finalizar(Pedido pedido, Usuario usuario) {\n        if (flags.ativa(\"novo-calculo-frete\", usuario)) {\n            return novoFluxo(pedido);\n        }\n        return fluxoAtual(pedido);\n    }\n}",
+          "interview_question": "Como feature flags permitem fazer deploy de código incompleto com segurança?",
+          "references": [
+            "https://martinfowler.com/articles/feature-toggles.html",
+            "https://openfeature.dev/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Deploys Progressivos e Rollback Automático",
+      "description": "Canary guiado por métricas.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em um canary progressivo, a nova versão recebe uma fração crescente do tráfego (5%, 25%, 50%, 100%) e, entre os passos, uma análise automática compara métricas — taxa de erro e latência — com limites ou com a versão estável. Se degradar, o rollout é abortado e o tráfego volta para a versão anterior sem intervenção humana. Argo Rollouts e Flagger implementam isso no Kubernetes.",
+          "code": "# Argo Rollouts: análise com Prometheus entre os passos\nstrategy:\n  canary:\n    steps:\n      - setWeight: 10\n      - analysis:\n          templates: [{ templateName: taxa-de-sucesso }]\n      - setWeight: 50\n      - pause: { duration: 10m }\n---\nkind: AnalysisTemplate\nmetadata: { name: taxa-de-sucesso }\nspec:\n  metrics:\n    - name: sucesso\n      successCondition: result[0] >= 0.99\n      provider:\n        prometheus:\n          query: |\n            sum(rate(http_server_requests_seconds_count{status!~\"5..\"}[5m]))\n            / sum(rate(http_server_requests_seconds_count[5m]))",
+          "interview_question": "Como automatizar a decisão de promover ou reverter um canary?",
+          "references": [
+            "https://argoproj.github.io/argo-rollouts/features/canary/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "GitOps no Pipeline",
+      "description": "CI publica, o cluster sincroniza.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O CI termina publicando a imagem e atualizando a tag no repositório de configuração (via commit ou Pull Request); o Argo CD detecta a mudança e sincroniza o cluster. O CI nunca precisa de credenciais do cluster, cada deploy é um commit auditável e o rollback é um git revert. Promoções entre ambientes viram Pull Requests entre pastas ou branches de configuração.",
+          "code": "atualizar-config:\n  needs: docker\n  runs-on: ubuntu-latest\n  steps:\n    - uses: actions/checkout@v4\n      with:\n        repository: loja/infra-config\n        token: ${{ secrets.CONFIG_REPO_TOKEN }}\n    - run: |\n        cd apps/api-pedidos/overlays/staging\n        kustomize edit set image api=ghcr.io/loja/api:${{ github.sha }}\n        git commit -am \"deploy(api-pedidos): ${{ github.sha }}\"\n        git push",
+          "interview_question": "Como o CI se integra a um fluxo GitOps?",
+          "references": [
+            "https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Segurança da Cadeia de Suprimentos",
+      "description": "Dependências, SBOM e artefatos assinados.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Ataques à cadeia de suprimentos comprometem dependências, actions ou o próprio pipeline. Defesas: escanear dependências (Dependabot, OWASP Dependency-Check) e imagens (Trivy); gerar um SBOM (Software Bill of Materials), inventário de todos os componentes, para responder rápido a uma nova CVE; assinar artefatos e gerar atestados de proveniência; e fixar actions de terceiros pelo SHA do commit.",
+          "code": "- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 fixada por SHA\n\n- name: Scan de vulnerabilidades\n  uses: aquasecurity/trivy-action@0.28.0\n  with:\n    image-ref: ghcr.io/loja/api:${{ github.sha }}\n    severity: CRITICAL,HIGH\n    exit-code: '1'\n\n- name: Gerar SBOM\n  uses: anchore/sbom-action@v0\n  with:\n    image: ghcr.io/loja/api:${{ github.sha }}",
+          "interview_question": "O que é SBOM e por que ele importa no pipeline?",
+          "references": [
+            "https://slsa.dev/",
+            "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Migrations de Banco em Deploy Contínuo",
+      "description": "Mudanças de schema sem downtime.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Durante um rolling update, versões antiga e nova rodam juntas contra o mesmo banco, então cada migration precisa ser compatível com ambas. Use o padrão expand/contract: adicione a coluna nova (expand), faça a aplicação escrever nas duas e migre os dados, passe a ler da nova e, em um deploy posterior, remova a antiga (contract). Nunca remova ou renomeie algo que a versão em produção ainda usa.",
+          "code": "-- Deploy 1 (expand): V10__adiciona_email_contato.sql\nALTER TABLE clientes ADD COLUMN email_contato VARCHAR(255);\nUPDATE clientes SET email_contato = email;\n-- aplicação v1.5 escreve em email e email_contato, lê de email_contato\n\n-- Deploy 2 (contract), após nenhuma versão usar a coluna antiga:\n-- V11__remove_email.sql\nALTER TABLE clientes DROP COLUMN email;",
+          "interview_question": "Como renomear uma coluna sem derrubar a aplicação durante um deploy contínuo?",
+          "references": [
+            "https://martinfowler.com/bliki/ParallelChange.html"
+          ]
+        }
+      ]
+    }
+  ]
+}

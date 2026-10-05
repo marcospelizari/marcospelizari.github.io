@@ -28,19 +28,23 @@
     {
       "subtitle": "O que é Git?",
       "description": "Definição e propósito do Git.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Git é essencial para equipes porque rastreia mudanças, permite colaboração paralela e suporta recuperação de versões, centralizando o controle de código em projetos distribuídos.",
           "code": "git init   # Inicia um novo repositório\ngit status # Mostra o estado atual dos arquivos",
           "interview_question": "Por que o Git é essencial para equipes de desenvolvimento?",
-          "references": ["https://git-scm.com/doc"]
+          "references": [
+            "https://git-scm.com/doc"
+          ]
         }
       ]
     },
     {
       "subtitle": "Fluxo Básico: Clone, Commit e Push",
       "description": "Comandos iniciais para versionamento.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
@@ -53,19 +57,23 @@
     {
       "subtitle": "Branch e Merge",
       "description": "Trabalho paralelo e integração de código.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Resolva conflitos editando os arquivos (marcados com <<<<<<< e >>>>>>>), escolhendo ou combinando mudanças. Use 'git add' nos resolvidos e 'git commit' para finalizar, integrando o trabalho de forma segura.",
           "code": "git switch -c nova-feature # Cria e alterna para nova branch\ngit add .                 # Adiciona mudanças\ngit commit -m \"nova funcionalidade\"\ngit switch main           # Volta para main\ngit merge nova-feature    # Integra mudanças",
           "interview_question": "Como resolver conflitos de merge em um projeto?",
-          "references": ["https://git-scm.com/docs/git-merge"]
+          "references": [
+            "https://git-scm.com/docs/git-merge"
+          ]
         }
       ]
     },
     {
       "subtitle": "Merge vs Rebase",
       "description": "Formas de integrar histórico.",
+      "category": "conceitos",
       "examples": [
         {
           "title": "Explicação",
@@ -78,6 +86,7 @@
     {
       "subtitle": "Pull e Fetch",
       "description": "Sincronizando com repositório remoto.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
@@ -90,6 +99,7 @@
     {
       "subtitle": ".gitignore",
       "description": "Ignorando arquivos desnecessários.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
@@ -102,6 +112,7 @@
     {
       "subtitle": "Status, Diff e Restore",
       "description": "Inspecionando e revertendo mudanças locais.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
@@ -114,6 +125,7 @@
     {
       "subtitle": "Revert e Reset",
       "description": "Desfazendo alterações de forma segura.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
@@ -126,19 +138,23 @@
     {
       "subtitle": "Git Stash",
       "description": "Salvando mudanças temporariamente.",
+      "category": "pratica",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "'Git stash' salva mudanças não commitadas, permitindo alternar branches para tarefas urgentes e recuperar com 'git stash pop', ideal para fluxos dinâmicos como corrigir bugs em paralelo.",
           "code": "git stash                 # Salva mudanças temporariamente\ngit switch main           # Alterna para main\ngit stash pop             # Recupera mudanças salvas",
           "interview_question": "Como git stash ajuda em fluxos de trabalho dinâmicos?",
-          "references": ["https://git-scm.com/docs/git-stash"]
+          "references": [
+            "https://git-scm.com/docs/git-stash"
+          ]
         }
       ]
     },
     {
       "subtitle": "Git Log e Blame",
       "description": "Inspecionando histórico e autoria.",
+      "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
@@ -151,13 +167,66 @@
     {
       "subtitle": "Pull Requests",
       "description": "Colaboração em plataformas como GitHub.",
+      "category": "boas-praticas",
       "examples": [
         {
           "title": "Explicação",
           "explanation": "Pull Requests são importantes porque permitem revisão de código, discussões e aprovações antes da integração, garantindo qualidade e alinhamento em projetos colaborativos como um app de equipe.",
           "code": "git push origin feature   # Envia branch para remoto\n# Cria PR na plataforma (ex.: GitHub)\ngit pull origin main      # Sincroniza após aprovação",
           "interview_question": "Qual a importância de pull requests em projetos colaborativos?",
-          "references": ["https://docs.github.com/en/pull-requests"]
+          "references": [
+            "https://docs.github.com/en/pull-requests"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Conventional Commits",
+      "description": "Mensagens de commit padronizadas e legíveis.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O padrão Conventional Commits usa o formato tipo(escopo): descrição — feat para funcionalidade, fix para correção, refactor, test, docs, chore, ci. O assunto fica no imperativo e curto; o corpo explica o porquê. Isso facilita revisões, gera changelogs automaticamente e permite versionamento semântico automatizado (feat → minor, fix → patch, BREAKING CHANGE → major).",
+          "code": "git commit -m \"feat(pedidos): adiciona cancelamento de pedido\"\ngit commit -m \"fix(auth): corrige expiração do token JWT\"\ngit commit -m \"refactor: extrai cálculo de frete para Strategy\"\n\n# Mudança incompatível\ngit commit -m \"feat(api)!: remove endpoint /v1/usuarios\" -m \"BREAKING CHANGE: use /v2/usuarios\"",
+          "interview_question": "Como escrever boas mensagens de commit?",
+          "references": [
+            "https://www.conventionalcommits.org/pt-br/v1.0.0/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Estratégias de Branching",
+      "description": "Git Flow, GitHub Flow e Trunk-Based Development.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Git Flow usa branches de longa duração (main, develop, release, hotfix) e funciona bem para releases planejadas, mas gera merges grandes e integração tardia. GitHub Flow simplifica: main sempre implantável e branches curtas de feature com Pull Request. Trunk-Based Development leva isso ao extremo: integrações no trunk várias vezes ao dia, com feature flags escondendo trabalho incompleto — é o modelo que melhor combina com CI/CD.",
+          "code": "# GitHub Flow\ngit switch -c feature/cancelar-pedido\n# ... commits pequenos ...\ngit push -u origin feature/cancelar-pedido\n# abre PR -> revisão -> CI verde -> merge na main -> deploy\n\n# Git Flow (resumo)\n# main <- release/1.4 <- develop <- feature/*\n# main <- hotfix/1.4.1",
+          "interview_question": "Qual a diferença entre Git Flow e Trunk-Based Development?",
+          "references": [
+            "https://docs.github.com/en/get-started/using-github/github-flow",
+            "https://trunkbaseddevelopment.com/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Tags e Versionamento Semântico",
+      "description": "Marcando releases no histórico.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Tags marcam commits específicos, normalmente releases. Tags anotadas (-a) guardam autor, data e mensagem e são as recomendadas. O Versionamento Semântico (MAJOR.MINOR.PATCH) comunica o impacto: MAJOR para mudanças incompatíveis, MINOR para funcionalidades compatíveis e PATCH para correções. Pipelines de CI/CD costumam publicar artefatos quando uma tag v* é enviada.",
+          "code": "git tag -a v1.4.0 -m \"Release 1.4.0: cancelamento de pedidos\"\ngit push origin v1.4.0\n\ngit tag --list \"v1.*\"     # lista tags\ngit checkout v1.3.2       # inspeciona uma versão antiga (detached HEAD)",
+          "interview_question": "Como versionar releases com tags no Git?",
+          "references": [
+            "https://semver.org/lang/pt-BR/",
+            "https://git-scm.com/book/en/v2/Git-Basics-Tagging"
+          ]
         }
       ]
     }
