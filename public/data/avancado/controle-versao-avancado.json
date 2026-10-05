@@ -1,0 +1,141 @@
+{
+  "title": "Git — Avançado",
+  "description": "Histórico limpo, recuperação de erros e fluxos profissionais com Git.",
+  "version": "Git 2.43",
+  "resumo": [
+    "Git avançado é sobre manter o histórico útil e saber se recuperar de qualquer erro. Quase nada no Git se perde de verdade: o reflog guarda por onde o HEAD passou.",
+    "Rebase interativo, squash e fixup deixam o histórico legível antes do Pull Request; cherry-pick leva correções pontuais entre branches; bisect encontra o commit que introduziu um bug.",
+    "Em equipes, regras de proteção de branch, revisões obrigatórias e CI verde antes do merge evitam que problemas cheguem à main.",
+    "Hooks e assinatura de commits automatizam verificações locais e garantem a autoria do código."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Rebase Interativo, Squash e Fixup",
+      "description": "Histórico limpo antes do Pull Request.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "git rebase -i permite reordenar, editar, juntar (squash/fixup) e remover commits locais, transformando vários commits de \"WIP\" em poucos commits coerentes. Como rebase reescreve hashes, nunca faça em branches que outras pessoas já usam (como main); na sua branch de feature, após o rebase use --force-with-lease, que recusa o push se alguém tiver enviado commits novos.",
+          "code": "git commit --fixup=a1b2c3d          # marca correção de um commit anterior\ngit rebase -i --autosquash origin/main\n\n# No editor:\n# pick   a1b2c3d feat: cancelamento de pedido\n# fixup  e4f5a6b fixup! feat: cancelamento de pedido\n# reword 9c8d7e6 test: cobre cancelamento\n\ngit push --force-with-lease",
+          "interview_question": "Quando evitar rebase em branches compartilhadas?",
+          "references": [
+            "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Cherry-pick e Hotfix",
+      "description": "Levando uma correção específica para outra branch.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Cherry-pick aplica um commit específico em outra branch, criando um novo commit com as mesmas mudanças. É útil para levar um hotfix da main para uma branch de release sem trazer funcionalidades não lançadas. Use com moderação: cherry-picks frequentes duplicam commits e podem gerar conflitos repetidos. A opção -x registra a origem na mensagem.",
+          "code": "git switch release/1.4\ngit cherry-pick -x 3f9a2b1          # aplica o hotfix feito na main\ngit cherry-pick a1b2c3d..f6e5d4c    # intervalo de commits\n# Em conflito: resolva, git add, git cherry-pick --continue",
+          "interview_question": "Quando cherry-pick é uma boa solução?",
+          "references": [
+            "https://git-scm.com/docs/git-cherry-pick"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Reflog: Recuperando o \"Perdido\"",
+      "description": "Desfazendo reset, rebase e branches apagadas.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O reflog registra localmente cada movimento do HEAD (commits, checkouts, resets, rebases) por cerca de 90 dias. Encontre o estado anterior e volte para ele com reset ou crie uma branch a partir dele. Funciona também para recuperar uma branch apagada antes do push. Só não ajuda com mudanças que nunca foram commitadas.",
+          "code": "git reflog\n# 3f9a2b1 HEAD@{0}: reset: moving to HEAD~3\n# c7d8e9f HEAD@{1}: commit: feat: relatório de vendas\n\ngit reset --hard HEAD@{1}                 # volta ao estado anterior\ngit switch -c recuperada c7d8e9f          # ou cria uma branch a partir dele",
+          "interview_question": "Como recuperar commits após um git reset --hard acidental?",
+          "references": [
+            "https://git-scm.com/docs/git-reflog"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Git Bisect",
+      "description": "Busca binária pelo commit que introduziu um bug.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "git bisect faz uma busca binária no histórico: você marca um commit bom e um ruim, e o Git faz checkout no meio para você testar. Em poucos passos (log2 de N) o commit culpado aparece. Com git bisect run e um script de teste, o processo inteiro é automático.",
+          "code": "git bisect start\ngit bisect bad                 # commit atual tem o bug\ngit bisect good v1.3.0         # esta versão funcionava\n# teste e marque cada passo com: git bisect good | git bisect bad\n\n# Automático: o script retorna 0 (bom) ou diferente de 0 (ruim)\ngit bisect run ./mvnw -q test -Dtest=CheckoutTest\ngit bisect reset",
+          "interview_question": "Como encontrar rapidamente o commit que quebrou uma funcionalidade?",
+          "references": [
+            "https://git-scm.com/docs/git-bisect"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Resolução de Conflitos Avançada",
+      "description": "Ferramentas para conflitos complexos.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Integre com frequência (branches curtas), mantenha commits pequenos e atualize sua branch com a main regularmente. O estilo diff3/zdiff3 mostra também a versão ancestral, deixando claro o que cada lado mudou. git rerere memoriza resoluções para reaplicá-las em conflitos repetidos. Depois de resolver, rode os testes: um merge sem conflito textual ainda pode quebrar a lógica.",
+          "code": "git config --global merge.conflictstyle zdiff3\ngit config --global rerere.enabled true\n\ngit merge origin/main\ngit checkout --ours  caminho/arquivo   # mantém a sua versão\ngit checkout --theirs caminho/arquivo  # mantém a versão recebida\ngit add caminho/arquivo && git commit",
+          "interview_question": "Que práticas reduzem e facilitam conflitos de merge?",
+          "references": [
+            "https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Hooks e Automação Local",
+      "description": "Verificações antes do commit e do push.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Hooks são scripts executados em eventos do Git: pre-commit (formatar e lintar), commit-msg (validar Conventional Commits), pre-push (rodar testes rápidos). Ficam em .git/hooks e não são versionados; para compartilhar com o time, aponte core.hooksPath para uma pasta do repositório. Eles complementam, mas não substituem, as verificações do CI.",
+          "code": "# .githooks/commit-msg\n#!/bin/sh\nif ! grep -qE '^(feat|fix|docs|refactor|test|chore|ci)(\\(.+\\))?!?: .+' \"$1\"; then\n  echo \"Mensagem fora do padrão Conventional Commits\"\n  exit 1\nfi\n\ngit config core.hooksPath .githooks\nchmod +x .githooks/commit-msg",
+          "interview_question": "Para que servem os Git hooks?",
+          "references": [
+            "https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Proteção de Branches e Fluxo de PR",
+      "description": "Garantindo qualidade antes do merge.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Configure regras de proteção: proibir push direto e force push, exigir Pull Request com pelo menos uma aprovação, exigir status checks do CI (build e testes) e branch atualizada antes do merge. CODEOWNERS define revisores obrigatórios por área do código. Squash merge mantém um commit por PR na main, facilitando reverts.",
+          "code": "# .github/CODEOWNERS\n/src/main/java/com/loja/pagamento/  @time-pagamentos\n/infra/                             @time-plataforma\n*.sql                               @dba-team",
+          "interview_question": "Como proteger a branch main em um repositório de equipe?",
+          "references": [
+            "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Assinatura de Commits",
+      "description": "Comprovando a autoria do código.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Qualquer pessoa pode configurar user.name e user.email com o nome de outra; a assinatura criptográfica (GPG ou SSH) prova que o commit foi feito pelo dono da chave. Plataformas como GitHub exibem o selo \"Verified\" e podem exigir commits assinados na branch protegida — uma defesa da cadeia de suprimentos de software.",
+          "code": "git config --global gpg.format ssh\ngit config --global user.signingkey ~/.ssh/id_ed25519.pub\ngit config --global commit.gpgsign true\n\ngit log --show-signature -1",
+          "interview_question": "Por que assinar commits?",
+          "references": [
+            "https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification"
+          ]
+        }
+      ]
+    }
+  ]
+}

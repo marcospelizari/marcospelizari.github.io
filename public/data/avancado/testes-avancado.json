@@ -1,0 +1,144 @@
+{
+  "title": "Testes — Avançado",
+  "description": "Integração realista, contratos, mutação, carga e confiabilidade da suíte.",
+  "resumo": [
+    "No nível avançado, a pergunta é se a suíte dá confiança real para fazer deploy. Testes que passam com mocks mas falham em produção, ou que quebram aleatoriamente, minam essa confiança.",
+    "Testcontainers trazem dependências reais (PostgreSQL, Kafka) para os testes de integração; testes de contrato garantem que serviços continuem compatíveis entre times.",
+    "Testes de mutação medem se os testes detectam bugs de verdade, algo que a cobertura de linhas não mostra; testes de carga validam capacidade e SLOs antes dos usuários.",
+    "Uma suíte saudável é rápida, determinística e organizada pela pirâmide — e testes instáveis são tratados como bugs."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Testcontainers e Integração Real",
+      "description": "Bancos e brokers reais em containers descartáveis.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "H2 não é PostgreSQL: tipos, funções, JSONB e locks se comportam diferente, e um teste verde com H2 pode falhar em produção. Testcontainers sobe a mesma versão do banco ou broker em Docker durante o teste e o descarta ao final. No Spring Boot 3.1+, @ServiceConnection configura a conexão automaticamente. Mocks continuam ideais para testes unitários de regras de negócio.",
+          "code": "@SpringBootTest\n@Testcontainers\nclass PedidoRepositoryIT {\n\n    @Container\n    @ServiceConnection\n    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>(\"postgres:16-alpine\");\n\n    @Autowired PedidoRepository repository;\n\n    @Test\n    void deveBuscarPedidosPagos() {\n        repository.save(new Pedido(StatusPedido.PAGO));\n        assertThat(repository.findByStatus(StatusPedido.PAGO)).hasSize(1);\n    }\n}",
+          "interview_question": "Quando preferir Testcontainers a mocks ou banco em memória?",
+          "references": [
+            "https://java.testcontainers.org/",
+            "https://docs.spring.io/spring-boot/reference/testing/testcontainers.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de Contrato",
+      "description": "Evitando quebras entre produtor e consumidor.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em testes de contrato orientados ao consumidor (Pact), o consumidor descreve as requisições que faz e as respostas que espera; esse contrato é publicado e o produtor o verifica no seu próprio CI. Se o produtor remover um campo que o consumidor usa, o build do produtor falha antes do deploy. É mais rápido e estável que testes end-to-end com todos os serviços no ar. Spring Cloud Contract segue a mesma ideia, com o contrato definido pelo produtor.",
+          "code": "// Consumidor (Pact JVM + JUnit 5)\n@Pact(consumer = \"checkout\", provider = \"estoque\")\nV4Pact estoqueDisponivel(PactDslWithProvider builder) {\n    return builder\n        .given(\"produto LIV-01 com estoque\")\n        .uponReceiving(\"consulta de estoque\")\n            .path(\"/estoque/LIV-01\").method(\"GET\")\n        .willRespondWith()\n            .status(200)\n            .body(new PactDslJsonBody().stringType(\"sku\", \"LIV-01\").integerType(\"quantidade\", 10))\n        .toPact(V4Pact.class);\n}",
+          "interview_question": "Como contratos evitam deploys quebrados entre times?",
+          "references": [
+            "https://docs.pact.io/",
+            "https://spring.io/projects/spring-cloud-contract"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de Mutação",
+      "description": "Seus testes realmente detectam bugs?",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Cobertura mostra que a linha foi executada, não que o resultado foi verificado — um teste sem asserções cobre tudo. Ferramentas de mutação como o PIT alteram o código (trocam > por >=, removem chamadas, invertem condições) e rodam os testes: se nenhum falha, o mutante \"sobreviveu\" e revela uma verificação ausente. O mutation score é uma medida bem mais honesta da qualidade da suíte.",
+          "code": "<!-- pom.xml -->\n<plugin>\n  <groupId>org.pitest</groupId>\n  <artifactId>pitest-maven</artifactId>\n  <version>1.16.1</version>\n  <configuration>\n    <targetClasses><param>com.loja.pedidos.*</param></targetClasses>\n    <mutationThreshold>80</mutationThreshold>\n  </configuration>\n</plugin>\n<!-- mvn org.pitest:pitest-maven:mutationCoverage -->",
+          "interview_question": "Por que 100% de cobertura não garante bons testes?",
+          "references": [
+            "https://pitest.org/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de Arquitetura",
+      "description": "Regras de dependência verificadas no build.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "ArchUnit expressa regras de arquitetura como testes JUnit: controllers não acessam repositories diretamente, o domínio não depende de Spring, não há ciclos entre pacotes. Quando alguém viola a regra, o CI falha — a arquitetura deixa de depender só da memória do time e das revisões de código.",
+          "code": "@AnalyzeClasses(packages = \"com.loja\")\nclass ArquiteturaTest {\n\n    @ArchTest\n    static final ArchRule camadas = layeredArchitecture().consideringAllDependencies()\n        .layer(\"Controller\").definedBy(\"..controller..\")\n        .layer(\"Service\").definedBy(\"..service..\")\n        .layer(\"Repository\").definedBy(\"..repository..\")\n        .whereLayer(\"Controller\").mayNotBeAccessedByAnyLayer()\n        .whereLayer(\"Repository\").mayOnlyBeAccessedByLayers(\"Service\");\n\n    @ArchTest\n    static final ArchRule dominioSemSpring = noClasses().that().resideInAPackage(\"..domain..\")\n        .should().dependOnClassesThat().resideInAPackage(\"org.springframework..\");\n}",
+          "interview_question": "Como impedir que a arquitetura em camadas se degrade com o tempo?",
+          "references": [
+            "https://www.archunit.org/userguide/html/000_Index.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de Carga e Performance",
+      "description": "Validando capacidade e SLOs antes da produção.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Latência em percentis (p95/p99), throughput, taxa de erros e uso de recursos (CPU, memória, conexões do pool). Teste de carga simula o tráfego esperado; estresse aumenta até quebrar para achar o limite; soak mantém carga por horas para revelar vazamentos. Rode em um ambiente parecido com produção e defina critérios de aprovação (thresholds) para que o teste possa rodar no pipeline.",
+          "code": "// k6: rampa até 200 usuários virtuais com critérios de aprovação\nimport http from 'k6/http';\nimport { check } from 'k6';\n\nexport const options = {\n  stages: [\n    { duration: '2m', target: 200 },\n    { duration: '5m', target: 200 },\n    { duration: '1m', target: 0 },\n  ],\n  thresholds: {\n    http_req_duration: ['p(95)<300'],\n    http_req_failed: ['rate<0.01'],\n  },\n};\n\nexport default function () {\n  const res = http.get('https://staging.loja.com/produtos?page=0');\n  check(res, { 'status 200': (r) => r.status === 200 });\n}",
+          "interview_question": "Quais métricas você acompanha em testes de carga?",
+          "references": [
+            "https://grafana.com/docs/k6/latest/",
+            "https://gatling.io/docs/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes Instáveis (Flaky)",
+      "description": "Encontrando e eliminando falhas aleatórias.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Causas típicas: dependência de horário ou fuso (use um Clock injetável), ordem de execução e estado compartilhado entre testes, Thread.sleep para esperar algo assíncrono (use Awaitility), portas fixas e dados aleatórios sem semente. Testes flaky destroem a confiança no CI; isole-os, corrija a causa e não apenas adicione retries.",
+          "code": "// Tempo controlado: o serviço recebe um Clock\nClock fixo = Clock.fixed(Instant.parse(\"2024-05-10T10:00:00Z\"), ZoneOffset.UTC);\nvar service = new CupomService(fixo);\n\n// Espera assíncrona sem sleep\nawait().atMost(Duration.ofSeconds(5))\n       .untilAsserted(() -> assertThat(emailFake.enviados()).hasSize(1));",
+          "interview_question": "Quais são as causas comuns de testes instáveis e como corrigi-las?",
+          "references": [
+            "https://github.com/awaitility/awaitility",
+            "https://martinfowler.com/articles/nonDeterminism.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes Baseados em Propriedades",
+      "description": "Gerando centenas de entradas automaticamente.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em vez de escolher alguns exemplos, você descreve uma propriedade que deve valer para qualquer entrada, e a biblioteca (jqwik) gera centenas de casos, incluindo bordas como zero, negativos e strings vazias. Quando encontra uma falha, ela reduz a entrada ao menor contraexemplo. É excelente para cálculos, conversões e parsers.",
+          "code": "class DescontoProperties {\n    @Property\n    void descontoNuncaDeixaPrecoNegativo(@ForAll @BigRange(min = \"0\", max = \"100000\") BigDecimal preco,\n                                         @ForAll @IntRange(min = 0, max = 100) int percentual) {\n        BigDecimal resultado = Desconto.aplicar(preco, percentual);\n        assertThat(resultado).isBetween(BigDecimal.ZERO, preco);\n    }\n}",
+          "interview_question": "O que são testes baseados em propriedades?",
+          "references": [
+            "https://jqwik.net/docs/current/user-guide.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Estratégia de Testes no Pipeline",
+      "description": "Feedback rápido sem perder cobertura.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Separe por velocidade: testes unitários rodam primeiro e em todo push (falha rápida); integração com Testcontainers roda em seguida, no Maven com o plugin Failsafe (sufixo IT); contratos são verificados antes do merge; testes de carga e E2E rodam em staging antes da promoção para produção. Paralelize, publique relatórios e trate a quebra da main como prioridade.",
+          "code": "mvn test       # Surefire: *Test.java (unitários, segundos)\nmvn verify     # Failsafe: *IT.java (integração com Testcontainers, minutos)\n\nPipeline:\n  push      -> unitários + análise estática\n  PR        -> + integração + verificação de contratos\n  main      -> build da imagem -> deploy em staging -> E2E + carga\n  aprovação -> produção",
+          "interview_question": "Como organizar a execução dos testes em um pipeline de CI?",
+          "references": [
+            "https://maven.apache.org/surefire/maven-failsafe-plugin/"
+          ]
+        }
+      ]
+    }
+  ]
+}

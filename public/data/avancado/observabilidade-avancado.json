@@ -1,0 +1,142 @@
+{
+  "title": "Observabilidade — Avançado",
+  "description": "Logs, métricas e rastreamento distribuído para entender sistemas em produção.",
+  "resumo": [
+    "Observabilidade é a capacidade de responder perguntas sobre o sistema em produção sem precisar implantar código novo. Ela se apoia em três sinais: logs, métricas e traces.",
+    "Logs estruturados contam o que aconteceu em cada evento; métricas mostram tendências e alimentam alertas; traces seguem uma requisição através de vários serviços.",
+    "OpenTelemetry padroniza a coleta dos três sinais, e no ecossistema Spring o Micrometer integra métricas e tracing de forma quase automática.",
+    "SLIs, SLOs e alertas bem calibrados transformam esses dados em decisões: o que é \"saudável\", quando acordar alguém e quanto risco o time pode assumir."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Logs Estruturados",
+      "description": "Logs em JSON, pesquisáveis e correlacionados.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Logs em JSON têm campos consistentes (timestamp, nível, serviço, traceId, pedidoId) que ferramentas como Elasticsearch, Loki ou CloudWatch indexam e filtram — \"todos os erros do pedido 123 em todos os serviços\" vira uma consulta. Texto livre exige regex frágeis. O Spring Boot 3.4+ suporta logs estruturados nativamente; controle a verbosidade, pois logs custam armazenamento.",
+          "code": "# application.yml (Spring Boot 3.4+)\nlogging:\n  structured:\n    format:\n      console: ecs\n\n// Saída (uma linha por evento)\n{\"@timestamp\":\"2024-05-10T14:32:01.120Z\",\"log.level\":\"INFO\",\"service.name\":\"api-pedidos\",\n \"trace.id\":\"4bf92f3577b34da6\",\"message\":\"Pedido criado\",\"pedidoId\":123}",
+          "interview_question": "Por que preferir logs estruturados a texto livre?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/features/logging.html#features.logging.structured"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Contexto e Correlação com MDC",
+      "description": "Ligando todos os logs de uma requisição.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O MDC (Mapped Diagnostic Context) do SLF4J guarda pares chave-valor por thread, e o padrão de log os inclui em cada linha. Com Micrometer Tracing, traceId e spanId já entram no MDC automaticamente. Para dados de negócio, adicione no início do processamento e limpe ao final — em pools de threads, um MDC não limpo vaza para a próxima requisição.",
+          "code": "public void processar(Pedido pedido) {\n    try (var ignored = MDC.putCloseable(\"pedidoId\", pedido.id().toString())) {\n        log.info(\"Iniciando processamento\");\n        pagamento.cobrar(pedido);\n        log.info(\"Pagamento concluído\");\n    } // pedidoId removido do MDC automaticamente\n}\n\n# application.yml\nlogging.pattern.level: \"%5p [%X{traceId:-},%X{spanId:-}] pedido=%X{pedidoId:-}\"",
+          "interview_question": "Como incluir o id da requisição em todos os logs sem passá-lo como parâmetro?",
+          "references": [
+            "https://www.slf4j.org/manual.html#mdc"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Métricas com Micrometer e Prometheus",
+      "description": "Medindo o comportamento técnico e de negócio.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Os sinais de ouro: latência (p95/p99, não média), tráfego (requisições por segundo), erros (taxa de 5xx) e saturação (CPU, pool de conexões, filas). Some métricas de negócio, como pedidos criados e pagamentos recusados. O Micrometer expõe tudo em /actuator/prometheus; o Prometheus coleta e o Grafana exibe. Evite tags de alta cardinalidade (userId, pedidoId) — cada valor cria uma nova série temporal.",
+          "code": "@Service\npublic class PedidoService {\n    private final Counter pedidosCriados;\n    private final Timer tempoCheckout;\n\n    public PedidoService(MeterRegistry registry) {\n        this.pedidosCriados = Counter.builder(\"pedidos.criados\")\n            .tag(\"canal\", \"web\").register(registry);\n        this.tempoCheckout = Timer.builder(\"checkout.duracao\")\n            .publishPercentiles(0.95, 0.99).register(registry);\n    }\n\n    public void finalizar(Pedido p) {\n        tempoCheckout.record(() -> processar(p));\n        pedidosCriados.increment();\n    }\n}",
+          "interview_question": "Quais métricas você definiria para uma API crítica?",
+          "references": [
+            "https://docs.micrometer.io/micrometer/reference/",
+            "https://sre.google/sre-book/monitoring-distributed-systems/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Tracing Distribuído",
+      "description": "Seguindo uma requisição por vários serviços.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Um trace representa uma requisição completa; cada operação (chamada HTTP, consulta SQL, mensagem) é um span com início, duração e atributos. O contexto (traceparent, padrão W3C) é propagado nos cabeçalhos entre serviços, e ferramentas como Jaeger, Tempo ou Zipkin montam a árvore de spans — mostrando que, dos 900 ms do checkout, 700 ms foram no serviço de frete. Use amostragem para controlar custo.",
+          "code": "GET /checkout  ─────────────────────────────── 900ms\n  ├─ api-pedidos: SELECT carrinho ──── 40ms\n  ├─ api-frete: GET /frete/01001000 ─────────── 700ms   <- gargalo\n  └─ api-pagamentos: POST /cobrancas ── 120ms\n\ntraceparent: 00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+          "interview_question": "Como o tracing ajuda a encontrar gargalos entre serviços?",
+          "references": [
+            "https://www.w3.org/TR/trace-context/",
+            "https://opentelemetry.io/docs/concepts/signals/traces/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "OpenTelemetry",
+      "description": "Um padrão aberto para logs, métricas e traces.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "OpenTelemetry define APIs, SDKs e o protocolo OTLP para os três sinais, independente de fornecedor. A aplicação instrumenta uma vez e envia para um OpenTelemetry Collector, que roteia para Prometheus, Jaeger, Datadog ou outro backend — trocar de ferramenta não exige mudar código. O agente Java instrumenta automaticamente HTTP, JDBC e Kafka, e no Spring Boot o Micrometer Tracing com a bridge OTel cumpre o mesmo papel.",
+          "code": "# Agente Java: instrumentação automática, sem alterar código\njava -javaagent:opentelemetry-javaagent.jar \\\n     -Dotel.service.name=api-pedidos \\\n     -Dotel.exporter.otlp.endpoint=http://otel-collector:4317 \\\n     -jar app.jar",
+          "interview_question": "Por que adotar OpenTelemetry em vez de um SDK de fornecedor?",
+          "references": [
+            "https://opentelemetry.io/docs/languages/java/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "SLI, SLO e Error Budget",
+      "description": "Definindo \"saudável\" de forma mensurável.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "SLI é o indicador medido (ex.: % de requisições com sucesso abaixo de 300 ms). SLO é a meta interna para esse indicador (99,9% em 30 dias). SLA é o compromisso contratual com o cliente, com penalidades — normalmente mais frouxo que o SLO. O error budget é o quanto se pode falhar (0,1% ≈ 43 minutos por mês): sobrando orçamento, o time acelera entregas; estourado, prioriza estabilidade.",
+          "code": "SLI:  requisições com status < 500 e latência < 300ms / total de requisições\nSLO:  99,9% em janela móvel de 30 dias\nError budget: 0,1% de 30 dias ≈ 43 min de indisponibilidade\n\n# PromQL: disponibilidade nos últimos 30 dias\nsum(rate(http_server_requests_seconds_count{status!~\"5..\"}[30d]))\n  / sum(rate(http_server_requests_seconds_count[30d]))",
+          "interview_question": "Qual a diferença entre SLI, SLO e SLA?",
+          "references": [
+            "https://sre.google/sre-book/service-level-objectives/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Alertas Acionáveis",
+      "description": "Alertar sobre sintomas, não sobre ruído.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Alerte sobre sintomas que afetam usuários (taxa de erro, latência, consumo rápido do error budget), não sobre cada causa possível (CPU a 80%). Todo alerta deve ser acionável e ter um runbook dizendo o que fazer. Use janelas e limiares que evitem disparos por picos de segundos, e revise alertas que tocam sem ação necessária — alertas ignorados escondem os importantes.",
+          "code": "# Prometheus: taxa de erro acima de 2% por 5 minutos\ngroups:\n  - name: api-pedidos\n    rules:\n      - alert: TaxaDeErroAlta\n        expr: |\n          sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[5m]))\n            / sum(rate(http_server_requests_seconds_count[5m])) > 0.02\n        for: 5m\n        labels: { severity: page }\n        annotations:\n          runbook: https://wiki.loja/runbooks/api-pedidos-erros",
+          "interview_question": "Como evitar fadiga de alertas?",
+          "references": [
+            "https://prometheus.io/docs/prometheus/latest/configuration/alerting_rules/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Dashboards e Investigação de Incidentes",
+      "description": "Do alerta à causa raiz.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Comece pelo dashboard do serviço (sinais de ouro) e correlacione com eventos: houve deploy, pico de tráfego ou mudança de configuração? Use as métricas para delimitar quando e onde, os traces para achar o span lento e os logs daquele traceId para o detalhe. Mitigue primeiro (rollback, escalar), investigue depois e registre um post-mortem sem culpados, com ações para evitar a repetição.",
+          "code": "1. Alerta: p99 do checkout > 2s\n2. Dashboard: começou às 14:05, junto com o deploy da v1.4.0\n3. Traces: span \"SELECT pedidos\" passou de 20ms para 1.5s\n4. Logs do traceId: nova consulta sem índice em pedidos.status\n5. Mitigação: rollback para v1.3.9\n6. Correção: índice + teste de performance no CI\n7. Post-mortem sem culpados com ações e prazos",
+          "interview_question": "Como você investiga um aumento de latência em produção?",
+          "references": [
+            "https://sre.google/sre-book/postmortem-culture/"
+          ]
+        }
+      ]
+    }
+  ]
+}

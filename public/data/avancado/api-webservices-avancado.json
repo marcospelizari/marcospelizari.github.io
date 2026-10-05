@@ -1,0 +1,143 @@
+{
+  "title": "APIs — Avançado",
+  "description": "Design evolutivo, segurança, protocolos e proteção de APIs em produção.",
+  "resumo": [
+    "APIs são contratos: depois que clientes dependem delas, toda mudança precisa ser compatível ou versionada. Design evolutivo, idempotência e erros padronizados reduzem quebras.",
+    "Escolher o protocolo certo importa: REST é universal e cacheável, GraphQL atende UIs com necessidades variadas de dados e gRPC brilha na comunicação interna de baixa latência.",
+    "Segurança vai além de autenticar: OAuth2 com escopos, validação de entrada, rate limiting e proteção contra abuso mantêm a API disponível e os dados protegidos.",
+    "Em produção, cache HTTP, compressão e paginação eficiente sustentam performance, enquanto contratos OpenAPI documentam e permitem gerar clientes."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Maturidade REST e Versionamento",
+      "description": "Evoluir a API sem quebrar clientes.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Mudanças aditivas (novo campo opcional, novo endpoint) são compatíveis se os clientes ignoram campos desconhecidos — configure isso nos seus próprios clientes. Remover ou renomear campos e mudar tipos exige nova versão: por URL (/v2), mais explícita, ou por header/media type. O Modelo de Maturidade de Richardson descreve a evolução de RPC sobre HTTP até recursos, verbos corretos e hipermídia (HATEOAS).",
+          "code": "GET /v1/pedidos/123 -> { \"id\": 123, \"total\": 99.90 }\nGET /v2/pedidos/123 -> { \"id\": 123, \"total\": { \"valor\": 99.90, \"moeda\": \"BRL\" } }\n\n# Versionamento por header\nGET /pedidos/123\nAccept: application/vnd.loja.v2+json\n\n# Depreciação comunicada ao cliente\nDeprecation: true\nSunset: Wed, 31 Dec 2025 23:59:59 GMT",
+          "interview_question": "Como adicionar campos sem quebrar clientes existentes?",
+          "references": [
+            "https://martinfowler.com/articles/richardsonMaturityModel.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Idempotência em Operações Críticas",
+      "description": "Evitando cobranças duplicadas em retries.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O cliente envia um Idempotency-Key único por operação; o servidor grava a chave com o resultado e, se a mesma chave chegar de novo (retry após timeout), devolve a resposta original em vez de processar outra vez. A chave deve ser armazenada com restrição de unicidade para resistir a requisições concorrentes e ter tempo de expiração.",
+          "code": "@PostMapping(\"/pagamentos\")\nResponseEntity<PagamentoResponse> pagar(@RequestHeader(\"Idempotency-Key\") String chave,\n                                        @Valid @RequestBody PagamentoRequest req) {\n    return idempotencia.buscar(chave)\n        .map(ResponseEntity::ok)\n        .orElseGet(() -> {\n            PagamentoResponse resp = service.pagar(req);\n            idempotencia.salvar(chave, resp); // UNIQUE(chave) no banco\n            return ResponseEntity.status(HttpStatus.CREATED).body(resp);\n        });\n}",
+          "interview_question": "Como tornar um POST de pagamento seguro contra repetições?",
+          "references": [
+            "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "GraphQL vs REST",
+      "description": "Escolhendo pelo formato de consumo.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "GraphQL deixa o cliente pedir exatamente os campos necessários em uma única chamada, resolvendo over-fetching e under-fetching em UIs complexas com várias telas e clientes. Em troca, cache HTTP fica mais difícil (tudo é POST em um endpoint), consultas profundas podem ser caras (limite profundidade e complexidade) e resolvers ingênuos geram N+1 (use DataLoader/batching). REST continua mais simples para CRUDs e APIs públicas.",
+          "code": "# Uma requisição traz pedido, cliente e itens com os campos escolhidos\nquery {\n  pedido(id: 123) {\n    total\n    cliente { nome }\n    itens { produto { nome } quantidade }\n  }\n}\n\n// Spring for GraphQL\n@Controller\nclass PedidoGraphQlController {\n    @QueryMapping\n    Pedido pedido(@Argument Long id) { return service.buscar(id); }\n}",
+          "interview_question": "Quando GraphQL é mais indicado que REST?",
+          "references": [
+            "https://graphql.org/learn/",
+            "https://docs.spring.io/spring-graphql/reference/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "gRPC e Streaming",
+      "description": "Contratos binários de baixa latência.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "gRPC usa Protocol Buffers (binário, compacto e fortemente tipado) sobre HTTP/2, com multiplexação e streaming unário, de servidor, de cliente ou bidirecional. O contrato .proto gera clientes e servidores em várias linguagens. É ótimo para comunicação interna entre serviços com alto volume; para navegadores e APIs públicas, REST/JSON continua mais acessível.",
+          "code": "// pedido.proto\nsyntax = \"proto3\";\n\nservice PedidoService {\n  rpc Buscar (BuscarPedidoRequest) returns (Pedido);\n  rpc AcompanharStatus (BuscarPedidoRequest) returns (stream StatusAtualizado);\n}\n\nmessage BuscarPedidoRequest { int64 id = 1; }\nmessage Pedido { int64 id = 1; string status = 2; double total = 3; }\nmessage StatusAtualizado { string status = 1; }",
+          "interview_question": "Quando preferir gRPC a REST?",
+          "references": [
+            "https://grpc.io/docs/what-is-grpc/introduction/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "OAuth2, OIDC e Escopos",
+      "description": "Delegação de acesso e identidade.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "OAuth2 é um framework de autorização: emite access tokens que permitem a um cliente acessar recursos em nome do usuário, limitados por escopos. OIDC (OpenID Connect) adiciona autenticação sobre o OAuth2, com o ID token e o endpoint userinfo, dizendo quem é o usuário. Para apps web e mobile use o fluxo Authorization Code com PKCE; entre serviços, Client Credentials. Tokens de acesso curtos com refresh tokens reduzem o impacto de vazamentos.",
+          "code": "# Authorization Code + PKCE (resumo)\n1. App redireciona: /authorize?response_type=code&client_id=app&scope=openid pedidos:ler&code_challenge=...\n2. Usuário autentica no provedor e o app recebe ?code=abc\n3. App troca o code: POST /token (code + code_verifier)\n4. Recebe: access_token (curto), refresh_token, id_token (OIDC)\n5. Chama a API: Authorization: Bearer <access_token>",
+          "interview_question": "Diferença entre OAuth2 e OIDC em uma API?",
+          "references": [
+            "https://oauth.net/2/",
+            "https://openid.net/developers/how-connect-works/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Rate Limiting e Proteção contra Abuso",
+      "description": "Mantendo a API disponível para todos.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Rate limiting limita requisições por cliente (por chave de API, usuário ou IP) em uma janela de tempo, normalmente com token bucket; ao exceder, responda 429 Too Many Requests com Retry-After. Aplique-o no API Gateway ou com bibliotecas como Bucket4j, combinado com limites de tamanho de payload, paginação obrigatória e timeouts.",
+          "code": "HTTP/1.1 429 Too Many Requests\nRetry-After: 30\nRateLimit-Limit: 100\nRateLimit-Remaining: 0\nRateLimit-Reset: 30\n\n# Spring Cloud Gateway: limite por usuário com Redis\nspring.cloud.gateway.routes[0].filters[0]: >\n  RequestRateLimiter=redis-rate-limiter.replenishRate=10,redis-rate-limiter.burstCapacity=20",
+          "interview_question": "Como proteger uma API pública contra abuso e picos de tráfego?",
+          "references": [
+            "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Cache HTTP e ETags",
+      "description": "Menos tráfego com respostas condicionais.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Cache-Control define por quanto tempo clientes e CDNs podem reutilizar uma resposta. ETag é um identificador da versão do recurso: o cliente envia If-None-Match e, se nada mudou, recebe 304 Not Modified sem corpo. Em escritas, If-Match com a ETag implementa controle de concorrência otimista: se outro cliente alterou o recurso antes, a API responde 412 Precondition Failed.",
+          "code": "GET /produtos/42\n-> 200 OK\n   ETag: \"v7\"\n   Cache-Control: max-age=60\n\nGET /produtos/42\nIf-None-Match: \"v7\"\n-> 304 Not Modified\n\nPUT /produtos/42\nIf-Match: \"v6\"\n-> 412 Precondition Failed   # alguém já atualizou para v7",
+          "interview_question": "Como ETags reduzem tráfego e evitam atualizações perdidas?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Contrato com OpenAPI",
+      "description": "Documentação viva e geração de clientes.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "No code-first, o springdoc-openapi gera a especificação a partir dos controllers e anotações — rápido para começar. No contract-first, o arquivo OpenAPI é escrito e revisado antes, e o openapi-generator gera interfaces e clientes, permitindo que times de front e back trabalhem em paralelo. Em ambos, valide no CI se mudanças no contrato são compatíveis com versões anteriores.",
+          "code": "<!-- pom.xml -->\n<dependency>\n  <groupId>org.springdoc</groupId>\n  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>\n  <version>2.6.0</version>\n</dependency>\n<!-- Swagger UI em /swagger-ui.html e especificação em /v3/api-docs -->",
+          "interview_question": "Qual a diferença entre abordagens code-first e contract-first com OpenAPI?",
+          "references": [
+            "https://springdoc.org/",
+            "https://swagger.io/specification/"
+          ]
+        }
+      ]
+    }
+  ]
+}

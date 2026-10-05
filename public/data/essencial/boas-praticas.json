@@ -1,0 +1,156 @@
+{
+  "title": "Boas Práticas Gerais",
+  "description": "Recomendações para código limpo, eficiente e colaborativo em Java, backend e DevOps, valorizadas em entrevistas.",
+  "version": "Java 21, Spring Boot 3.3.x",
+  "resumo": [
+    "Boas práticas são acordos que mantêm o código fácil de ler, testar e mudar. Em entrevistas, mostram maturidade: não basta o código funcionar, ele precisa ser sustentável pelo time.",
+    "Organização começa por camadas claras (controller, service, repository), nomes que revelam intenção e classes com uma única responsabilidade. Princípios como SOLID guiam essas decisões.",
+    "Qualidade é verificada automaticamente: testes cobrindo regras de negócio, CI executando build e testes em cada Pull Request e revisões de código focadas em corretude e segurança.",
+    "No banco e nas APIs, evite consultas N+1, valide toda entrada externa, padronize erros e nunca exponha entidades ou dados sensíveis diretamente.",
+    "Em operação, logs com contexto, métricas e deploys automatizados e pequenos reduzem riscos. Segredos ficam fora do repositório e dependências são mantidas atualizadas."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Código e Organização",
+      "description": "Estruturação de projetos.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Use nomes descritivos, siga padrões como MVC (Model-View-Controller), documente com JavaDoc e organize em camadas (controller, service, repository). Isso facilita colaboração e manutenção.",
+          "code": "/**\n * Lista produtos por categoria.\n * @param categoria Categoria desejada\n * @return Lista de produtos\n */\n@GetMapping(\"/produtos\")\npublic List<Produto> listarPorCategoria(@RequestParam String categoria) {\n    return service.findByCategoria(categoria);\n}",
+          "interview_question": "Como você organiza o código em um projeto backend?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Princípios de Design",
+      "description": "Aplicação de SOLID e DRY.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Siga o SRP (Single Responsibility Principle) para classes com uma função e o DRY (Don't Repeat Yourself) para evitar duplicação. Promove código reutilizável e fácil de testar.",
+          "code": "public double aplicarDesconto(double valor, double percentual) {\n    return valor * (1 - percentual / 100);\n}",
+          "interview_question": "O que é o princípio SOLID e como você o aplica?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Bancos de Dados",
+      "description": "Otimização e segurança de dados.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Use índices, evite SELECT *, normalize tabelas, aplique transações e PreparedStatement para segurança. Garante performance e proteção em sistemas críticos.",
+          "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT id, nome FROM usuarios WHERE id = ?\");\nstmt.setInt(1, id);\nResultSet rs = stmt.executeQuery();",
+          "interview_question": "Quais práticas você segue para otimizar consultas SQL?"
+        }
+      ]
+    },
+    {
+      "subtitle": "APIs e Testes",
+      "description": "Desenvolvimento e validação de APIs.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Use URLs claras, códigos HTTP corretos, valide entradas com @Valid e teste com JUnit e RestAssured, mirando 80%+ de cobertura. Assegura APIs confiáveis e fáceis de usar.",
+          "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}",
+          "interview_question": "Como você garante a qualidade de uma API REST?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Git e Colaboração",
+      "description": "Gerenciamento de código em equipe.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Faça commits pequenos com mensagens claras, use branches (ex.: feature/nova-api), revise PRs (Pull Requests) e use .gitignore. Facilita colaboração em projetos distribuídos.",
+          "code": "git commit -m \"Adiciona endpoint /produtos\"\ngit push origin feature/nova-api",
+          "interview_question": "Como você organiza commits em um projeto em equipe?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Performance e DevOps",
+      "description": "Otimização e implantação.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Use cache, assincronismo (@Async), imagens leves no Docker e pipelines CI/CD (Continuous Integration/Continuous Deployment). Monitorar com Prometheus garante sistemas escaláveis.",
+          "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: mvn clean package",
+          "interview_question": "Quais práticas DevOps você aplicaria para otimizar deploys?"
+        }
+      ]
+    },
+    {
+      "subtitle": "Nomes Significativos",
+      "description": "Código que se explica sozinho.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Nomes devem revelar intenção: o que é, por que existe e como é usado. Prefira termos do domínio (calcularFrete, pedidosPendentes) a abreviações (calc, lst, tmp). Métodos são verbos, classes são substantivos, booleanos soam como perguntas (isAtivo, temEstoque). Quando um comentário explica \"o que\" o código faz, normalmente um nome melhor ou a extração de um método resolve; comentários ficam para o \"porquê\".",
+          "code": "// Antes\nint d; // dias desde a criação\nList<int[]> lst = get(1);\nif (u.s == 2) { ... }\n\n// Depois\nint diasDesdeCriacao;\nList<Pedido> pedidosPendentes = buscarPedidosPorStatus(StatusPedido.PENDENTE);\nif (usuario.estaBloqueado()) { ... }",
+          "interview_question": "Como bons nomes reduzem a necessidade de comentários?",
+          "references": [
+            "https://martinfowler.com/bliki/TwoHardThings.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Logs e Tratamento de Erros",
+      "description": "Falhar de forma visível e diagnosticável.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Nunca engula exceções (catch vazio) nem logue e relance a mesma exceção em várias camadas, o que duplica logs. Use níveis corretos — ERROR para falhas que exigem ação, WARN para situações anormais recuperáveis, INFO para eventos de negócio, DEBUG para diagnóstico. Inclua contexto (ids de pedido e usuário) com placeholders do SLF4J e jamais registre senhas, tokens ou dados pessoais.",
+          "code": "private static final Logger log = LoggerFactory.getLogger(PagamentoService.class);\n\npublic void processar(Pedido pedido) {\n    try {\n        gateway.cobrar(pedido);\n        log.info(\"Pagamento aprovado pedidoId={} valor={}\", pedido.id(), pedido.total());\n    } catch (GatewayIndisponivelException e) {\n        log.warn(\"Gateway indisponível, pedidoId={} será reprocessado\", pedido.id(), e);\n        fila.reagendar(pedido);\n    }\n}",
+          "interview_question": "Quais erros comuns você evita ao tratar exceções e escrever logs?",
+          "references": [
+            "https://www.slf4j.org/manual.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Code Review",
+      "description": "Revisões que melhoram o código e o time.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Comece pelo objetivo: o PR resolve o problema descrito? Depois corretude e casos de borda, testes cobrindo o comportamento, legibilidade e nomes, segurança (validação de entrada, segredos) e impacto em performance. PRs pequenos são revisados melhor e mais rápido. Comentários devem ser objetivos e sobre o código, não sobre a pessoa, diferenciando o que é bloqueante do que é sugestão.",
+          "code": "Checklist de revisão:\n[ ] A descrição explica o que muda e por quê\n[ ] Há testes para o novo comportamento e para os casos de erro\n[ ] Nenhum segredo, senha ou dado sensível no código ou nos logs\n[ ] Entradas externas são validadas\n[ ] Consultas novas não geram N+1 nem carregam dados demais\n[ ] O CI está verde",
+          "interview_question": "O que você observa ao revisar um Pull Request?",
+          "references": [
+            "https://google.github.io/eng-practices/review/reviewer/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Segurança Básica (OWASP)",
+      "description": "Os riscos mais comuns em aplicações web.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O OWASP Top 10 lista os riscos mais críticos em aplicações web. Entre eles: controle de acesso quebrado (verifique se o usuário pode acessar aquele recurso, não só se está logado), injeção (use consultas parametrizadas), falhas criptográficas (HTTPS e hash de senhas com BCrypt) e componentes vulneráveis (mantenha dependências atualizadas e escaneie-as no CI). Segredos ficam em variáveis de ambiente ou cofres, nunca no repositório.",
+          "code": "// Controle de acesso: o pedido pertence ao usuário autenticado?\n@GetMapping(\"/pedidos/{id}\")\nPedidoResponse buscar(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {\n    Pedido pedido = service.buscar(id);\n    if (!pedido.clienteId().equals(jwt.getSubject())) {\n        throw new AccessDeniedException(\"Pedido de outro cliente\");\n    }\n    return PedidoResponse.from(pedido);\n}\n\n// Hash de senha\nString hash = new BCryptPasswordEncoder().encode(senha);",
+          "interview_question": "Cite riscos do OWASP Top 10 e como mitigá-los em uma API Java.",
+          "references": [
+            "https://owasp.org/www-project-top-ten/"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+<app-header />
+
+@if (menu.open()) {
+  <div class="lg:hidden fixed inset-0 top-header z-30 bg-black/40" aria-hidden="true" (click)="menu.close()"></div>
+}
+
+<app-sidebar />
+
+<div class="lg:pl-sidebar">
+  <main class="w-full pt-header min-h-screen">
+    <router-outlet />
+  </main>
+</div>

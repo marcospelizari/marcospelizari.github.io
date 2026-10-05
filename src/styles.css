@@ -1,0 +1,164 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens from the Stitch export (Estudos.dev).
+ * Utilities (bg-surface-container-low, text-primary, ...) resolve to the
+ * --c-* variables below, which switch with html[data-theme].
+ */
+@theme {
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --color-background: var(--c-background);
+  --color-surface: var(--c-background);
+  --color-surface-container-lowest: var(--c-surface-container-lowest);
+  --color-surface-container-low: var(--c-surface-container-low);
+  --color-surface-container: var(--c-surface-container);
+  --color-surface-container-high: var(--c-surface-container-high);
+  --color-surface-container-highest: var(--c-surface-container-highest);
+  --color-surface-bright: var(--c-surface-bright);
+  --color-on-surface: var(--c-on-surface);
+  --color-on-surface-variant: var(--c-on-surface-variant);
+  --color-outline: var(--c-outline);
+  --color-outline-variant: var(--c-outline-variant);
+  --color-primary: var(--c-primary);
+  --color-on-primary: var(--c-on-primary);
+  --color-primary-container: var(--c-primary-container);
+  --color-on-primary-container: var(--c-on-primary-container);
+  --color-secondary: var(--c-secondary);
+  --color-tertiary: var(--c-tertiary);
+  --color-error: var(--c-error);
+  --color-code-bg: var(--c-code-bg);
+  --color-code-bar: var(--c-code-bar);
+
+  --spacing-space-xs: 0.25rem;
+  --spacing-space-sm: 0.5rem;
+  --spacing-space-md: 0.75rem;
+  --spacing-space-lg: 1.25rem;
+  --spacing-space-xl: 2rem;
+  --spacing-margin: 2rem;
+  --spacing-margin-mobile: 1rem;
+
+  /* Shell dimensions: h-header, pt-header, w-sidebar, lg:pl-sidebar, ... */
+  --spacing-header: 3.5rem;
+  --spacing-sidebar: 16rem;
+  --spacing-sidebar-mobile: 18rem;
+  /* Header height plus breathing room, for sticky panels and anchor scrolling. */
+  --spacing-header-offset: 5rem;
+
+  --radius-lg: 0.25rem;
+  --radius-xl: 0.5rem;
+
+  --text-label-kbd: 11px;
+  --text-label-kbd--line-height: 12px;
+  --text-label-kbd--font-weight: 600;
+  --text-label-ui: 12px;
+  --text-label-ui--line-height: 16px;
+  --text-label-ui--font-weight: 500;
+  --text-code-inline: 12.5px;
+  --text-code-inline--line-height: 16px;
+  --text-code-block: 13px;
+  --text-code-block--line-height: 20px;
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 18px;
+  --text-body-md: 14px;
+  --text-body-md--line-height: 22px;
+  --text-body-lg: 16px;
+  --text-body-lg--line-height: 26px;
+  --text-headline-sm: 15px;
+  --text-headline-sm--line-height: 22px;
+  --text-headline-sm--font-weight: 600;
+  --text-headline-md: 18px;
+  --text-headline-md--line-height: 26px;
+  --text-headline-md--font-weight: 600;
+  --text-headline-lg: 24px;
+  --text-headline-lg--line-height: 32px;
+  --text-headline-lg--font-weight: 600;
+  --text-headline-xl: 32px;
+  --text-headline-xl--line-height: 40px;
+  --text-headline-xl--font-weight: 600;
+}
+
+/* Light: slate/cyan palette from StitchCodeLight.html (cyan-700 accent for AA contrast). */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --c-background: #f8fafc;
+  --c-surface-container-lowest: #ffffff;
+  --c-surface-container-low: #ffffff;
+  --c-surface-container: #f1f5f9;
+  --c-surface-container-high: #eef2f6;
+  --c-surface-container-highest: #e2e8f0;
+  --c-surface-bright: #e2e8f0;
+  --c-on-surface: #0f172a;
+  --c-on-surface-variant: #334155;
+  --c-outline: #64748b;
+  --c-outline-variant: #cbd5e1;
+  --c-primary: #0e7490;
+  --c-on-primary: #ffffff;
+  --c-primary-container: #cffafe;
+  --c-on-primary-container: #155e75;
+  --c-secondary: #0f766e;
+  --c-tertiary: #c2410c;
+  --c-error: #dc2626;
+  --c-code-bg: #0f172a;
+  --c-code-bar: #1e293b;
+}
+
+/* Dark: Material tokens from StichtCodeDark.html. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-background: #0f131d;
+  --c-surface-container-lowest: #0a0e18;
+  --c-surface-container-low: #171b26;
+  --c-surface-container: #1c1f2a;
+  --c-surface-container-high: #262a35;
+  --c-surface-container-highest: #313540;
+  --c-surface-bright: #353944;
+  --c-on-surface: #dfe2f1;
+  --c-on-surface-variant: #bcc9cd;
+  --c-outline: #869397;
+  --c-outline-variant: #3d494c;
+  --c-primary: #4cd7f6;
+  --c-on-primary: #003640;
+  --c-primary-container: #06b6d4;
+  --c-on-primary-container: #00424f;
+  --c-secondary: #4fdbc8;
+  --c-tertiary: #ffb873;
+  --c-error: #ffb4ab;
+  --c-code-bg: #0a0e18;
+  --c-code-bar: #171b26;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-sans text-body-md antialiased;
+  }
+  ::selection {
+    @apply bg-primary-container text-on-primary-container;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+}
+
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  direction: ltr;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Prism tokens. Code windows stay dark in both themes, as in the design. */
+.token.comment, .token.prolog, .token.doctype, .token.cdata { color: #869397; font-style: italic; }
+.token.keyword, .token.atrule, .token.important, .token.selector, .token.tag { color: #ffb873; }
+.token.string, .token.char, .token.attr-value, .token.regex, .token.inserted { color: #4fdbc8; }
+.token.class-name, .token.function, .token.annotation, .token.builtin, .token.key, .token.property { color: #acedff; }
+.token.number, .token.boolean, .token.constant, .token.attr-name, .token.variable { color: #4cd7f6; }
+.token.punctuation, .token.operator { color: #bcc9cd; }

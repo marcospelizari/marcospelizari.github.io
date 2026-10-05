@@ -1,0 +1,210 @@
+<div class="w-full max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-space-lg flex flex-col gap-space-xl">
+  @if (entry(); as entry) {
+    <!-- Breadcrumb -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md pb-space-md border-b border-outline-variant/30">
+      <nav aria-label="Trilha" class="flex flex-wrap items-center gap-space-xs text-body-sm">
+        <span class="text-on-surface-variant flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px] text-outline" aria-hidden="true">{{ entry.group.icon }}</span>
+          {{ entry.group.label }}
+        </span>
+        <span class="text-outline" aria-hidden="true">/</span>
+        <span class="text-primary text-headline-sm" aria-current="page">{{ entry.topic.label }}</span>
+      </nav>
+      @if (content.hasValue() && content.value().version; as version) {
+        <div class="flex items-center gap-1.5 px-space-sm py-1 rounded-xl bg-surface-container-high text-secondary text-label-ui shadow-sm self-start">
+          <span class="w-2 h-2 rounded-full bg-secondary" aria-hidden="true"></span>
+          <span class="font-mono">{{ version }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- Hero -->
+    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg">
+      <div class="flex flex-col gap-space-xs max-w-3xl">
+        <div class="inline-flex items-center gap-space-xs text-primary font-mono text-code-inline uppercase">
+          <span class="material-symbols-outlined text-[16px]" aria-hidden="true">school</span>
+          {{ entry.group.label }} · {{ levelLabel() }}
+        </div>
+        <h1 class="text-headline-lg sm:text-headline-xl tracking-tight text-on-surface">
+          {{ content.hasValue() ? content.value().title : entry.topic.label }}
+        </h1>
+        @if (content.hasValue()) {
+          <p class="text-body-lg text-on-surface-variant">{{ content.value().description }}</p>
+        }
+      </div>
+
+      <div class="flex items-center gap-1 p-1.5 rounded-xl bg-surface-container-low shadow-sm self-start lg:self-end" role="group" aria-label="Nível">
+        @for (lvl of levels; track lvl[0]) {
+          @if (entry.topic.files[lvl[0]]) {
+            <a
+              [routerLink]="['/', entry.topic.slug, lvl[0]]"
+              [attr.aria-current]="lvl[0] === level() ? 'page' : null"
+              class="px-space-md py-1.5 rounded-lg text-headline-sm transition-all"
+              [class]="lvl[0] === level()
+                ? 'bg-surface-container-highest text-primary shadow-sm'
+                : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'"
+            >{{ lvl[1] }}</a>
+          } @else {
+            <span class="px-space-md py-1.5 rounded-lg text-headline-sm text-outline/60 cursor-not-allowed" title="Sem conteúdo neste nível">{{ lvl[1] }}</span>
+          }
+        }
+      </div>
+    </div>
+
+    @if (!file()) {
+      <p class="text-on-surface-variant">Este tópico não tem conteúdo no nível escolhido.</p>
+    } @else if (content.isLoading()) {
+      <div class="flex items-center gap-space-sm text-on-surface-variant" role="status">
+        <span class="material-symbols-outlined animate-spin text-primary" aria-hidden="true">progress_activity</span>
+        Carregando conteúdo...
+      </div>
+    } @else if (content.error()) {
+      <div class="p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center gap-space-md" role="alert">
+        <span class="material-symbols-outlined text-error" aria-hidden="true">error</span>
+        <p class="flex-1">Erro ao carregar o tópico <code class="font-mono text-code-inline">data/{{ file() }}</code>.</p>
+        <button type="button" (click)="content.reload()" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm">Tentar novamente</button>
+      </div>
+    } @else if (content.hasValue()) {
+      <!-- Filter pill bar -->
+      <div class="flex items-center justify-between gap-space-md p-1.5 rounded-xl bg-surface-container-low shadow-sm">
+        <div class="flex items-center gap-1 overflow-x-auto" role="group" aria-label="Filtrar seções por tipo">
+          @for (filter of filters(); track filter.id) {
+            <button
+              type="button"
+              (click)="category.set(filter.id)"
+              [disabled]="filter.count === 0"
+              [attr.aria-pressed]="category() === filter.id"
+              class="flex items-center gap-1.5 px-space-md py-1.5 rounded-lg text-headline-sm whitespace-nowrap transition-all disabled:text-outline/50 disabled:cursor-not-allowed"
+              [class]="category() === filter.id
+                ? 'bg-surface-container-highest text-primary shadow-sm'
+                : 'text-on-surface-variant enabled:hover:text-on-surface enabled:hover:bg-surface-container-high'"
+            >
+              <span class="material-symbols-outlined text-[18px]" aria-hidden="true">{{ filter.icon }}</span>
+              {{ filter.label }}
+              <span class="font-mono text-label-kbd px-1.5 py-0.5 rounded bg-surface-container">{{ filter.count }}</span>
+            </button>
+          }
+        </div>
+        <span class="hidden md:block px-space-sm text-outline font-mono text-code-inline whitespace-nowrap" aria-live="polite">
+          {{ sections().length }} de {{ filters()[0].count }} seções
+        </span>
+      </div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-space-xl items-start">
+        <div class="xl:col-span-9 flex flex-col gap-space-xl min-w-0">
+          @if (showResumo()) {
+            <details id="resumo" class="group rounded-xl bg-surface-container-low relative overflow-hidden shadow-md scroll-mt-header-offset">
+              <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" aria-hidden="true"></div>
+              <summary class="flex items-center gap-space-md p-space-lg cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden hover:bg-surface-container transition-colors">
+                <span class="hidden sm:flex w-9 h-9 rounded-lg bg-surface-container-high items-center justify-center text-primary flex-shrink-0">
+                  <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
+                </span>
+                <span class="flex-1 flex flex-col">
+                  <span class="text-headline-sm text-primary uppercase tracking-wide">Resumo</span>
+                  <span class="text-label-ui text-outline">{{ content.value().resumo!.length }} parágrafos · clique para expandir</span>
+                </span>
+                <span class="material-symbols-outlined text-outline transition-transform group-open:rotate-180" aria-hidden="true">expand_more</span>
+              </summary>
+              <div class="flex flex-col gap-space-sm px-space-lg pb-space-lg sm:pl-[calc(var(--spacing-space-lg)+2.25rem+var(--spacing-space-md))]">
+                @for (paragraph of content.value().resumo; track $index) {
+                  <p class="text-body-lg text-on-surface">{{ paragraph }}</p>
+                }
+              </div>
+            </details>
+          }
+
+          @for (item of sections(); track item.index) {
+            <section [id]="sectionId(item.index)" class="flex flex-col gap-space-md scroll-mt-header-offset">
+              <div class="flex flex-wrap items-center justify-between gap-space-sm pb-space-xs border-b border-surface-container-highest">
+                <div class="flex items-center gap-space-sm">
+                  <span class="px-space-xs py-0.5 rounded bg-surface-container-high text-primary font-mono text-code-inline">{{ sectionNumber(item.index) }}</span>
+                  <h2 class="text-headline-md sm:text-headline-lg text-on-surface">{{ item.subsection.subtitle }}</h2>
+                </div>
+                <span class="text-outline text-label-ui">{{ item.subsection.description }}</span>
+              </div>
+
+              @for (example of item.subsection.examples; track $index) {
+                <article class="p-space-lg rounded-xl bg-surface-container-low flex flex-col gap-space-md shadow-md">
+                  @if (example.interview_question) {
+                    <div class="flex items-start gap-space-md">
+                      <div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary flex-shrink-0">
+                        <span class="material-symbols-outlined text-[22px]" aria-hidden="true">quiz</span>
+                      </div>
+                      <div class="flex flex-col gap-1">
+                        <span class="text-label-kbd font-mono uppercase text-secondary">Pergunta de entrevista</span>
+                        <h3 class="text-headline-sm sm:text-headline-md text-on-surface">{{ example.interview_question }}</h3>
+                      </div>
+                    </div>
+                  }
+                  <p class="text-body-md sm:text-body-lg text-on-surface-variant">{{ example.explanation }}</p>
+                  @if (example.code) {
+                    <app-code-block [code]="example.code" />
+                  }
+                  @if (example.references?.length) {
+                    <div class="flex flex-col gap-space-xs">
+                      <span class="text-label-ui text-outline">Referências</span>
+                      <ul class="flex flex-wrap gap-space-xs">
+                        @for (ref of example.references; track ref) {
+                          <li>
+                            <a [href]="ref" target="_blank" rel="noopener noreferrer"
+                               class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-container text-primary font-mono text-code-inline hover:bg-surface-container-high break-all">
+                              <span class="material-symbols-outlined text-[14px]" aria-hidden="true">link</span>{{ ref }}
+                            </a>
+                          </li>
+                        }
+                      </ul>
+                    </div>
+                  }
+                </article>
+              }
+            </section>
+          } @empty {
+            <div class="p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center gap-space-md">
+              <span class="material-symbols-outlined text-outline" aria-hidden="true">search_off</span>
+              <p class="flex-1 text-on-surface-variant">
+                Nenhuma seção encontrada
+                @if (search.query()) { para "{{ search.query() }}" }
+                com o filtro atual.
+              </p>
+              <button type="button" (click)="clearFilters()" class="h-9 px-space-md rounded-xl bg-surface-container-high text-on-surface text-headline-sm hover:bg-surface-bright">Limpar filtros</button>
+            </div>
+          }
+        </div>
+
+        <!-- On this page -->
+        <aside class="hidden xl:flex xl:col-span-3 sticky top-header-offset flex-col gap-space-md">
+          <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-space-md">
+            <div class="flex items-center gap-2 pb-space-xs border-b border-surface-container-highest text-headline-sm">
+              <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">toc</span>
+              Nesta Página
+            </div>
+            <nav aria-label="Nesta página" class="flex flex-col gap-1 text-body-sm">
+              @if (showResumo()) {
+                <button type="button" (click)="scrollTo('resumo')" class="text-left px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">Resumo</button>
+              }
+              @for (item of sections(); track item.index) {
+                <button type="button" (click)="scrollTo(sectionId(item.index))" class="text-left px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">
+                  <span class="font-mono text-outline mr-1">{{ sectionNumber(item.index) }}</span>{{ item.subsection.subtitle }}
+                </button>
+              }
+            </nav>
+          </div>
+          @if (entry.next; as next) {
+            <a [routerLink]="['/', next.slug]" class="p-space-sm px-space-md rounded-lg bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-colors">
+              <span class="flex flex-col">
+                <span class="text-outline text-label-kbd font-mono uppercase">Próximo Tema</span>
+                <span class="text-headline-sm">{{ next.label }}</span>
+              </span>
+              <span class="material-symbols-outlined text-primary text-[20px]" aria-hidden="true">arrow_forward</span>
+            </a>
+          }
+        </aside>
+      </div>
+    }
+  } @else {
+    <div class="flex flex-col items-start gap-space-md py-space-xl">
+      <h1 class="text-headline-lg">Tópico não encontrado</h1>
+      <a routerLink="/" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm inline-flex items-center">Voltar ao início</a>
+    </div>
+  }
+</div>
