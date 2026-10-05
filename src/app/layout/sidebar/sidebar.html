@@ -1,0 +1,42 @@
+<aside
+  id="sidebar"
+  class="fixed left-0 top-header bottom-0 w-sidebar-mobile lg:w-sidebar bg-surface-container-lowest z-40 overflow-y-auto transition-transform duration-200 lg:translate-x-0"
+  [class]="menu.open() ? 'translate-x-0 shadow-xl' : '-translate-x-full max-lg:invisible'"
+>
+  <div class="p-space-md flex flex-col gap-space-lg">
+    <label class="sm:hidden h-9 px-space-md rounded-xl bg-surface-container-low flex items-center gap-space-sm">
+      <span class="material-symbols-outlined text-[18px] text-outline" aria-hidden="true">search</span>
+      <input
+        type="search"
+        placeholder="Buscar nesta página..."
+        aria-label="Buscar seções do tópico"
+        class="flex-1 min-w-0 bg-transparent text-body-sm text-on-surface placeholder:text-outline outline-none focus-visible:outline-none"
+        [value]="search.query()"
+        (input)="onSearch($event)"
+      />
+    </label>
+
+    <nav aria-label="Tópicos" class="flex flex-col gap-space-lg">
+      @for (group of groups; track group.label) {
+        <div class="flex flex-col gap-space-xs">
+          <div class="px-space-sm py-1 text-outline text-label-ui uppercase tracking-wider">{{ group.label }}</div>
+          <div class="flex flex-col gap-0.5">
+            @for (topic of group.topics; track topic.slug) {
+              <a
+                [routerLink]="['/', topic.slug]"
+                routerLinkActive="bg-surface-container-high! text-primary! font-semibold border-l-2 border-primary"
+                ariaCurrentWhenActive="page"
+                class="flex items-center justify-between px-space-sm py-1.5 rounded-lg text-on-surface-variant text-body-sm hover:bg-surface-container-high hover:text-on-surface transition-colors"
+              >
+                <span class="truncate">{{ topic.label }}</span>
+                @if (!topic.files.essencial) {
+                  <span class="font-mono text-label-kbd text-outline px-1.5 py-0.5 rounded bg-surface-container-low">AV</span>
+                }
+              </a>
+            }
+          </div>
+        </div>
+      }
+    </nav>
+  </div>
+</aside>
