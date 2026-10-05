@@ -16,6 +16,17 @@
       />
     </label>
 
+    <a
+      routerLink="/"
+      routerLinkActive="bg-surface-container-high! text-primary! font-semibold border-l-2 border-primary"
+      [routerLinkActiveOptions]="{ exact: true }"
+      ariaCurrentWhenActive="page"
+      class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant text-body-sm hover:bg-surface-container-high hover:text-on-surface transition-colors"
+    >
+      <span class="material-symbols-outlined text-[18px]" aria-hidden="true">dashboard</span>
+      Início
+    </a>
+
     <nav aria-label="Tópicos" class="flex flex-col gap-space-lg">
       @for (group of groups; track group.label) {
         <div class="flex flex-col gap-space-xs">

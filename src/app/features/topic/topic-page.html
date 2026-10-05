@@ -120,7 +120,22 @@
                   <span class="px-space-xs py-0.5 rounded bg-surface-container-high text-primary font-mono text-code-inline">{{ sectionNumber(item.index) }}</span>
                   <h2 class="text-headline-md sm:text-headline-lg text-on-surface">{{ item.subsection.subtitle }}</h2>
                 </div>
-                <span class="text-outline text-label-ui">{{ item.subsection.description }}</span>
+                <div class="flex items-center gap-space-sm">
+                  <span class="text-outline text-label-ui">{{ item.subsection.description }}</span>
+                  @let studied = progress.isStudied(key(item.subsection.subtitle));
+                  <button
+                    type="button"
+                    (click)="progress.toggle(key(item.subsection.subtitle))"
+                    [attr.aria-pressed]="studied"
+                    class="flex items-center gap-1 px-space-sm py-1 rounded-lg text-label-ui transition-colors"
+                    [class]="studied
+                      ? 'bg-secondary/15 text-secondary'
+                      : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-bright'"
+                  >
+                    <span class="material-symbols-outlined text-[16px]" aria-hidden="true">{{ studied ? 'check_circle' : 'radio_button_unchecked' }}</span>
+                    {{ studied ? 'Estudado' : 'Marcar como estudado' }}
+                  </button>
+                </div>
               </div>
 
               @for (example of item.subsection.examples; track $index) {
@@ -185,6 +200,9 @@
               @for (item of sections(); track item.index) {
                 <button type="button" (click)="scrollTo(sectionId(item.index))" class="text-left px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">
                   <span class="font-mono text-outline mr-1">{{ sectionNumber(item.index) }}</span>{{ item.subsection.subtitle }}
+                  @if (progress.isStudied(key(item.subsection.subtitle))) {
+                    <span class="material-symbols-outlined text-[14px] text-secondary align-middle ml-1" aria-label="estudado">check_circle</span>
+                  }
                 </button>
               }
             </nav>
