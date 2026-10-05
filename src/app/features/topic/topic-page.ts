@@ -7,7 +7,8 @@ import { SearchService } from '../../core/services/search.service';
 import { Category, StudyContent } from '../../core/models/study-content.model';
 import { CATEGORIES } from '../../core/data/categories';
 import { Level } from '../../core/models/topic.model';
-import { matchesQuery } from '../../core/utils/content.utils';
+import { matchesQuery, sectionKey } from '../../core/utils/content.utils';
+import { ProgressService } from '../../core/services/progress.service';
 import { SITE_CONFIG } from '../../core/config/site.config';
 import { LEVEL_LABELS, findTopic } from '../../core/data/topics';
 
@@ -22,6 +23,7 @@ export class TopicPage {
   readonly level = input.required<string>();
 
   protected readonly search = inject(SearchService);
+  protected readonly progress = inject(ProgressService);
   protected readonly levels = Object.entries(LEVEL_LABELS) as [Level, string][];
 
   protected readonly levelLabel = computed(() => LEVEL_LABELS[this.level() as Level]);
@@ -83,6 +85,10 @@ export class TopicPage {
   protected clearFilters(): void {
     this.category.set(null);
     this.search.query.set('');
+  }
+
+  protected key(subtitle: string): string {
+    return sectionKey(this.slug(), this.level(), subtitle);
   }
 
   protected sectionId(index: number): string {

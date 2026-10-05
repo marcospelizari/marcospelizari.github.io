@@ -35,3 +35,8 @@ export function detectLanguage(code: string): string {
   if (/^\s*(git|docker|mvn|java|javac|curl|kubectl|npm)\s/m.test(code)) return 'bash';
   return 'plaintext';
 }
+
+/** Stable id of a section for progress tracking: survives reordering, not renaming. */
+export function sectionKey(slug: string, level: string, subtitle: string): string {
+  return `${slug}/${level}#${subtitle}`;
+}

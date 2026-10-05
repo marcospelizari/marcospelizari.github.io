@@ -1,0 +1,208 @@
+{
+  "title": "Kubernetes e kubectl",
+  "description": "Orquestração de containers na prática: objetos principais do Kubernetes e o uso diário do kubectl.",
+  "version": "Kubernetes 1.31, kubectl 1.31",
+  "resumo": [
+    "Kubernetes orquestra containers em um cluster: você declara o estado desejado (quantas réplicas, qual imagem, quais portas) e o cluster trabalha continuamente para mantê-lo, reiniciando e redistribuindo containers quando algo falha.",
+    "O kubectl é a ferramenta de linha de comando para conversar com a API do cluster. No dia a dia ele é usado para aplicar manifests, inspecionar recursos, ler logs, entrar em containers e acompanhar deploys.",
+    "Os objetos essenciais são: Pod (um ou mais containers), Deployment (réplicas e atualizações), Service (endereço estável e balanceamento), Ingress (entrada HTTP externa), ConfigMap e Secret (configuração) e Namespace (isolamento lógico).",
+    "O fluxo típico de uma aplicação Spring Boot: imagem publicada no registry, manifests versionados no Git, kubectl apply (ou GitOps) e acompanhamento com kubectl get, describe, logs e rollout status.",
+    "Em entrevistas, espera-se saber explicar o modelo declarativo, a diferença entre Pod, Deployment e Service e como investigar um pod com problema usando kubectl."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Arquitetura de um Cluster",
+      "description": "Control plane, nós e o modelo declarativo.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O control plane tem o kube-apiserver (porta de entrada de todas as operações, inclusive do kubectl), o etcd (banco chave-valor com o estado do cluster), o scheduler (escolhe em qual nó cada pod roda) e os controllers (loops que comparam o estado desejado com o atual e corrigem diferenças). Em cada nó, o kubelet executa os pods e o kube-proxy cuida da rede dos Services. Se um pod morre, o controller do ReplicaSet cria outro: você descreve o \"o quê\", e o cluster cuida do \"como\".",
+          "code": "kubectl (você)\n    │  HTTPS\n    ▼\n┌──────────── Control plane ────────────┐\n│ kube-apiserver ── etcd (estado)        │\n│ scheduler      controllers (loops)     │\n└───────────────────────────────────────┘\n    │\n    ▼\nNó 1: kubelet + kube-proxy + runtime -> pods\nNó 2: kubelet + kube-proxy + runtime -> pods",
+          "interview_question": "Como o Kubernetes mantém o estado desejado da aplicação?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/architecture/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Configurando o kubectl: kubeconfig e Contextos",
+      "description": "Saber em qual cluster você está antes de qualquer comando.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O kubectl lê o arquivo ~/.kube/config (ou o caminho em KUBECONFIG), que guarda clusters, usuários e contextos — um contexto combina cluster, usuário e namespace padrão. Sempre confira o contexto atual antes de comandos que alteram recursos, defina o namespace padrão do contexto para não precisar repetir -n e use contextos com nomes claros (dev, staging, prod). Ferramentas como kubectx/kubens agilizam a troca.",
+          "code": "kubectl version                              # versões do cliente e do servidor\nkubectl config get-contexts                  # lista contextos (* = atual)\nkubectl config current-context               # confirme ANTES de alterar algo\nkubectl config use-context staging           # troca de cluster\nkubectl config set-context --current --namespace=pedidos   # namespace padrão\nkubectl cluster-info                         # endereço do control plane",
+          "interview_question": "Como alternar entre clusters com kubectl sem correr o risco de alterar produção por engano?",
+          "references": [
+            "https://kubernetes.io/docs/reference/kubectl/",
+            "https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Inspecionando Recursos: get, describe e events",
+      "description": "Os primeiros comandos ao investigar qualquer problema.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "kubectl get lista recursos em formato resumido (status, réplicas prontas, reinícios) — com -o wide mostra nó e IP, e com -o yaml o objeto completo. kubectl describe mostra o detalhe legível de um recurso, incluindo a seção Events no final, onde aparecem erros de agendamento, falhas ao baixar imagem e probes falhando. Na dúvida, describe e events vêm primeiro.",
+          "code": "kubectl get pods                       # STATUS, READY, RESTARTS\nkubectl get pods -o wide               # + nó e IP\nkubectl get deploy api-pedidos -o yaml # objeto completo (spec + status)\nkubectl get pods -w                    # acompanha mudanças em tempo real\n\nkubectl describe pod api-pedidos-7d9f8 # detalhes + Events no final\nkubectl get events --sort-by=.metadata.creationTimestamp\nkubectl explain deployment.spec.strategy   # documentação de um campo",
+          "interview_question": "Qual a diferença entre kubectl get e kubectl describe?",
+          "references": [
+            "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_describe/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "kubectl apply e o Modelo Declarativo",
+      "description": "Manifests versionados como fonte da verdade.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Comandos imperativos (create, scale, set image) são rápidos para testes, mas deixam o cluster diferente do que está no Git — a próxima aplicação dos manifests desfaz a mudança. O modelo declarativo (kubectl apply -f) com manifests versionados é reproduzível, revisável em Pull Request e base para GitOps. kubectl diff mostra o que vai mudar antes de aplicar, e --dry-run=client -o yaml gera um manifest inicial a partir de um comando imperativo.",
+          "code": "kubectl diff -f k8s/          # o que mudaria no cluster\nkubectl apply -f k8s/         # aplica todos os manifests da pasta\nkubectl delete -f k8s/        # remove o que foi criado por eles\n\n# Imperativo: útil para gerar YAML inicial\nkubectl create deployment api --image=ghcr.io/loja/api:1.0 --dry-run=client -o yaml > deployment.yaml",
+          "interview_question": "Por que preferir kubectl apply com arquivos versionados a comandos imperativos?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/overview/working-with-objects/object-management/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Pods",
+      "description": "A menor unidade executável do Kubernetes.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Um Pod agrupa um ou mais containers que compartilham rede (mesmo IP, comunicação via localhost) e volumes. Pods são efêmeros: se o nó cai ou o pod é removido, ele não volta sozinho e um novo pod recebe outro IP. Por isso aplicações usam controllers — Deployment, StatefulSet, Job — que recriam pods automaticamente. Criar um pod avulso com kubectl run é útil apenas para testes rápidos e depuração.",
+          "code": "# Pod temporário para testar conectividade dentro do cluster\nkubectl run teste --rm -it --image=busybox:1.36 --restart=Never -- sh\n# dentro do pod:\nwget -qO- http://api-pedidos.pedidos.svc.cluster.local:8080/actuator/health\n\nkubectl get pods -o wide        # IP do pod e nó onde está rodando",
+          "interview_question": "Por que normalmente não se cria Pods diretamente?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/workloads/pods/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Namespaces, Labels e Selectors",
+      "description": "Organizando e filtrando recursos.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Namespaces separam recursos logicamente (por time, ambiente ou aplicação) e permitem quotas e permissões por namespace. Labels são pares chave-valor em qualquer objeto; selectors as usam para ligar recursos — o Service encontra seus pods e o Deployment, seus ReplicaSets, por labels. No kubectl, -l filtra por label, o que torna comandos sobre grupos de recursos simples.",
+          "code": "kubectl get namespaces\nkubectl create namespace pedidos\nkubectl get pods -n pedidos\nkubectl get pods -A                          # todos os namespaces\n\nkubectl get pods -l app=api-pedidos          # filtra por label\nkubectl get pods -l 'env in (staging,prod)'\nkubectl label pod api-pedidos-7d9f8 versao=1.4.0\nkubectl get pods --show-labels",
+          "interview_question": "Para que servem labels e selectors no Kubernetes?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Deployments e ReplicaSets",
+      "description": "Réplicas, atualizações e auto-recuperação.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O Deployment declara a imagem, o número de réplicas e a estratégia de atualização. Ele cria um ReplicaSet, que garante que o número de pods com aquele template esteja sempre rodando. A cada mudança no template (nova imagem, nova variável), o Deployment cria um novo ReplicaSet e migra os pods gradualmente (rolling update); os ReplicaSets antigos ficam guardados para permitir rollback. Para mudar a quantidade de réplicas, altere replicas no manifest; kubectl scale serve para ajustes rápidos (e é desfeito no próximo apply), e um HorizontalPodAutoscaler ajusta automaticamente conforme a carga.",
+          "code": "# deployment.yaml\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api-pedidos\n  labels: { app: api-pedidos }\nspec:\n  replicas: 3\n  selector:\n    matchLabels: { app: api-pedidos }\n  template:\n    metadata:\n      labels: { app: api-pedidos }\n    spec:\n      containers:\n        - name: api\n          image: ghcr.io/loja/api-pedidos:1.4.0\n          ports:\n            - containerPort: 8080\n\n# Comandos\nkubectl apply -f deployment.yaml\nkubectl get deploy,rs,pods -l app=api-pedidos\n\nkubectl scale deploy/api-pedidos --replicas=5   # rápido, mas some no próximo apply\nkubectl autoscale deploy/api-pedidos --min=3 --max=10 --cpu-percent=70",
+          "interview_question": "Qual a relação entre Deployment, ReplicaSet e Pod?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/workloads/controllers/deployment/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Services: Endereço Estável e Balanceamento",
+      "description": "ClusterIP, NodePort e LoadBalancer.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Pods mudam de IP a cada recriação. O Service oferece um nome DNS e um IP virtual estáveis e distribui o tráfego entre os pods que casam com seu selector de labels. ClusterIP (padrão) é acessível só dentro do cluster — ideal entre microserviços; NodePort expõe uma porta em cada nó; LoadBalancer provisiona um balanceador do provedor de nuvem. Dentro do cluster, o nome é <servico>.<namespace>.svc.cluster.local.",
+          "code": "apiVersion: v1\nkind: Service\nmetadata:\n  name: api-pedidos\nspec:\n  type: ClusterIP\n  selector: { app: api-pedidos }   # envia tráfego para pods com esta label\n  ports:\n    - port: 80          # porta do Service\n      targetPort: 8080  # porta do container\n\nkubectl get svc\nkubectl get endpointslices -l kubernetes.io/service-name=api-pedidos   # pods por trás do Service",
+          "interview_question": "Por que a aplicação não deve chamar o IP de um pod diretamente?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/services-networking/service/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Ingress: Entrada HTTP Externa",
+      "description": "Roteamento por host e caminho com TLS.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Um Service LoadBalancer cria um balanceador por serviço, o que custa caro com muitos serviços. O Ingress define regras HTTP — por host e caminho, com TLS — e um único Ingress Controller (como ingress-nginx) atende todas elas, roteando para os Services internos. O Ingress não faz nada sem um controller instalado no cluster. A Gateway API é a evolução mais expressiva desse modelo.",
+          "code": "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: loja\nspec:\n  ingressClassName: nginx\n  tls:\n    - hosts: [api.loja.com]\n      secretName: api-loja-tls\n  rules:\n    - host: api.loja.com\n      http:\n        paths:\n          - path: /pedidos\n            pathType: Prefix\n            backend:\n              service:\n                name: api-pedidos\n                port: { number: 80 }",
+          "interview_question": "Qual a diferença entre um Service do tipo LoadBalancer e um Ingress?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/services-networking/ingress/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "ConfigMaps e Secrets",
+      "description": "Configuração fora da imagem.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A mesma imagem deve rodar em todos os ambientes; o que muda é a configuração. ConfigMaps guardam valores não sensíveis e Secrets guardam credenciais. Ambos podem virar variáveis de ambiente (o Spring Boot mapeia SPRING_DATASOURCE_URL para spring.datasource.url) ou arquivos montados. Lembre: Secrets são apenas codificados em Base64 — controle o acesso com RBAC e não os versione em texto puro.",
+          "code": "kubectl create configmap api-config \\\n  --from-literal=SPRING_PROFILES_ACTIVE=prod \\\n  --from-literal=SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/loja\n\nkubectl create secret generic api-secrets \\\n  --from-literal=SPRING_DATASOURCE_PASSWORD='trocar-me'\n\n# No container do Deployment:\n#   envFrom:\n#     - configMapRef: { name: api-config }\n#     - secretRef:    { name: api-secrets }\n\nkubectl get configmap api-config -o yaml",
+          "interview_question": "Como passar configuração e credenciais para uma aplicação Spring Boot no Kubernetes?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/configuration/configmap/",
+            "https://kubernetes.io/docs/concepts/configuration/secret/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Logs, exec e port-forward",
+      "description": "Depurando a aplicação dentro do cluster.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "kubectl logs mostra a saída do container atual; após um crash, --previous mostra os logs da execução anterior, que normalmente contém o erro. -f acompanha em tempo real e -l agrega vários pods. kubectl exec roda comandos dentro do container (imagens distroless não têm shell — use kubectl debug). kubectl port-forward cria um túnel local até um pod ou Service, útil para acessar o Actuator ou um banco sem expô-los.",
+          "code": "kubectl logs api-pedidos-7d9f8                 # logs atuais\nkubectl logs api-pedidos-7d9f8 --previous      # logs antes do último restart\nkubectl logs -f deploy/api-pedidos             # acompanha um pod do Deployment\nkubectl logs -l app=api-pedidos --tail=50      # últimas linhas de todos os pods\n\nkubectl exec -it api-pedidos-7d9f8 -- sh       # shell no container\nkubectl exec api-pedidos-7d9f8 -- env          # variáveis de ambiente\n\nkubectl port-forward svc/api-pedidos 8080:80   # http://localhost:8080\nkubectl cp api-pedidos-7d9f8:/tmp/heap.hprof ./heap.hprof",
+          "interview_question": "Como ver os logs de um container que reiniciou?",
+          "references": [
+            "https://kubernetes.io/docs/reference/kubectl/quick-reference/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Atualizações e Rollback com kubectl rollout",
+      "description": "Acompanhando e desfazendo deploys.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Ao alterar a imagem, o Deployment faz um rolling update. kubectl rollout status acompanha até o fim (e falha se o rollout travar, o que é útil no CI). Se a nova versão tiver problema, kubectl rollout undo volta para a revisão anterior — ou para uma específica com --to-revision. rollout restart recria os pods sem mudar a imagem, por exemplo para recarregar um Secret alterado.",
+          "code": "kubectl set image deploy/api-pedidos api=ghcr.io/loja/api-pedidos:1.5.0\nkubectl rollout status deploy/api-pedidos --timeout=5m\nkubectl rollout history deploy/api-pedidos\n\nkubectl rollout undo deploy/api-pedidos                  # volta à revisão anterior\nkubectl rollout undo deploy/api-pedidos --to-revision=3\nkubectl rollout restart deploy/api-pedidos               # recria os pods",
+          "interview_question": "Como fazer rollback de um deploy com problema?",
+          "references": [
+            "https://kubernetes.io/docs/reference/kubectl/generated/kubectl_rollout/"
+          ]
+        }
+      ]
+    }
+  ]
+}

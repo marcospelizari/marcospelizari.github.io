@@ -100,17 +100,12 @@
     },
     {
       "subtitle": "Kubernetes (Básico)",
-      "description": "Orquestração de containers em escala.",
+      "description": "Orquestração de containers em produção.",
       "category": "ferramentas",
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Kubernetes difere do Docker Compose ao gerenciar clusters em escala, com pods orquestrados para alta disponibilidade, enquanto Compose é local, sendo Kubernetes mais adequado para deploy de uma app Spring Boot em produção.",
-          "code": "# Exemplo de pod Kubernetes\napiVersion: v1\nkind: Pod\nmetadata:\n  name: spring-app\nspec:\n  containers:\n  - name: app\n    image: minha-app:latest\n    ports:\n    - containerPort: 8080",
-          "interview_question": "Como o Kubernetes diferencia-se do Docker Compose?",
-          "references": [
-            "https://kubernetes.io/docs/concepts/"
-          ]
+          "explanation": "Kubernetes e kubectl têm um tópico próprio, logo a seguir no menu (DevOps & Infra → Kubernetes & kubectl), do cluster e dos primeiros comandos até troubleshooting, Helm e RBAC."
         }
       ]
     },

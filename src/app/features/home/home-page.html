@@ -1,0 +1,106 @@
+<div class="w-full max-w-[1440px] mx-auto px-margin-mobile lg:px-margin py-space-lg flex flex-col gap-space-xl">
+  <!-- Hero -->
+  <div class="flex flex-col gap-space-xs max-w-3xl pb-space-md border-b border-outline-variant/30">
+    <div class="inline-flex items-center gap-space-xs text-primary font-mono text-code-inline">
+      <span class="material-symbols-outlined text-[16px]" aria-hidden="true">dashboard</span>
+      overview / dashboard
+    </div>
+    <h1 class="text-headline-lg sm:text-headline-xl tracking-tight text-on-surface">Caderno de Estudos &amp; Engenharia de Software</h1>
+    <p class="text-body-lg text-on-surface-variant">
+      Documentações técnicas sintetizadas, snippets e perguntas de entrevista de backend, infraestrutura e qualidade.
+    </p>
+  </div>
+
+  @if (modules.isLoading()) {
+    <div class="flex items-center gap-space-sm text-on-surface-variant" role="status">
+      <span class="material-symbols-outlined animate-spin text-primary" aria-hidden="true">progress_activity</span>
+      Carregando tópicos...
+    </div>
+  } @else if (modules.error()) {
+    <div class="p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center gap-space-md" role="alert">
+      <span class="material-symbols-outlined text-error" aria-hidden="true">error</span>
+      <p class="flex-1">Não foi possível carregar os tópicos.</p>
+      <button type="button" (click)="modules.reload()" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm">Tentar novamente</button>
+    </div>
+  } @else {
+    @let s = stats();
+    <!-- Stats -->
+    <section aria-label="Resumo do progresso" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+      <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
+        <div class="flex items-center justify-between text-label-ui text-outline">
+          Módulos concluídos
+          <span class="material-symbols-outlined text-[20px] text-primary" aria-hidden="true">verified</span>
+        </div>
+        <div class="text-headline-lg text-on-surface">{{ s.modulesDone }} <span class="text-headline-sm text-outline">/ {{ s.modules }}</span></div>
+        <div class="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden" aria-hidden="true">
+          <div class="h-full bg-primary rounded-full transition-all" [style.width.%]="percent(s.modulesDone, s.modules)"></div>
+        </div>
+        <span class="text-label-ui text-outline">{{ percent(s.modulesDone, s.modules) }}% completo</span>
+      </div>
+
+      <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
+        <div class="flex items-center justify-between text-label-ui text-outline">
+          Seções estudadas
+          <span class="material-symbols-outlined text-[20px] text-secondary" aria-hidden="true">task_alt</span>
+        </div>
+        <div class="text-headline-lg text-on-surface">{{ s.sectionsStudied }} <span class="text-headline-sm text-outline">/ {{ s.sections }}</span></div>
+        <div class="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden" aria-hidden="true">
+          <div class="h-full bg-secondary rounded-full transition-all" [style.width.%]="percent(s.sectionsStudied, s.sections)"></div>
+        </div>
+        <span class="text-label-ui text-outline">{{ percent(s.sectionsStudied, s.sections) }}% do conteúdo</span>
+      </div>
+
+      <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
+        <div class="flex items-center justify-between text-label-ui text-outline">
+          Esta semana
+          <span class="material-symbols-outlined text-[20px] text-tertiary" aria-hidden="true">trending_up</span>
+        </div>
+        <div class="text-headline-lg text-on-surface">{{ studiedLastWeek() }} <span class="text-headline-sm text-outline">seções</span></div>
+        <span class="text-label-ui text-outline">marcadas como estudadas nos últimos 7 dias</span>
+      </div>
+
+      <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
+        <div class="flex items-center justify-between text-label-ui text-outline">
+          Material de estudo
+          <span class="material-symbols-outlined text-[20px] text-primary" aria-hidden="true">code</span>
+        </div>
+        <div class="text-headline-lg text-on-surface">{{ s.snippets }} <span class="text-headline-sm text-outline">snippets</span></div>
+        <span class="text-label-ui text-outline">{{ s.questions }} perguntas de entrevista</span>
+      </div>
+    </section>
+
+    <!-- Topics by group -->
+    @for (group of groups; track group.label) {
+      <section class="flex flex-col gap-space-md" [attr.aria-labelledby]="'grupo-' + $index">
+        <div class="flex items-center gap-space-sm pb-space-xs border-b border-surface-container-highest">
+          <span class="material-symbols-outlined text-[20px] text-primary" aria-hidden="true">{{ group.icon }}</span>
+          <h2 [id]="'grupo-' + $index" class="text-headline-md text-on-surface">{{ group.label }}</h2>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-md">
+          @for (topic of group.topics; track topic.slug) {
+            <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-md hover:bg-surface-container transition-colors">
+              <a [routerLink]="['/', topic.slug]" class="text-headline-md text-on-surface hover:text-primary transition-colors">{{ topic.label }}</a>
+              <div class="flex flex-col gap-space-sm">
+                @for (lvl of levels; track lvl[0]) {
+                  @if (levelProgress(topic.slug, lvl[0]); as p) {
+                    <a [routerLink]="['/', topic.slug, lvl[0]]" class="flex flex-col gap-1 group">
+                      <span class="flex items-center justify-between text-body-sm">
+                        <span class="text-on-surface-variant group-hover:text-primary">{{ lvl[1] }}</span>
+                        <span class="font-mono text-label-kbd" [class]="p.studied === p.total ? 'text-secondary' : 'text-outline'">
+                          {{ p.studied }}/{{ p.total }}
+                        </span>
+                      </span>
+                      <span class="w-full h-1 rounded-full bg-surface-container-high overflow-hidden" aria-hidden="true">
+                        <span class="block h-full bg-secondary rounded-full transition-all" [style.width.%]="percent(p.studied, p.total)"></span>
+                      </span>
+                    </a>
+                  }
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

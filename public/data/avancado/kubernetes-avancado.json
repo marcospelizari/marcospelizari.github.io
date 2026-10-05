@@ -1,0 +1,146 @@
+{
+  "title": "Kubernetes e kubectl — Avançado",
+  "description": "Troubleshooting, kubectl avançado, empacotamento com Helm e Kustomize, segurança e workloads especiais.",
+  "version": "Kubernetes 1.31, Helm 3",
+  "resumo": [
+    "No nível avançado, o foco é operar aplicações com segurança: diagnosticar rapidamente pods com problema, empacotar manifests para vários ambientes e controlar quem pode fazer o quê no cluster.",
+    "Os erros mais comuns têm assinaturas conhecidas — CrashLoopBackOff, ImagePullBackOff, Pending, OOMKilled — e um roteiro de investigação com kubectl resolve a maioria em minutos.",
+    "Helm e Kustomize evitam copiar manifests entre ambientes; RBAC e ServiceAccounts aplicam o princípio do menor privilégio; NetworkPolicies e PodDisruptionBudgets protegem a rede e a disponibilidade.",
+    "Aplicações Java exigem atenção a shutdown gracioso, limites de memória e probes bem calibradas para que deploys e escalonamentos não derrubem requisições."
+  ],
+  "subsections": [
+    {
+      "subtitle": "kubectl Avançado: Saídas, Filtros e Debug",
+      "description": "Extraindo exatamente a informação necessária.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "-o jsonpath e -o custom-columns extraem campos específicos, ótimos para scripts; --field-selector filtra por campos como status.phase; --sort-by ordena. kubectl debug adiciona um container efêmero com ferramentas a um pod em execução — essencial para imagens distroless sem shell — ou cria um pod de depuração em um nó. kubectl auth can-i verifica permissões.",
+          "code": "# Imagem de cada pod\nkubectl get pods -o jsonpath='{range .items[*]}{.metadata.name}{\"\\t\"}{.spec.containers[0].image}{\"\\n\"}{end}'\n\n# Tabela personalizada\nkubectl get pods -o custom-columns=NOME:.metadata.name,REINICIOS:.status.containerStatuses[0].restartCount\n\nkubectl get pods --field-selector=status.phase!=Running -A\nkubectl get pods --sort-by=.status.containerStatuses[0].restartCount\n\n# Container efêmero com ferramentas em um pod distroless\nkubectl debug -it api-pedidos-7d9f8 --image=busybox:1.36 --target=api\n\nkubectl auth can-i delete pods -n pedidos\nkubectl api-resources                 # todos os tipos de recurso do cluster",
+          "interview_question": "Como extrair informações específicas de muitos recursos com kubectl?",
+          "references": [
+            "https://kubernetes.io/docs/reference/kubectl/jsonpath/",
+            "https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Troubleshooting: Roteiro com kubectl",
+      "description": "Diagnosticando os erros mais comuns de pods.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "CrashLoopBackOff significa que o container inicia e morre repetidamente; o Kubernetes espera cada vez mais entre as tentativas. Veja o motivo e o código de saída em describe, e o erro da aplicação em logs --previous — causas comuns são configuração faltando, banco inacessível ou liveness probe agressiva demais. ImagePullBackOff indica imagem ou tag inexistente ou falta de credencial do registry. Pending indica que o scheduler não achou nó (recursos insuficientes, taints, volume indisponível). OOMKilled (exit code 137) indica limite de memória excedido.",
+          "code": "kubectl get pods                                   # STATUS e RESTARTS\nkubectl describe pod <pod>                         # Last State, Reason, Exit Code, Events\nkubectl logs <pod> --previous                      # erro da execução que morreu\nkubectl get events -n pedidos --sort-by=.lastTimestamp\n\n# Assinaturas comuns\n# CrashLoopBackOff  -> logs --previous; config/env; liveness probe\n# ImagePullBackOff  -> nome/tag da imagem; imagePullSecrets\n# Pending           -> describe: \"Insufficient memory\", taints, PVC\n# OOMKilled (137)   -> aumentar limit ou ajustar -XX:MaxRAMPercentage\nkubectl top pods                                   # consumo real (requer metrics-server)",
+          "interview_question": "Um pod está em CrashLoopBackOff. Como você investiga?",
+          "references": [
+            "https://kubernetes.io/docs/tasks/debug/debug-application/debug-pods/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Probes e Shutdown Gracioso",
+      "description": "Deploys sem perder requisições.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Ao remover um pod, o Kubernetes envia SIGTERM e, em paralelo, o retira dos endpoints do Service — por alguns instantes ele ainda pode receber tráfego. Configure o shutdown gracioso do Spring (termina requisições em andamento), um preStop curto para dar tempo à atualização dos endpoints e um terminationGracePeriodSeconds maior que a soma dos dois. Readiness controla quando o pod recebe tráfego; startupProbe protege aplicações de inicialização lenta para que a liveness não as mate antes de subirem.",
+          "code": "# application.yml\nserver.shutdown: graceful\nspring.lifecycle.timeout-per-shutdown-phase: 20s\n\n# Deployment (trecho do container)\nspec:\n  terminationGracePeriodSeconds: 40\n  containers:\n    - name: api\n      lifecycle:\n        preStop:\n          sleep: { seconds: 10 }   # Kubernetes 1.30+; antes: exec com \"sleep 10\"\n      startupProbe:\n        httpGet: { path: /actuator/health/liveness, port: 8080 }\n        failureThreshold: 30\n        periodSeconds: 5\n      readinessProbe:\n        httpGet: { path: /actuator/health/readiness, port: 8080 }\n      livenessProbe:\n        httpGet: { path: /actuator/health/liveness, port: 8080 }",
+          "interview_question": "Como evitar erros 502 durante um rolling update de uma API Spring Boot?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination",
+            "https://docs.spring.io/spring-boot/reference/web/graceful-shutdown.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "StatefulSets, Jobs e CronJobs",
+      "description": "Workloads além de APIs stateless.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Deployment trata pods como intercambiáveis. StatefulSet dá a cada pod identidade estável (nome ordenado como db-0, db-1, DNS próprio) e um volume persistente exclusivo que o acompanha, criando e removendo pods em ordem — necessário para bancos e brokers. Em produção, bancos gerenciados costumam ser mais simples. Job executa uma tarefa até concluir (uma migração, um processamento em lote) e CronJob agenda Jobs periódicos.",
+          "code": "apiVersion: batch/v1\nkind: CronJob\nmetadata:\n  name: limpar-carrinhos\nspec:\n  schedule: \"0 3 * * *\"          # todo dia às 3h\n  concurrencyPolicy: Forbid      # não sobrepõe execuções\n  jobTemplate:\n    spec:\n      backoffLimit: 2\n      template:\n        spec:\n          restartPolicy: OnFailure\n          containers:\n            - name: job\n              image: ghcr.io/loja/jobs:1.2.0\n              args: [\"limpar-carrinhos\"]\n\nkubectl create job --from=cronjob/limpar-carrinhos teste-manual   # roda agora\nkubectl get jobs,cronjobs",
+          "interview_question": "Quando usar StatefulSet em vez de Deployment?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/",
+            "https://kubernetes.io/docs/concepts/workloads/controllers/cron-jobs/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Helm",
+      "description": "Empacotando aplicações em charts reutilizáveis.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Helm empacota manifests em charts com templates e um arquivo values.yaml; cada ambiente informa seus próprios valores (réplicas, imagem, recursos). helm upgrade --install instala ou atualiza de forma idempotente, e cada instalação vira um release versionado com histórico e rollback. Também é a forma padrão de instalar softwares de terceiros no cluster, como ingress-nginx, Prometheus e cert-manager.",
+          "code": "helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx\nhelm upgrade --install ingress ingress-nginx/ingress-nginx -n ingress --create-namespace\n\n# Chart próprio\nhelm create api-pedidos\nhelm template api-pedidos ./api-pedidos -f values-prod.yaml   # renderiza sem aplicar\nhelm upgrade --install api-pedidos ./api-pedidos -n pedidos \\\n  -f values-prod.yaml --set image.tag=1.5.0 --atomic --timeout 5m\n\nhelm history api-pedidos -n pedidos\nhelm rollback api-pedidos 3 -n pedidos",
+          "interview_question": "Que problema o Helm resolve?",
+          "references": [
+            "https://helm.sh/docs/intro/using_helm/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Kustomize",
+      "description": "Variações por ambiente sem templates.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Kustomize trabalha com YAML puro: uma base com os manifests comuns e overlays por ambiente que aplicam patches (réplicas, recursos, imagem). Não há linguagem de template, o que deixa os arquivos fáceis de ler e revisar. Está embutido no kubectl (apply -k). É uma boa escolha para as próprias aplicações em fluxos GitOps; Helm brilha para distribuir pacotes configuráveis para terceiros.",
+          "code": "k8s/\n  base/\n    deployment.yaml\n    service.yaml\n    kustomization.yaml        # resources: [deployment.yaml, service.yaml]\n  overlays/\n    producao/\n      kustomization.yaml\n\n# overlays/producao/kustomization.yaml\nresources:\n  - ../../base\nnamespace: pedidos\nreplicas:\n  - name: api-pedidos\n    count: 5\nimages:\n  - name: ghcr.io/loja/api-pedidos\n    newTag: \"1.5.0\"\n\nkubectl kustomize k8s/overlays/producao      # mostra o YAML final\nkubectl apply -k k8s/overlays/producao",
+          "interview_question": "Quando usar Kustomize em vez de Helm?",
+          "references": [
+            "https://kubectl.docs.kubernetes.io/references/kustomize/",
+            "https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "RBAC e ServiceAccounts",
+      "description": "Menor privilégio para pessoas e aplicações.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "RBAC liga identidades a permissões: Role (em um namespace) ou ClusterRole (no cluster) lista verbos permitidos sobre recursos, e RoleBinding/ClusterRoleBinding associa a um usuário, grupo ou ServiceAccount. Pods usam ServiceAccounts para chamar a API; desative a montagem do token quando a aplicação não precisa dele. Dê ao CI apenas o necessário no namespace da aplicação, nunca cluster-admin.",
+          "code": "apiVersion: rbac.authorization.k8s.io/v1\nkind: Role\nmetadata: { name: deployer, namespace: pedidos }\nrules:\n  - apiGroups: [\"apps\"]\n    resources: [\"deployments\"]\n    verbs: [\"get\", \"list\", \"patch\", \"update\"]\n---\napiVersion: rbac.authorization.k8s.io/v1\nkind: RoleBinding\nmetadata: { name: ci-deployer, namespace: pedidos }\nsubjects:\n  - kind: ServiceAccount\n    name: ci\n    namespace: pedidos\nroleRef: { kind: Role, name: deployer, apiGroup: rbac.authorization.k8s.io }\n\nkubectl auth can-i patch deployments -n pedidos --as=system:serviceaccount:pedidos:ci   # yes\nkubectl auth can-i delete secrets -n pedidos --as=system:serviceaccount:pedidos:ci      # no",
+          "interview_question": "Como dar a um pipeline de CI permissão apenas para fazer deploy em um namespace?",
+          "references": [
+            "https://kubernetes.io/docs/reference/access-authn-authz/rbac/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "NetworkPolicy e PodDisruptionBudget",
+      "description": "Isolando tráfego e protegendo a disponibilidade.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Por padrão, todo pod pode falar com qualquer outro; NetworkPolicies restringem o tráfego (por exemplo, só a API acessa o banco), desde que o plugin de rede as suporte. PodDisruptionBudget limita quantos pods de uma aplicação podem ficar indisponíveis em interrupções voluntárias — como kubectl drain durante a atualização de nós —, evitando que todas as réplicas sejam removidas ao mesmo tempo.",
+          "code": "apiVersion: policy/v1\nkind: PodDisruptionBudget\nmetadata: { name: api-pedidos }\nspec:\n  minAvailable: 2\n  selector:\n    matchLabels: { app: api-pedidos }\n---\napiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata: { name: banco-somente-api }\nspec:\n  podSelector:\n    matchLabels: { app: postgres }\n  ingress:\n    - from:\n        - podSelector:\n            matchLabels: { app: api-pedidos }\n      ports:\n        - port: 5432\n\nkubectl drain node-1 --ignore-daemonsets --delete-emptydir-data   # respeita o PDB\nkubectl uncordon node-1",
+          "interview_question": "Como garantir disponibilidade durante a manutenção dos nós do cluster?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/workloads/pods/disruptions/",
+            "https://kubernetes.io/docs/concepts/services-networking/network-policies/"
+          ]
+        }
+      ]
+    }
+  ]
+}

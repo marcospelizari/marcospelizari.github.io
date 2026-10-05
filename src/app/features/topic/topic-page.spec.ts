@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
+import { ProgressService } from '../../core/services/progress.service';
 import { SearchService } from '../../core/services/search.service';
 import { StudyContent } from '../../core/models/study-content.model';
 import { TopicPage } from './topic-page';
@@ -48,6 +49,8 @@ function render(slug: string, level: string) {
 }
 
 describe('TopicPage', () => {
+  beforeEach(() => localStorage.clear());
+
   it('loads the topic JSON and renders its content as text', async () => {
     const { fixture, http } = render('controle-versao', 'essencial');
     http.expectOne('data/essencial/controle-versao.json').flush(content);
@@ -144,5 +147,22 @@ describe('TopicPage', () => {
       expect(pill(fixture.nativeElement, 'Todos').getAttribute('aria-pressed')).toBe('true');
       expect(fixture.nativeElement.querySelectorAll('section[id^="secao-"]').length).toBe(2);
     });
+  });
+
+  it('marks a section as studied and shows it in "Nesta Página"', async () => {
+    const { fixture, http } = render('controle-versao', 'essencial');
+    http.expectOne('data/essencial/controle-versao.json').flush(content);
+    await fixture.whenStable();
+    const el: HTMLElement = fixture.nativeElement;
+
+    const button = el.querySelector<HTMLButtonElement>('#secao-1 button[aria-pressed]')!;
+    expect(button.textContent).toContain('Marcar como estudado');
+    button.click();
+    await fixture.whenStable();
+
+    expect(button.getAttribute('aria-pressed')).toBe('true');
+    expect(button.textContent).toContain('Estudado');
+    expect(el.querySelectorAll('nav[aria-label="Nesta página"] [aria-label="estudado"]').length).toBe(1);
+    expect(TestBed.inject(ProgressService).isStudied('controle-versao/essencial#O que é Git?')).toBe(true);
   });
 });
