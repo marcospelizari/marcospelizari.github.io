@@ -96,6 +96,11 @@ export const TOPIC_GROUPS: TopicGroup[] = [
         files: { essencial: 'essencial/testes.json', avancado: 'avancado/testes-avancado.json' },
       },
       {
+        slug: 'seguranca',
+        label: 'Segurança de Aplicações',
+        files: { essencial: 'essencial/seguranca.json', avancado: 'avancado/seguranca-avancado.json' },
+      },
+      {
         slug: 'boas-praticas',
         label: 'Boas Práticas & Clean Code',
         files: { essencial: 'essencial/boas-praticas.json' },

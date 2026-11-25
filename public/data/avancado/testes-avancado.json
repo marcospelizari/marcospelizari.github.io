@@ -43,6 +43,24 @@
       ]
     },
     {
+      "subtitle": "Karate Avançado: Configuração, Reuso e Dados",
+      "description": "Ambientes, cenários reutilizáveis, testes guiados por dados e execução paralela.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Em projetos maiores, o karate-config.js define a URL e as credenciais de cada ambiente, escolhido com -Dkarate.env. Passos repetidos, como obter um token, ficam em um .feature próprio chamado com call ou callonce (callonce executa uma só vez por arquivo). Scenario Outline com Examples roda o mesmo cenário para várias entradas, útil para validações. O Runner executa os cenários em paralelo e gera relatórios em target/karate-reports. Para cada cenário ser independente, cada um cria os próprios dados em vez de depender da ordem de execução.",
+          "code": "// src/test/java/karate-config.js\nfunction fn() {\n  var env = karate.env || 'dev';\n  var config = { baseUrl: 'http://localhost:8080' };\n  if (env == 'qa') config.baseUrl = 'https://qa.exemplo.com';\n  return config;\n}\n\n# auth/token.feature (reutilizável)\nFeature: obter token\n  Scenario:\n    Given url baseUrl\n    And path 'auth', 'token'\n    And request { usuario: '#(usuario)', senha: '#(senha)' }\n    When method post\n    Then status 200\n    * def token = response.access_token\n\n# clientes/validacoes.feature\nFeature: validações de cliente\n  Background:\n    * def auth = callonce read('classpath:auth/token.feature') { usuario: 'qa', senha: '#(senhaQa)' }\n    * header Authorization = 'Bearer ' + auth.token\n    * url baseUrl\n\n  Scenario Outline: e-mail <email> retorna <status>\n    Given path 'clientes'\n    And request { nome: 'Ana', email: '<email>' }\n    When method post\n    Then status <status>\n\n    Examples:\n      | email           | status |\n      | ana@exemplo.com | 201    |\n      | invalido        | 400    |\n      |                 | 400    |\n\n// Execução paralela no JUnit 5\n@Test\nvoid paralelo() {\n    Results r = Runner.path(\"classpath:clientes\").parallel(4);\n    assertEquals(0, r.getFailCount(), r.getErrorMessages());\n}\n\n# Rodar contra o ambiente de QA\nmvn test -Dkarate.env=qa",
+          "interview_question": "Como você organiza testes Karate para rodar em vários ambientes sem repetir o login em cada cenário?",
+          "references": [
+            "https://github.com/karatelabs/karate#karate-configjs",
+            "https://github.com/karatelabs/karate#calling-other-feature-files",
+            "https://github.com/karatelabs/karate#parallel-execution"
+          ]
+        }
+      ]
+    },
+    {
       "subtitle": "Testes de Mutação",
       "description": "Seus testes realmente detectam bugs?",
       "category": "ferramentas",

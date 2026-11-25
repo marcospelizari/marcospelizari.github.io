@@ -76,6 +76,23 @@
       ]
     },
     {
+      "subtitle": "Times Ágeis e Scrum",
+      "description": "Como o trabalho é organizado em sprints.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Métodos ágeis entregam software em ciclos curtos, recebendo feedback a cada entrega em vez de planejar tudo no início. No Scrum, o trabalho acontece em sprints de 1 a 4 semanas. Os papéis são o Product Owner, que prioriza o backlog; o Scrum Master, que remove impedimentos e cuida do processo; e os Developers, que constroem. Os eventos são a Sprint Planning (o que entra na sprint), a Daily (15 minutos: o que fiz, o que vou fazer, o que me impede), a Sprint Review (mostrar o que foi entregue) e a Retrospectiva (como melhorar o processo). Uma tarefa só está pronta quando atende à Definition of Done do time, que costuma incluir testes, code review aprovado e pipeline verde. Kanban é a alternativa sem sprints: um fluxo contínuo com limite de tarefas em andamento.",
+          "code": "Exemplo de Daily:\nOntem: terminei a atualização do jackson-databind e abri o PR.\nHoje: vou corrigir os comentários do review e começar os testes Karate do endpoint de pedidos.\nImpedimento: preciso de acesso ao ambiente de QA.\n\nDefinition of Done (exemplo):\n[ ] Código revisado e aprovado\n[ ] Testes unitários e de API passando\n[ ] Sem CVE alta ou crítica nova no scan\n[ ] Pipeline verde\n[ ] Critérios de aceite da história atendidos",
+          "interview_question": "Quais são os eventos do Scrum e qual o objetivo de cada um?",
+          "references": [
+            "https://scrumguides.org/scrum-guide.html",
+            "https://agilemanifesto.org/iso/ptbr/manifesto.html"
+          ]
+        }
+      ]
+    },
+    {
       "subtitle": "Performance e DevOps",
       "description": "Otimização e implantação.",
       "category": "boas-praticas",
@@ -126,12 +143,21 @@
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
+          "title": "Revisando um Pull Request",
           "explanation": "Comece pelo objetivo: o PR resolve o problema descrito? Depois corretude e casos de borda, testes cobrindo o comportamento, legibilidade e nomes, segurança (validação de entrada, segredos) e impacto em performance. PRs pequenos são revisados melhor e mais rápido. Comentários devem ser objetivos e sobre o código, não sobre a pessoa, diferenciando o que é bloqueante do que é sugestão.",
           "code": "Checklist de revisão:\n[ ] A descrição explica o que muda e por quê\n[ ] Há testes para o novo comportamento e para os casos de erro\n[ ] Nenhum segredo, senha ou dado sensível no código ou nos logs\n[ ] Entradas externas são validadas\n[ ] Consultas novas não geram N+1 nem carregam dados demais\n[ ] O CI está verde",
           "interview_question": "O que você observa ao revisar um Pull Request?",
           "references": [
             "https://google.github.io/eng-practices/review/reviewer/"
+          ]
+        },
+        {
+          "title": "Recebendo uma Revisão",
+          "explanation": "Abrir um bom Pull Request facilita a revisão: um assunto por PR, descrição com o que muda, por quê e como foi testado, e o link da tarefa ou da CVE. Comentários são sobre o código, não sobre você: responda a todos, corrija o que for pedido ou explique com argumentos por que manter, e marque como resolvido só depois de tratar. Quando uma discussão fica longa, uma conversa rápida resolve melhor do que dez comentários. Para um estagiário, revisar PRs dos colegas também é uma ótima forma de aprender o código do time.",
+          "code": "Modelo de descrição de PR:\n\n## O que muda\nAtualiza jackson-databind de 2.17.1 para 2.17.2.\n\n## Por quê\nCorrige a CVE-XXXX-YYYY (CVSS 7.5), apontada pelo Dependency-Check.\n\n## Como foi testado\n- mvn verify (unitários e integração)\n- Testes Karate da API de clientes no ambiente de QA\n\n## Tarefa\nJIRA-123",
+          "interview_question": "Como você reage quando recebe muitos comentários em um Pull Request seu?",
+          "references": [
+            "https://google.github.io/eng-practices/review/developer/"
           ]
         }
       ]
