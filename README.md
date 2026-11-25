@@ -191,10 +191,9 @@ The goal is to keep each JSON focused on one major subject rather than creating 
 
 ## 🚀 Deployment (GitHub Pages)
 
-This is an Angular application, so GitHub Pages must serve the **build output** (`dist/estudos-dev/browser`), not the repository files. A deployment workflow is **not included yet**. The recommended setup:
+This is an Angular application, so GitHub Pages must serve the **build output** (`dist/estudos-dev/browser`), not the repository files. The workflow `.github/workflows/deploy.yml` does this on every push to `master` (or by hand from the Actions tab): it runs `npm ci`, the tests and `ng build`, then publishes `dist/estudos-dev/browser`.
 
-1. In **Settings → Pages**, set **Source = GitHub Actions**.
-2. Add a workflow that runs `npm ci`, the tests and `npm run build`, then publishes `dist/estudos-dev/browser` with `actions/upload-pages-artifact` and `actions/deploy-pages`.
+One-time setup: in **Settings → Pages**, set **Source = GitHub Actions**. With "Deploy from a branch", Pages publishes the raw repository and the site shows only this README.
 
 ## 🚧 Roadmap
 
