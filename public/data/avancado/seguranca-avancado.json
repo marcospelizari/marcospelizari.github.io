@@ -1,0 +1,116 @@
+{
+  "title": "Segurança de Aplicações — Avançado",
+  "description": "Triagem de CVEs, estratégia de upgrade, regras no build, análise estática e revisão de segurança.",
+  "version": "Java 21, Spring Boot 3.x, Maven 3.9",
+  "resumo": [
+    "Com o básico dominado, o desafio passa a ser o volume: um projeto grande recebe dezenas de alertas de CVE, e nem todos têm a mesma urgência. Triagem é decidir, com justificativa, o que corrigir agora, o que agendar e o que é falso positivo.",
+    "Atualizar uma dependência é uma mudança de código como outra qualquer: pode quebrar a compilação, mudar comportamento em tempo de execução ou conflitar com outras bibliotecas. Por isso a atualização precisa de testes de regressão e de uma estratégia que prefira mudanças pequenas e frequentes.",
+    "O build pode impedir problemas antes da revisão: o Maven Enforcer bloqueia versões banidas e conflitos de versão, e a análise estática (SAST) encontra padrões perigosos no código, como SQL montado com concatenação.",
+    "Por fim, a revisão de código com olhar de segurança fecha o ciclo: quem revisa verifica controle de acesso, validação, dados expostos e segredos, coisas que ferramentas nem sempre pegam."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Triagem de CVEs",
+      "description": "Priorizar alertas com critério, não só pela nota.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A nota CVSS mede a gravidade genérica da falha, não o risco para a sua aplicação. Na triagem, pergunte: a parte vulnerável é usada (por exemplo, a CVE é no parser de YAML, mas a aplicação nunca lê YAML de fora)? A biblioteca está no classpath de produção ou só em testes (scope test)? Existe exploração conhecida (o catálogo KEV da CISA lista as exploradas ativamente, e o EPSS estima a probabilidade de exploração)? Um falso positivo, quando o scanner confunde a biblioteca com outra, pode ser suprimido, mas sempre com justificativa escrita e data de revisão, para não esconder um problema real para sempre.",
+          "code": "<!-- dependency-check-suppressions.xml -->\n<suppressions xmlns=\"https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd\">\n  <suppress until=\"2026-06-30Z\">\n    <notes>Falso positivo: o CPE confunde a lib cliente com o servidor de mesmo nome.\n    Revisado no PR #123.</notes>\n    <packageUrl regex=\"true\">^pkg:maven/com\\.exemplo/cliente-http@.*$</packageUrl>\n    <cve>CVE-2024-12345</cve>\n  </suppress>\n</suppressions>\n\n<!-- pom.xml -->\n<configuration>\n  <suppressionFile>dependency-check-suppressions.xml</suppressionFile>\n</configuration>",
+          "interview_question": "Uma CVE crítica apareceu, mas a função vulnerável não é usada pela aplicação. O que você faz?",
+          "references": [
+            "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+            "https://www.first.org/epss/",
+            "https://dependency-check.github.io/DependencyCheck/general/suppression.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Estratégia de Upgrade de Dependências",
+      "description": "Atualizar com frequência e com segurança.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Quanto mais tempo uma dependência fica parada, mais difícil é atualizá-la: várias versões major acumulam mudanças incompatíveis. Atualizações pequenas e frequentes são mais baratas. Para cada upgrade: leia as release notes e o guia de migração procurando breaking changes; atualize uma biblioteca (ou um grupo coerente, como todo o Jackson) por Pull Request; rode testes unitários, de integração e de API; e compare o dependency:tree antes e depois para ver o que mudou junto. Upgrades major, como Spring Boot 2 para 3 (javax para jakarta), merecem uma tarefa própria e ferramentas como o OpenRewrite, que aplica as mudanças automaticamente.",
+          "code": "# Antes e depois do upgrade\nmvn dependency:tree > arvore-antes.txt\n# ... atualiza o pom.xml ...\nmvn dependency:tree > arvore-depois.txt\ndiff arvore-antes.txt arvore-depois.txt\n\n# Ver atualizações disponíveis, ignorando versões não estáveis\nmvn versions:display-dependency-updates \\\n  -Dmaven.version.ignore='.*-(alpha|beta|rc|M)\\d*'\n\n# Migração automática Spring Boot 2 para 3 com OpenRewrite\nmvn -U org.openrewrite.maven:rewrite-maven-plugin:run \\\n  -Drewrite.recipeArtifactCoordinates=org.openrewrite.recipe:rewrite-spring:RELEASE \\\n  -Drewrite.activeRecipes=org.openrewrite.java.spring.boot3.UpgradeSpringBoot_3_0",
+          "interview_question": "Como você reduz o risco de quebrar a aplicação ao atualizar uma dependência?",
+          "references": [
+            "https://www.mojohaus.org/versions/versions-maven-plugin/",
+            "https://docs.openrewrite.org/recipes/java/spring/boot3/upgradespringboot_3_0"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Regras no Build com Maven Enforcer",
+      "description": "O build falha antes que a versão errada entre.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "O Maven Enforcer Plugin verifica regras a cada build. bannedDependencies proíbe versões vulneráveis conhecidas mesmo quando chegam como transitivas; dependencyConvergence falha quando duas bibliotecas pedem versões diferentes da mesma dependência, um sinal de conflito que pode causar NoSuchMethodError em produção; requireUpperBoundDeps garante que a versão escolhida não é menor que a pedida por alguém. Assim, uma correção de CVE não volta atrás sem querer em um upgrade futuro.",
+          "code": "<plugin>\n  <groupId>org.apache.maven.plugins</groupId>\n  <artifactId>maven-enforcer-plugin</artifactId>\n  <version>3.5.0</version>\n  <executions>\n    <execution>\n      <id>enforce</id>\n      <goals><goal>enforce</goal></goals>\n      <configuration>\n        <rules>\n          <bannedDependencies>\n            <excludes>\n              <!-- Log4Shell: qualquer log4j-core abaixo de 2.17.1 -->\n              <exclude>org.apache.logging.log4j:log4j-core:[,2.17.1)</exclude>\n            </excludes>\n          </bannedDependencies>\n          <dependencyConvergence/>\n        </rules>\n      </configuration>\n    </execution>\n  </executions>\n</plugin>",
+          "interview_question": "Como impedir que uma versão vulnerável de uma biblioteca volte ao projeto em um upgrade futuro?",
+          "references": [
+            "https://maven.apache.org/enforcer/enforcer-rules/bannedDependencies.html",
+            "https://maven.apache.org/enforcer/enforcer-rules/dependencyConvergence.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Análise Estática de Segurança (SAST)",
+      "description": "Encontrar padrões perigosos no próprio código.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Enquanto o scan de dependências olha as bibliotecas, o SAST (Static Application Security Testing) analisa o seu código sem executá-lo. O SpotBugs com o plugin Find Security Bugs detecta SQL montado por concatenação, criptografia fraca e desserialização insegura. Semgrep, CodeQL e SonarQube fazem o mesmo com regras próprias. SAST gera falsos positivos, então o resultado precisa ser lido por alguém, mas rodar no CI a cada Pull Request faz o problema aparecer quando ainda é barato corrigir.",
+          "code": "<plugin>\n  <groupId>com.github.spotbugs</groupId>\n  <artifactId>spotbugs-maven-plugin</artifactId>\n  <version>4.8.6.6</version>\n  <configuration>\n    <plugins>\n      <plugin>\n        <groupId>com.h3xstream.findsecbugs</groupId>\n        <artifactId>findsecbugs-plugin</artifactId>\n        <version>1.13.0</version>\n      </plugin>\n    </plugins>\n  </configuration>\n</plugin>\n\n# Executar e falhar se houver achados\nmvn spotbugs:check\n\n# Achado típico\n[ERROR] SQL_INJECTION_JDBC: This use of java/sql/Statement.executeQuery\n        can be vulnerable to SQL injection [ClienteDao.java:42]",
+          "interview_question": "Qual a diferença entre o scan de dependências e a análise estática de segurança (SAST)?",
+          "references": [
+            "https://find-sec-bugs.github.io/",
+            "https://owasp.org/www-community/Source_Code_Analysis_Tools"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Erros sem Vazamento de Informação",
+      "description": "Respostas de erro padronizadas e genéricas.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma exceção não tratada pode devolver ao cliente a mensagem do banco, o nome da tabela ou a consulta SQL, informação que ajuda um atacante a montar uma injeção. Centralize o tratamento com @RestControllerAdvice: exceções conhecidas viram respostas claras (404, 400), e qualquer outra vira um 500 genérico, com um identificador que liga a resposta ao log interno, onde fica o detalhe. O ProblemDetail (RFC 9457) padroniza o formato.",
+          "code": "@RestControllerAdvice\nclass TratadorDeErros {\n    private static final Logger log = LoggerFactory.getLogger(TratadorDeErros.class);\n\n    @ExceptionHandler(RecursoNaoEncontrado.class)\n    ProblemDetail naoEncontrado(RecursoNaoEncontrado e) {\n        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());\n    }\n\n    @ExceptionHandler(Exception.class)\n    ProblemDetail inesperado(Exception e) {\n        String id = UUID.randomUUID().toString();\n        log.error(\"Erro inesperado id={}\", id, e);  // detalhe só no log\n        ProblemDetail pd = ProblemDetail.forStatusAndDetail(\n            HttpStatus.INTERNAL_SERVER_ERROR, \"Erro interno. Código: \" + id);\n        return pd;\n    }\n}",
+          "interview_question": "Por que uma API não deve devolver a mensagem original de uma exceção do banco ao cliente?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html",
+            "https://cheatsheetseries.owasp.org/cheatsheets/Error_Handling_Cheat_Sheet.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Revisão de Código com Foco em Segurança",
+      "description": "O que procurar em um Pull Request além da lógica.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Ferramentas pegam padrões conhecidos; a revisão pega o que depende do contexto. Os pontos que mais rendem: controle de acesso por recurso (o usuário pode ver este pedido, não só está logado?), entrada externa usada em SQL, caminhos de arquivo, URLs ou comandos, campos novos em DTOs de resposta, dados pessoais em logs, segredos em código ou em arquivos de configuração, e dependências novas ou atualizadas no pom.xml (são mesmo necessárias? a versão é a corrigida?). Ao revisar um PR de upgrade de 3PP, confira se a CVE citada está mesmo corrigida na versão escolhida.",
+          "code": "Checklist de segurança no PR:\n[ ] Endpoints novos verificam permissão sobre o recurso, não só autenticação\n[ ] Nenhuma consulta monta SQL/JPQL concatenando entrada externa\n[ ] DTOs de resposta não ganharam campos sensíveis\n[ ] Logs novos não registram senhas, tokens ou dados pessoais\n[ ] Nenhum segredo no código, nos testes ou no application.properties\n[ ] Dependências novas são necessárias e sem CVE conhecida\n[ ] Upgrade de 3PP: a versão nova corrige a CVE citada (conferir o advisory)",
+          "interview_question": "Ao revisar um Pull Request, o que você verifica do ponto de vista de segurança?",
+          "references": [
+            "https://owasp.org/www-project-code-review-guide/",
+            "https://owasp.org/www-project-top-ten/"
+          ]
+        }
+      ]
+    }
+  ]
+}

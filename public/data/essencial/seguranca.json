@@ -1,0 +1,150 @@
+{
+  "title": "Segurança de Aplicações",
+  "description": "Dependências de terceiros (3PP), CVEs, injeção de SQL e proteção de dados em aplicações Java.",
+  "version": "Java 21, Spring Boot 3.x, Maven 3.9",
+  "resumo": [
+    "Segurança de aplicações é o trabalho diário de impedir que o código exponha dados ou aceite ações que não deveria. Para um desenvolvedor, isso aparece em três frentes: o código que você escreve (consultas, validações, logs), as bibliotecas que você usa (dependências de terceiros, ou 3PP) e os segredos que a aplicação precisa (senhas, tokens).",
+    "Quase toda aplicação Java usa dezenas de bibliotecas que você não escreveu, e cada uma traz outras (dependências transitivas). Quando alguém descobre uma falha em uma delas, ela recebe um identificador público, a CVE, e uma nota de gravidade, o CVSS. Manter essas bibliotecas atualizadas é o que se chama de hardening de dependências.",
+    "O ciclo de uma atualização de 3PP é: o scanner (OWASP Dependency-Check, Dependabot, Trivy) aponta a CVE; você descobre de onde vem a biblioteca com mvn dependency:tree; escolhe a versão corrigida; atualiza o pom.xml; roda os testes para garantir que nada quebrou; e abre um Pull Request explicando a CVE corrigida.",
+    "No código, o risco mais conhecido é a injeção de SQL: montar uma consulta concatenando texto vindo do usuário. A defesa é sempre usar parâmetros (PreparedStatement, parâmetros nomeados no JPA). Outro risco comum é a exposição de dados: devolver entidades inteiras na API, escrever dados pessoais em logs ou mostrar stack traces ao cliente.",
+    "Em entrevistas e no dia a dia, o que mais conta é o hábito: validar toda entrada externa, nunca confiar no cliente, nunca colocar segredos no repositório e tratar alertas de segurança do pipeline como prioridade, não como ruído."
+  ],
+  "subsections": [
+    {
+      "subtitle": "CVE, CVSS e Dependências de Terceiros (3PP)",
+      "description": "O vocabulário básico de vulnerabilidades em bibliotecas.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "3PP (third-party product) é qualquer componente que você não escreveu: bibliotecas Maven, imagens base de container, ferramentas. Uma CVE (Common Vulnerabilities and Exposures) é o identificador público de uma falha conhecida, no formato CVE-ano-número, e fica registrada em bases como a NVD. O CVSS dá a gravidade de 0 a 10: baixa (0,1–3,9), média (4,0–6,9), alta (7,0–8,9) e crítica (9,0–10,0). A nota sozinha não decide tudo: importa também se a parte vulnerável da biblioteca é usada pela sua aplicação e se existe exploração conhecida. Um caso famoso é o Log4Shell (CVE-2021-44228), no Log4j 2, com nota 10.",
+          "code": "Exemplo de alerta de um scanner:\n\nDependência: com.fasterxml.jackson.core:jackson-databind:2.13.0\nCVE:         CVE-2022-42003\nCVSS:        7.5 (Alta)\nCorrigido em: 2.13.4.1\nCaminho:     minha-api -> spring-boot-starter-web -> spring-boot-starter-json -> jackson-databind\n\nPerguntas a responder:\n1. Qual versão corrige a falha?\n2. A dependência é direta ou transitiva?\n3. A atualização quebra algo (major, minor ou patch)?",
+          "interview_question": "O que é uma CVE e como o CVSS ajuda a priorizar a correção?",
+          "references": [
+            "https://www.cve.org/About/Overview",
+            "https://nvd.nist.gov/vuln-metrics/cvss"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Dependências Transitivas e mvn dependency:tree",
+      "description": "Descobrir de onde vem uma biblioteca vulnerável.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Uma dependência direta é a que está no seu pom.xml. Uma transitiva vem junto com outra: o spring-boot-starter-web traz o Jackson, o Tomcat e várias outras. A maioria das CVEs aparece em transitivas, então o primeiro passo é ver a árvore. O comando mvn dependency:tree mostra quem traz cada biblioteca, e o filtro -Dincludes mostra só o caminho até a que interessa. O Maven escolhe a versão mais próxima da raiz da árvore quando há conflito (nearest wins), o que explica por que uma versão antiga pode continuar no build.",
+          "code": "# Árvore completa\nmvn dependency:tree\n\n# Só o caminho até uma biblioteca\nmvn dependency:tree -Dincludes=com.fasterxml.jackson.core:jackson-databind\n\n# Saída\n[INFO] com.loja:minha-api:jar:1.0.0\n[INFO] \\- org.springframework.boot:spring-boot-starter-web:jar:3.3.4:compile\n[INFO]    \\- org.springframework.boot:spring-boot-starter-json:jar:3.3.4:compile\n[INFO]       \\- com.fasterxml.jackson.core:jackson-databind:jar:2.17.2:compile\n\n# Versões novas disponíveis para as dependências do projeto\nmvn versions:display-dependency-updates",
+          "interview_question": "Qual a diferença entre dependência direta e transitiva, e como você descobre de onde vem uma biblioteca?",
+          "references": [
+            "https://maven.apache.org/plugins/maven-dependency-plugin/tree-mojo.html",
+            "https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Corrigindo uma Dependência Vulnerável",
+      "description": "Atualizar a versão sem quebrar o projeto.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "A melhor correção é atualizar quem traz a biblioteca, por exemplo subir a versão do Spring Boot, porque ele testou as versões em conjunto. Quando isso não é possível, force a versão corrigida: em projetos Spring Boot, sobrescreva a propriedade de versão (como jackson-bom.version) ou declare a biblioteca no dependencyManagement. Prefira atualizações patch (2.17.1 para 2.17.2), que só corrigem falhas; minor e major podem mudar comportamento e exigem ler as release notes. Depois, confirme a versão nova com dependency:tree, rode todos os testes e explique no Pull Request qual CVE foi corrigida.",
+          "code": "<!-- Opção 1: subir o parent (preferida) -->\n<parent>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-parent</artifactId>\n  <version>3.3.5</version>\n</parent>\n\n<!-- Opção 2: sobrescrever a propriedade usada pelo BOM do Spring Boot -->\n<properties>\n  <jackson-bom.version>2.17.3</jackson-bom.version>\n</properties>\n\n<!-- Opção 3: fixar a versão de uma transitiva -->\n<dependencyManagement>\n  <dependencies>\n    <dependency>\n      <groupId>org.yaml</groupId>\n      <artifactId>snakeyaml</artifactId>\n      <version>2.2</version>\n    </dependency>\n  </dependencies>\n</dependencyManagement>",
+          "interview_question": "Um scanner apontou uma CVE em uma dependência transitiva. Quais passos você segue para corrigir?",
+          "references": [
+            "https://docs.spring.io/spring-boot/maven-plugin/using.html",
+            "https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#dependency-management"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Scanners de Dependências",
+      "description": "Ferramentas que encontram CVEs automaticamente.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Scanners comparam as bibliotecas do projeto com bases de CVEs. O OWASP Dependency-Check roda como plugin Maven e pode falhar o build acima de uma nota CVSS. O Dependabot (GitHub) e o Renovate abrem Pull Requests com a versão corrigida. O Trivy escaneia imagens de container, incluindo pacotes do sistema operacional. Rodar o scan no CI em todo Pull Request impede que uma versão vulnerável entre, e um scan agendado pega CVEs novas em código que não mudou.",
+          "code": "<!-- pom.xml: falha o build com CVSS 7 ou maior -->\n<plugin>\n  <groupId>org.owasp</groupId>\n  <artifactId>dependency-check-maven</artifactId>\n  <version>12.1.0</version>\n  <configuration>\n    <failBuildOnCVSS>7</failBuildOnCVSS>\n  </configuration>\n</plugin>\n\n# Executar\nmvn org.owasp:dependency-check-maven:check\n\n# .github/dependabot.yml\nversion: 2\nupdates:\n  - package-ecosystem: maven\n    directory: /\n    schedule:\n      interval: weekly",
+          "interview_question": "Como você garante que o projeto não usa bibliotecas com vulnerabilidades conhecidas?",
+          "references": [
+            "https://dependency-check.github.io/DependencyCheck/dependency-check-maven/",
+            "https://docs.github.com/en/code-security/dependabot",
+            "https://trivy.dev/"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Injeção de SQL",
+      "description": "Nunca montar consultas concatenando entrada do usuário.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Injeção de SQL acontece quando texto vindo do usuário vira parte do comando SQL. Com nome = \"' OR '1'='1\", a consulta concatenada devolve todos os clientes. A defesa é separar o comando dos dados: PreparedStatement com ?, parâmetros nomeados no JPA (:nome) ou métodos derivados do Spring Data, que já são parametrizados. Cuidado com consultas nativas (@Query com nativeQuery) e com ORDER BY dinâmico: nome de coluna não pode ser parâmetro, então valide contra uma lista de valores permitidos.",
+          "code": "// ERRADO: o texto do usuário vira SQL\nString sql = \"SELECT * FROM cliente WHERE nome = '\" + nome + \"'\";\nstatement.executeQuery(sql);\n\n// CERTO: JDBC com parâmetro\nPreparedStatement ps = conn.prepareStatement(\"SELECT * FROM cliente WHERE nome = ?\");\nps.setString(1, nome);\n\n// CERTO: Spring Data JPA\n@Query(\"SELECT c FROM Cliente c WHERE c.nome = :nome\")\nList<Cliente> buscarPorNome(@Param(\"nome\") String nome);\n\n// ORDER BY dinâmico: só colunas permitidas\nprivate static final Set<String> ORDENACAO = Set.of(\"nome\", \"criadoEm\");\nif (!ORDENACAO.contains(campo)) {\n    throw new IllegalArgumentException(\"Ordenação inválida\");\n}",
+          "interview_question": "O que é injeção de SQL e como evitá-la com JDBC e com Spring Data JPA?",
+          "references": [
+            "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Exposição de Dados Sensíveis",
+      "description": "Dados que não deveriam sair da aplicação.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Vazamento de dados raramente vem de um ataque sofisticado. Os casos mais comuns são: a API devolve a entidade inteira, com campos como senha ou CPF; logs registram o objeto completo da requisição; mensagens de erro mostram stack trace, nomes de tabelas ou a consulta SQL. As defesas são responder sempre com DTOs que contêm só o necessário, mascarar dados pessoais nos logs e devolver erros genéricos ao cliente, deixando o detalhe só no log interno.",
+          "code": "// DTO com só os campos públicos\npublic record ClienteResponse(Long id, String nome) {\n    static ClienteResponse from(Cliente c) {\n        return new ClienteResponse(c.getId(), c.getNome());\n    }\n}\n\n// Log sem dados pessoais\nlog.info(\"Cliente atualizado id={}\", cliente.getId());\n// evite: log.info(\"Cliente atualizado {}\", cliente);\n\n# application.properties: não mostrar detalhes internos no erro\nserver.error.include-stacktrace=never\nserver.error.include-message=never",
+          "interview_question": "Cite formas comuns de uma API expor dados sensíveis sem querer e como evitá-las.",
+          "references": [
+            "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/",
+            "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Validação de Entrada",
+      "description": "Toda entrada externa é suspeita até ser validada.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Validar entrada reduz falhas de segurança e bugs ao mesmo tempo. Com Bean Validation, as regras ficam no DTO e o Spring rejeita a requisição com 400 antes de chegar ao serviço. Valide tamanho, formato e faixa de valores; prefira listas de valores permitidos a listas de proibidos. A validação no front-end é só conveniência: a API precisa validar de novo, porque qualquer pessoa pode chamá-la diretamente.",
+          "code": "public record NovoClienteRequest(\n    @NotBlank @Size(max = 100) String nome,\n    @Email @NotBlank String email,\n    @Min(18) @Max(120) int idade\n) {}\n\n@PostMapping(\"/clientes\")\nResponseEntity<ClienteResponse> criar(@Valid @RequestBody NovoClienteRequest req) {\n    return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(req));\n}",
+          "interview_question": "Por que a API precisa validar dados mesmo que o front-end já valide?",
+          "references": [
+            "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
+            "https://docs.spring.io/spring-boot/reference/io/validation.html"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Segredos Fora do Código",
+      "description": "Senhas e tokens nunca vão para o repositório.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Senhas de banco, chaves de API e tokens ficam em variáveis de ambiente, Secrets do Kubernetes ou cofres como o Vault, nunca no código nem no application.properties versionado. Um segredo que foi commitado deve ser considerado vazado, mesmo que o commit seja apagado depois: o histórico do Git guarda tudo. A correção é trocar o segredo (rotacionar) e só então limpar o histórico. Ferramentas como gitleaks e o secret scanning do GitHub encontram segredos antes do push.",
+          "code": "# application.properties: só a referência\nspring.datasource.password=${DB_PASSWORD}\n\n# Execução local\nexport DB_PASSWORD='senha-local'\n./mvnw spring-boot:run\n\n# Procurar segredos no repositório\ngitleaks detect --source .",
+          "interview_question": "Você percebeu que uma senha foi commitada. O que faz?",
+          "references": [
+            "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+            "https://github.com/gitleaks/gitleaks"
+          ]
+        }
+      ]
+    }
+  ]
+}

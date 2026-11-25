@@ -43,7 +43,7 @@
         {
           "title": "Explicação",
           "explanation": "Testar uma unidade foca em métodos isolados, enquanto testar um sistema inteiro verifica interações entre componentes, sendo mais complexo e lento.",
-          "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  @DisplayName(\"Testa soma de dois números\")\n  void testSoma() {\n    Calc calc = new Calc();\n    assertEquals(4, calc.soma(2, 2));\n  }\n}\nclass Calc {\n  int soma(int a, int b) { return a + b; }\n}",
+          "code": "import org.junit.jupiter.api.DisplayName;\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  @DisplayName(\"Testa soma de dois números\")\n  void testSoma() {\n    Calc calc = new Calc();\n    assertEquals(4, calc.soma(2, 2));\n  }\n}\nclass Calc {\n  int soma(int a, int b) { return a + b; }\n}",
           "interview_question": "Qual a diferença entre testar uma unidade e testar um sistema inteiro?",
           "references": [
             "https://junit.org/junit5/docs/current/user-guide/#writing-tests"
@@ -96,6 +96,23 @@
           "interview_question": "Como testar uma API REST de forma automatizada?",
           "references": [
             "https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"
+          ]
+        }
+      ]
+    },
+    {
+      "subtitle": "Testes de API com Karate",
+      "description": "Testar endpoints HTTP escrevendo cenários em linguagem simples.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explicação",
+          "explanation": "Karate é um framework de testes de API em que os cenários são escritos em arquivos .feature, com a sintaxe Given/When/Then do Gherkin, sem precisar escrever classes Java para cada requisição. Ele já entende JSON: você compara a resposta inteira com match e usa marcadores como #number, #string e #notnull para campos que mudam a cada execução, como IDs e datas. Diferente do MockMvc, que testa o controller por dentro da aplicação, o Karate chama a API de fora, por HTTP, como um cliente real faria. Os testes rodam pelo JUnit 5, então entram no mvn test e no CI como qualquer outro teste.",
+          "code": "# src/test/java/clientes/clientes.feature\nFeature: API de clientes\n\n  Background:\n    * url baseUrl\n\n  Scenario: criar e buscar um cliente\n    Given path 'clientes'\n    And request { nome: 'Ana', email: 'ana@exemplo.com' }\n    When method post\n    Then status 201\n    And match response == { id: '#number', nome: 'Ana', email: 'ana@exemplo.com' }\n    * def id = response.id\n\n    Given path 'clientes', id\n    When method get\n    Then status 200\n    And match response.nome == 'Ana'\n\n  Scenario: rejeitar e-mail inválido\n    Given path 'clientes'\n    And request { nome: 'Ana', email: 'invalido' }\n    When method post\n    Then status 400\n\n// src/test/java/clientes/ClientesTest.java\nclass ClientesTest {\n    @Karate.Test\n    Karate clientes() {\n        return Karate.run(\"clientes\").relativeTo(getClass());\n    }\n}\n\n<!-- pom.xml -->\n<dependency>\n  <groupId>io.karatelabs</groupId>\n  <artifactId>karate-junit5</artifactId>\n  <version>1.5.1</version>\n  <scope>test</scope>\n</dependency>",
+          "interview_question": "Qual a diferença entre testar uma API com Karate e com MockMvc?",
+          "references": [
+            "https://github.com/karatelabs/karate",
+            "https://docs.karatelabs.io/"
           ]
         }
       ]
