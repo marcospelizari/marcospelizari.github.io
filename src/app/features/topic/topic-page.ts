@@ -3,6 +3,7 @@ import { httpResource } from '@angular/common/http';
 import { Title } from '@angular/platform-browser';
 import { RouterLink } from '@angular/router';
 import { CodeBlock } from './code-block/code-block';
+import { RichText } from './rich-text/rich-text';
 import { SearchService } from '../../core/services/search.service';
 import { Category, StudyContent } from '../../core/models/study-content.model';
 import { CATEGORIES } from '../../core/data/categories';
@@ -14,7 +15,7 @@ import { LEVEL_LABELS, findTopic } from '../../core/data/topics';
 
 @Component({
   selector: 'app-topic-page',
-  imports: [RouterLink, CodeBlock],
+  imports: [RouterLink, CodeBlock, RichText],
   templateUrl: './topic-page.html',
 })
 export class TopicPage {
@@ -35,7 +36,7 @@ export class TopicPage {
     return file ? `data/${file}` : undefined;
   });
 
-  /** Selected pill (null = all); back to "Todos" whenever the topic or level changes. */
+  /** Selected pill (null = all); back to "All" whenever the topic or level changes. */
   protected readonly category = linkedSignal<Category | null>(() => {
     this.slug();
     this.level();
@@ -48,7 +49,7 @@ export class TopicPage {
 
   /** Pill bar entries with section counts; categories absent from the topic have count 0. */
   protected readonly filters = computed(() => [
-    { id: null, label: 'Todos', icon: 'apps', count: this.subsections().length },
+    { id: null, label: 'All', icon: 'apps', count: this.subsections().length },
     ...CATEGORIES.map((c) => ({
       ...c,
       count: this.subsections().filter((s) => s.category === c.id).length,
@@ -79,6 +80,11 @@ export class TopicPage {
     effect(() => {
       const data = this.content.hasValue() ? this.content.value() : undefined;
       title.setTitle(data ? `${data.title} · ${SITE_CONFIG.name}` : SITE_CONFIG.name);
+    });
+    effect(() => {
+      if (this.content.hasValue()) {
+        this.progress.migrate(this.slug(), this.level(), this.content.value().subsections);
+      }
     });
   }
 

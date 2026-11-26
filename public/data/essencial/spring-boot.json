@@ -1,257 +1,260 @@
 {
   "title": "Spring Boot",
-  "description": "Framework que simplifica a criação de aplicações Java modernas, com foco em APIs REST e integração com bancos de dados.",
-  "version": "Spring Boot 3.3.x",
+  "description": "The framework that makes building Java APIs and services fast, with REST and database integration.",
+  "version": "Spring Boot 3.4+",
   "resumo": [
-    "Spring Boot = Spring + autoconfiguração + servidor embutido (Tomcat).",
-    "IoC: o container cria os beans. Injete por construtor; com um único construtor, @Autowired é desnecessário.",
-    "Beans são singleton por padrão: nunca guarde estado de requisição em atributos.",
-    "@RestController devolve objetos que o Jackson converte em JSON; @Service guarda a regra; Spring Data cria consultas pelo nome do método.",
-    "Entrada por DTO (record) + Bean Validation + @Valid: 400 automático. Nunca exponha a entidade JPA.",
-    "Erros centralizados com @RestControllerAdvice; ProblemDetail padroniza o corpo.",
-    "Configuração em application.yml + profiles (application-prod.yml) e @ConfigurationProperties; segredos em variáveis de ambiente.",
-    "Produção: Actuator (health e métricas) e Flyway para o schema, com ddl-auto=validate.",
-    "Testes: @WebMvcTest (web), @DataJpaTest (repositório), @SpringBootTest (aplicação inteira)."
+    "Spring Boot = Spring + starters + auto-configuration + an embedded server (Tomcat).",
+    "IoC: the container creates the beans. Inject through the constructor; with one constructor, `@Autowired` is not needed.",
+    "`@RestController` returns objects that Jackson turns into JSON; `@Service` holds the rules; Spring Data builds queries from method names.",
+    "Input: DTO (record) + Bean Validation + `@Valid` gives an automatic 400. Never expose the JPA entity.",
+    "Errors: `@RestControllerAdvice` in one place; `ProblemDetail` standardizes the body.",
+    "Configuration: `application.yml`, overridden by environment variables; secrets never in the file.",
+    "Tests: `@WebMvcTest` (web), `@DataJpaTest` (repository), `@SpringBootTest` (whole application)."
   ],
   "subsections": [
     {
-      "subtitle": "O que é Spring Boot?",
-      "description": "Definição e objetivo do framework.",
+      "subtitle": "What Is Spring Boot?",
+      "formerSubtitle": "O que é Spring Boot?",
+      "description": "Spring with sensible defaults and an embedded server.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Spring Boot é preferido para APIs modernas porque oferece autoconfiguração, servidor embutido e convenções padrão, acelerando o desenvolvimento de microserviços e APIs REST, como uma API de e-commerce, sem configuração manual excessiva.",
-          "code": "import org.springframework.boot.SpringApplication;\nimport org.springframework.boot.autoconfigure.SpringBootApplication;\n\n@SpringBootApplication\npublic class Application {\n  public static void main(String[] args) {\n    SpringApplication.run(Application.class, args);\n  }\n}",
-          "interview_question": "Por que o Spring Boot é preferido para desenvolver APIs modernas?",
+          "title": "Explanation",
+          "explanation": "**Problem:** plain Spring needs a lot of setup before the first endpoint: a web server, the dispatcher, a data source, JSON conversion, and library versions that work together.\n\n**Concept:** Spring Boot sits on top of the Spring Framework. Starters are dependency bundles with versions tested together; auto-configuration creates beans based on what is on the classpath and in your properties; an embedded server (Tomcat) makes the application a runnable JAR.\n\n**How it works:** generate a project at start.spring.io, add starters, write code. `@SpringBootApplication` combines `@Configuration`, `@EnableAutoConfiguration` and `@ComponentScan`, which scans the main class's package and its subpackages.",
+          "code": "<!-- pom.xml: one starter brings Spring MVC, Jackson and Tomcat -->\n<dependency>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-web</artifactId>\n</dependency>\n\n@SpringBootApplication\npublic class ShopApplication {\n    public static void main(String[] args) {\n        SpringApplication.run(ShopApplication.class, args);\n    }\n}\n\n$ ./mvnw spring-boot:run      # or: ./mvnw package && java -jar target/shop.jar",
+          "interview_question": "Why is Spring Boot preferred for building modern APIs?",
           "references": [
-            "https://docs.spring.io/spring-boot/docs/current/reference/html/"
+            "https://docs.spring.io/spring-boot/index.html",
+            "https://start.spring.io"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Putting the main class in a package that does not contain the others. Component scanning only looks at the main class's package and below it, so controllers and services elsewhere are never found.",
+          "code": "// WRONG\ncom.shop.app.ShopApplication          // @SpringBootApplication here\ncom.shop.orders.OrderController       // NOT scanned: not under com.shop.app\n// -> 404, or \"No qualifying bean of type OrderService\"\n\n// RIGHT: the main class in the root package\ncom.shop.ShopApplication\ncom.shop.orders.OrderController       // scanned"
         }
       ]
     },
     {
-      "subtitle": "Inversão de Controle e Injeção de Dependência",
-      "description": "Fundamentos do gerenciamento de dependências no Spring.",
+      "subtitle": "Inversion of Control and Dependency Injection",
+      "formerSubtitle": "Inversão de Controle e Injeção de Dependência",
+      "description": "Spring creates the objects and wires them together.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Injeção por construtor é preferível à injeção por campo (@Autowired no atributo): deixa as dependências explícitas, permite campos final, facilita testes com mocks sem subir o Spring e evita objetos parcialmente inicializados. Com um único construtor, o Spring injeta automaticamente, sem precisar de @Autowired.",
-          "code": "import org.springframework.stereotype.Service;\n\n@Service\nclass PedidoService {\n  private final PedidoRepository repo;\n\n  public PedidoService(PedidoRepository repo) {\n    this.repo = repo;\n  }\n  public String processar() { return repo.salvar(); }\n}\ninterface PedidoRepository {\n  String salvar();\n}",
-          "interview_question": "Por que preferir injeção por construtor à injeção por campo?",
+          "title": "Explanation",
+          "explanation": "**Problem:** `OrderService` does `new PaymentClient()` inside itself. It cannot be tested without calling the real payment provider, and the implementation cannot be swapped.\n\n**Concept:** with inversion of control, the Spring container creates and connects the objects (beans) instead of your code calling `new`. With dependency injection, a class receives its dependencies, usually through the constructor. Beans are found by annotations (`@Service`, `@Component`) or declared with `@Bean` in a `@Configuration` class.\n\n**How it works:** prefer constructor injection: the dependencies are explicit, the fields can be `final`, and a unit test can pass mocks without starting Spring. With a single constructor, `@Autowired` is not needed. Avoid `@Autowired` on fields, which hides dependencies.",
+          "code": "@Service\npublic class OrderService {\n    private final OrderRepository orders;\n    private final PaymentClient payments;\n\n    public OrderService(OrderRepository orders, PaymentClient payments) {   // Spring injects both\n        this.orders = orders;\n        this.payments = payments;\n    }\n}\n\n// In a unit test: no Spring needed\nvar service = new OrderService(mock(OrderRepository.class), mock(PaymentClient.class));\n\n@Configuration\nclass ClientsConfig {\n    @Bean                       // a bean for a class you do not own\n    RestClient paymentRestClient() {\n        return RestClient.create(\"https://payments.example.com\");\n    }\n}",
+          "interview_question": "What are IoC and dependency injection, and why prefer constructor injection?",
           "references": [
-            "https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#beans-dependency-injection"
+            "https://docs.spring.io/spring-framework/reference/core/beans/dependencies/factory-collaborators.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Two beans of the same type and a constructor that asks for \"the\" one. Spring cannot choose and fails at startup. Pick one with `@Qualifier`, or mark a default with `@Primary`.",
+          "code": "@Component class EmailNotifier implements Notifier { }\n@Component class SmsNotifier implements Notifier { }\n\n// WRONG\npublic AlertService(Notifier notifier) { ... }\n// NoUniqueBeanDefinitionException: expected single matching bean but found 2\n\n// RIGHT\npublic AlertService(@Qualifier(\"emailNotifier\") Notifier notifier) { ... }"
         }
       ]
     },
     {
-      "subtitle": "Anotações Principais",
-      "description": "Anotações para configurar componentes e endpoints.",
+      "subtitle": "Core Annotations",
+      "formerSubtitle": "Anotações Principais",
+      "description": "Telling Spring what each class is.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "@RestController difere de @Controller porque retorna dados diretamente como JSON, adequado para APIs, enquanto @Controller é usado com visões em aplicações web tradicionais, sendo essencial para endpoints REST.",
-          "code": "import org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class HelloController {\n  @GetMapping(\"/hi\")\n  public String hi() {\n    return \"Oi\";\n  }\n}",
-          "interview_question": "Qual a função de @RestController e como ele difere de @Controller?",
+          "title": "Explanation",
+          "explanation": "**Problem:** Spring needs to know what each class is — a controller, business logic, data access — to create it and apply the right behavior.\n\n**Concept:** `@Component` is a generic bean; `@Service` holds business logic; `@Repository` is data access (and translates database exceptions into Spring's `DataAccessException`); `@Controller` serves web pages; `@RestController` = `@Controller` + `@ResponseBody`, returning data as JSON. `@Configuration` with `@Bean` declares beans by hand.\n\n**How it works:** in controllers, `@GetMapping`, `@PostMapping` (and the other verbs) map URLs to methods; `@PathVariable` reads a part of the path, `@RequestParam` a query parameter and `@RequestBody` the JSON body.",
+          "code": "@RestController\n@RequestMapping(\"/products\")\npublic class ProductController {\n    private final ProductService service;\n    public ProductController(ProductService service) { this.service = service; }\n\n    @GetMapping(\"/{id}\")                       // GET /products/42\n    public ProductResponse get(@PathVariable Long id) { return service.find(id); }\n\n    @GetMapping                                // GET /products?category=books\n    public List<ProductResponse> list(@RequestParam(required = false) String category) { ... }\n\n    @PostMapping                               // POST /products with a JSON body\n    public ResponseEntity<ProductResponse> create(@Valid @RequestBody CreateProductRequest req) { ... }\n}",
+          "interview_question": "What does @RestController do, and how is it different from @Controller?",
           "references": [
-            "https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-controller"
+            "https://docs.spring.io/spring-framework/reference/core/beans/classpath-scanning.html",
+            "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `@Controller` for an API. Spring treats the returned String as the name of a view template, so the request fails instead of returning the text or JSON.",
+          "code": "// WRONG: @Controller treats the return value as a view name\n@Controller\npublic class HelloController {\n    @GetMapping(\"/hello\")\n    public String hello() { return \"Hi\"; }   // looks for a template called \"Hi\"\n}\n\n// RIGHT for APIs\n@RestController\npublic class HelloController {\n    @GetMapping(\"/hello\")\n    public String hello() { return \"Hi\"; }   // response body: Hi\n}"
         }
       ]
     },
     {
       "subtitle": "Spring MVC",
-      "description": "Modelo Model-View-Controller para APIs REST.",
+      "description": "How a request travels from URL to JSON.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Em uma API REST, o DispatcherServlet encaminha a requisição ao controller, que chama o serviço e devolve um objeto. Não há view: um HttpMessageConverter (Jackson) converte o retorno em JSON, como no endpoint /users/{id}.",
-          "code": "import org.springframework.web.bind.annotation.GetMapping;\nimport org.springframework.web.bind.annotation.PathVariable;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class UserController {\n  @GetMapping(\"/users/{id}\")\n  public User getUser(@PathVariable Long id) {\n    return new User(id, \"João\");\n  }\n}\nrecord User(Long id, String nome) {}",
-          "interview_question": "Como o Spring MVC organiza o fluxo de uma requisição REST?",
+          "title": "Explanation",
+          "explanation": "**Problem:** every HTTP request has to be read (URL, parameters, JSON body), routed to the right code and turned back into a response with a status and a body.\n\n**Concept:** in Spring MVC, the `DispatcherServlet` receives every request, finds the matching method (`@GetMapping`...), converts the parameters and the body, calls the method and converts the return value to JSON. The conversion is done by an `HttpMessageConverter` (Jackson). In a REST API no view is involved.\n\n**How it works:** a request flows client → DispatcherServlet → controller → service → repository, and back. Return the object for a plain 200, or a `ResponseEntity` to control the status and headers.",
+          "code": "@RestController\n@RequestMapping(\"/users\")\npublic class UserController {\n    private final UserService service;\n    public UserController(UserService service) { this.service = service; }\n\n    @GetMapping(\"/{id}\")\n    public UserResponse get(@PathVariable Long id) {          // 200 + JSON body\n        return service.find(id);\n    }\n\n    @PostMapping\n    public ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {\n        UserResponse created = service.create(req);\n        return ResponseEntity\n            .created(URI.create(\"/users/\" + created.id()))    // 201 + Location header\n            .body(created);\n    }\n}\n\n// GET /users/1  ->  {\"id\":1,\"name\":\"Ana\"}",
+          "interview_question": "How does Spring MVC handle a REST request, from URL to JSON?",
           "references": [
-            "https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc"
+            "https://docs.spring.io/spring-framework/reference/web/webmvc.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Business logic in the controller. Rules, database access and HTTP get mixed, and the rules cannot be reused or tested without HTTP. The controller translates HTTP; the service holds the rules.",
+          "code": "// WRONG: rules, database and HTTP in one place\n@PostMapping(\"/orders\")\npublic Order create(@RequestBody Order order) {\n    if (order.getItems().isEmpty()) throw new IllegalArgumentException(\"Empty order\");\n    order.setTotal(calculateTotal(order));\n    return orderRepository.save(order);\n}\n\n// RIGHT\n@PostMapping(\"/orders\")\npublic ResponseEntity<OrderResponse> create(@Valid @RequestBody CreateOrderRequest req) {\n    return ResponseEntity.status(HttpStatus.CREATED).body(orderService.create(req));\n}"
         }
       ]
     },
     {
       "subtitle": "Spring Data JPA",
-      "description": "Integração simplificada com bancos relacionais.",
+      "description": "Repositories generated from interfaces.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Uma consulta personalizada em Spring Data JPA pode ser criada com métodos derivados como findByEmail ou usando @Query com JPQL, permitindo buscas específicas, como encontrar usuários por e-mail em um repositório.",
-          "code": "import org.springframework.data.jpa.repository.JpaRepository;\nimport jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class User {\n  @Id\n  private Long id;\n  private String email;\n  // Getters e setters\n}\n\ninterface UserRepository extends JpaRepository<User, Long> {\n  Optional<User> findByEmail(String email);\n}",
-          "interview_question": "Como criar uma consulta personalizada com Spring Data JPA?",
+          "title": "Explanation",
+          "explanation": "**Problem:** every entity needs the same CRUD code — save, find by id, list, delete — plus queries by some field.\n\n**Concept:** you declare an interface that extends `JpaRepository<Entity, Id>`, and Spring generates the implementation at startup: `save`, `findById`, `findAll`, `deleteById`, paging. Derived queries turn a method name into a query (`findByEmail`, `findByStatusAndCreatedAtAfter`). `@Query` takes JPQL when the name would get too long.\n\n**How it works:** keep queries in the repository and let the database do the filtering, sorting and paging.",
+          "code": "@Entity\n@Table(name = \"users\")\npublic class User {\n    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE)\n    private Long id;\n    private String email;\n    private boolean active;\n    protected User() {}\n}\n\npublic interface UserRepository extends JpaRepository<User, Long> {\n    Optional<User> findByEmail(String email);                  // derived query\n    List<User> findByActiveTrueOrderByEmail();\n    Page<User> findByActive(boolean active, Pageable page);    // paging\n\n    @Query(\"select u from User u where u.email like %:domain\")\n    List<User> findByEmailDomain(@Param(\"domain\") String domain);\n}",
+          "interview_question": "How do you create a custom query with Spring Data JPA?",
           "references": [
-            "https://docs.spring.io/spring-data/jpa/docs/current/reference/html/"
+            "https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Calling `findAll()` and filtering in Java. The whole table is loaded into memory for a few rows. Let the database filter.",
+          "code": "// WRONG: loads every user, then filters\nList<User> active = userRepository.findAll().stream().filter(User::isActive).toList();\n\n// RIGHT\nList<User> active = userRepository.findByActiveTrueOrderByEmail();"
         }
       ]
     },
     {
-      "subtitle": "Configuração de Propriedades",
-      "description": "Configuração da aplicação via propriedades.",
+      "subtitle": "Configuration Properties",
+      "formerSubtitle": "Configuração de Propriedades",
+      "description": "Values that change per environment, outside the code.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Para configurar um banco em memória, use spring.datasource.url=jdbc:h2:mem:testdb em application.properties, permitindo testes rápidos sem configurar um banco externo, ideal para desenvolvimento local.",
-          "code": "# application.properties\nspring.datasource.url=jdbc:h2:mem:testdb\nspring.datasource.username=sa\n\n# Código Java\n@Component\npublic class Config {\n  @Value(\"${spring.datasource.url}\")\n  private String dbUrl;\n  public String getDbUrl() { return dbUrl; }\n}",
-          "interview_question": "Como configurar um banco de dados em memória com Spring Boot?",
-          "references": [
-            "https://docs.spring.io/spring-boot/docs/current/reference/html/application-properties.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Testes com Spring Boot",
-      "description": "Testes unitários e de integração com Spring.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Testar um endpoint REST com MockMvc simula requisições HTTP, verificando status e resposta, como um GET /users/1, enquanto @SpringBootTest testa a integração completa, garantindo robustez em APIs reais.",
-          "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.test.web.servlet.MockMvc;\nimport static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;\nimport static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;\nimport static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;\n\n@SpringBootTest\n@AutoConfigureMockMvc\nclass UserControllerTest {\n  @Autowired\n  private MockMvc mockMvc;\n\n  @Test\n  void testGetUser() throws Exception {\n    mockMvc.perform(get(\"/users/1\"))\n           .andExpect(status().isOk())\n           .andExpect(jsonPath(\"$.nome\").value(\"João\"));\n  }\n}",
-          "interview_question": "Como testar um endpoint REST com MockMvc no Spring Boot?",
-          "references": [
-            "https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Validação de Dados",
-      "description": "Validação de entradas com Bean Validation.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Anotações do Bean Validation, como @NotBlank, @Size e @Email, ativadas por @Valid no controller, rejeitam a requisição com 400 antes de chegar ao serviço — nomes vazios ou curtos, e-mails inválidos. O id não vem no request de criação: quem gera é o servidor.",
-          "code": "import jakarta.validation.Valid;\nimport jakarta.validation.constraints.Email;\nimport jakarta.validation.constraints.NotBlank;\nimport jakarta.validation.constraints.Size;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.web.bind.annotation.PostMapping;\nimport org.springframework.web.bind.annotation.RequestBody;\nimport org.springframework.web.bind.annotation.RestController;\n\n@RestController\npublic class UserController {\n  @PostMapping(\"/users\")\n  public ResponseEntity<Void> create(@Valid @RequestBody CriarUsuarioRequest req) {\n    // service.criar(req) ...\n    return ResponseEntity.status(HttpStatus.CREATED).build();\n  }\n}\n\n// @NotBlank barra null e vazio; @Size sozinho aceitaria null\nrecord CriarUsuarioRequest(@NotBlank @Size(min = 2, max = 100) String nome,\n                           @NotBlank @Email String email) {}",
-          "interview_question": "Como garantir que entradas de um endpoint são válidas?",
-          "references": [
-            "https://beanvalidation.org/2.0/"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Tratamento de Exceções",
-      "description": "Gerenciamento de erros em APIs REST.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "@RestControllerAdvice (@ControllerAdvice + @ResponseBody) centraliza o tratamento de erros: cada @ExceptionHandler devolve uma resposta consistente, como 400 para IllegalArgumentException. Com @ControllerAdvice puro, retornar String faz o Spring procurar uma view com esse nome.",
-          "code": "import org.springframework.http.HttpStatus;\nimport org.springframework.web.bind.annotation.ExceptionHandler;\nimport org.springframework.web.bind.annotation.ResponseStatus;\nimport org.springframework.web.bind.annotation.RestControllerAdvice;\n\n@RestControllerAdvice\npublic class GlobalExceptionHandler {\n  @ExceptionHandler(IllegalArgumentException.class)\n  @ResponseStatus(HttpStatus.BAD_REQUEST)\n  public String handleIllegalArgument(IllegalArgumentException e) {\n    return \"Erro: \" + e.getMessage();\n  }\n}",
-          "interview_question": "Como centralizar o tratamento de erros em uma API Spring Boot?",
-          "references": [
-            "https://docs.spring.io/spring-framework/docs/current/reference/html/web.html#mvc-ann-controller-advice"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Spring Security (Básico)",
-      "description": "Segurança básica para APIs.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Proteger um endpoint com Spring Security envolve configurar authorizeHttpRequests para restringir acesso, como permitir /public/** e exigir autenticação em outros, usando usuários em memória para prototipagem.",
-          "code": "import org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.security.config.Customizer;\nimport org.springframework.security.config.annotation.web.builders.HttpSecurity;\nimport org.springframework.security.core.userdetails.User;\nimport org.springframework.security.core.userdetails.UserDetailsService;\nimport org.springframework.security.provisioning.InMemoryUserDetailsManager;\nimport org.springframework.security.web.SecurityFilterChain;\n\n@Configuration\npublic class SecurityConfig {\n  @Bean\n  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {\n    http.authorizeHttpRequests(auth -> auth\n          .requestMatchers(\"/public/**\").permitAll()\n          .anyRequest().authenticated())\n        .httpBasic(Customizer.withDefaults());\n    return http.build();\n  }\n\n  @Bean // só para protótipo: usuário em memória\n  public UserDetailsService users() {\n    return new InMemoryUserDetailsManager(\n        User.withUsername(\"ana\").password(\"{noop}senha\").roles(\"USER\").build());\n  }\n}",
-          "interview_question": "Como proteger um endpoint com Spring Security?",
-          "references": [
-            "https://docs.spring.io/spring-security/reference/"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Profiles e @ConfigurationProperties",
-      "description": "Configuração por ambiente, tipada e validada.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Profiles ativam arquivos e beans específicos por ambiente: application-dev.yml, application-prod.yml, ativados com spring.profiles.active. Para ler grupos de propriedades, prefira @ConfigurationProperties com records: os valores ficam tipados, validáveis com Bean Validation e centralizados, em vez de @Value espalhado pelo código. Segredos nunca vão no YAML versionado — use variáveis de ambiente ou um cofre de segredos.",
-          "code": "# application.yml (padrão)\npagamento:\n  url: https://sandbox.gateway.com\n  timeout: 5s\n\n# application-prod.yml (outro arquivo; só sobrescreve o que muda)\npagamento:\n  url: https://api.gateway.com\n\n# Ativar: SPRING_PROFILES_ACTIVE=prod\n\n// Classe Java\n@ConfigurationProperties(prefix = \"pagamento\")\npublic record PagamentoProperties(String url, Duration timeout) {}\n\n@SpringBootApplication\n@EnableConfigurationProperties(PagamentoProperties.class)\npublic class Application {}",
-          "interview_question": "Como separar configurações de dev, teste e produção no Spring Boot?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the database URL, the port and timeouts differ between your machine, test and production. Hard-coded values mean a new build per environment.\n\n**Concept:** Spring Boot reads configuration from `application.properties` or `application.yml`, environment variables and command-line arguments; later sources override earlier ones, so an environment variable beats the file. Relaxed binding maps `SPRING_DATASOURCE_URL` to `spring.datasource.url`.\n\n**How it works:** keep defaults in the file and override per environment with environment variables. Read values with `@Value`, or group them with `@ConfigurationProperties` (Intermediate level).",
+          "code": "# application.yml\nserver:\n  port: 8080\nspring:\n  datasource:\n    url: jdbc:postgresql://localhost:5432/shop\n    username: shop\n    password: ${DB_PASSWORD}        # from an environment variable\nshop:\n  free-shipping-above: 200.00\n\n@Value(\"${shop.free-shipping-above}\")\nprivate BigDecimal freeShippingAbove;\n\n$ SERVER_PORT=9090 java -jar shop.jar      # the environment variable overrides the file",
+          "interview_question": "How does Spring Boot load configuration, and how do you override a value per environment?",
           "references": [
             "https://docs.spring.io/spring-boot/reference/features/external-config.html",
-            "https://docs.spring.io/spring-boot/reference/features/profiles.html"
+            "https://docs.spring.io/spring-boot/appendix/application-properties/index.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A typo in a property name. Spring does not complain: the value is simply not applied, and the default is used. `@ConfigurationProperties` with validation, or the IDE's property completion, catches it.",
+          "code": "# WRONG: \"datasorce\" — ignored silently; the app tries the default database\nspring:\n  datasorce:\n    url: jdbc:postgresql://db:5432/shop\n\n# RIGHT\nspring:\n  datasource:\n    url: jdbc:postgresql://db:5432/shop"
         }
       ]
     },
     {
-      "subtitle": "Escopos e Ciclo de Vida de Beans",
-      "description": "Singleton, prototype e callbacks de inicialização.",
-      "category": "conceitos",
+      "subtitle": "Testing with Spring Boot",
+      "formerSubtitle": "Testes com Spring Boot",
+      "description": "MockMvc, slices and full-context tests.",
+      "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O escopo padrão é singleton: uma única instância por contexto, compartilhada por todas as requisições. Por isso beans como @Service e @Repository devem ser stateless — guardar estado de requisição em atributos causa condições de corrida. Outros escopos: prototype (nova instância a cada injeção), request e session (aplicações web). Callbacks como @PostConstruct executam lógica após a injeção das dependências.",
-          "code": "@Service // singleton: NÃO guarde estado da requisição em campos\npublic class CarrinhoService {\n    private final ProdutoRepository produtos;\n\n    public CarrinhoService(ProdutoRepository produtos) {\n        this.produtos = produtos;\n    }\n\n    @PostConstruct\n    void aquecerCache() {\n        // executa uma vez, após a injeção\n    }\n}\n\n@Component\n@Scope(\"prototype\")\npublic class GeradorRelatorio { }",
-          "interview_question": "Qual o escopo padrão de um bean Spring e que cuidado isso exige?",
+          "title": "Explanation",
+          "explanation": "**Problem:** you want to check the controller — JSON, status code, validation — without starting the server by hand and clicking through Postman after every change.\n\n**Concept:** `spring-boot-starter-test` brings JUnit 5, Mockito, AssertJ and MockMvc. `@SpringBootTest` loads the whole application. MockMvc sends simulated HTTP requests through Spring MVC without a real server. Slices load only one layer: `@WebMvcTest` (controllers) and `@DataJpaTest` (repositories). `@MockitoBean` replaces a bean with a mock.\n\n**How it works:** for a controller, `@WebMvcTest` with the service mocked is the usual choice: it checks routing, JSON and validation, and starts much faster than the full application.",
+          "code": "// static imports: MockMvcRequestBuilders.*, MockMvcResultMatchers.*, Mockito.when\n@WebMvcTest(UserController.class)\nclass UserControllerTest {\n    @Autowired MockMvc mvc;\n    @MockitoBean UserService service;\n\n    @Test\n    void returnsTheUser() throws Exception {\n        when(service.find(1L)).thenReturn(new UserResponse(1L, \"Ana\"));\n\n        mvc.perform(get(\"/users/1\"))\n           .andExpect(status().isOk())\n           .andExpect(jsonPath(\"$.name\").value(\"Ana\"));\n    }\n\n    @Test\n    void rejectsInvalidInput() throws Exception {\n        mvc.perform(post(\"/users\").contentType(MediaType.APPLICATION_JSON).content(\"{\\\"name\\\":\\\"\\\"}\"))\n           .andExpect(status().isBadRequest());\n    }\n}",
+          "interview_question": "How do you test a REST endpoint with MockMvc, and when do you use @WebMvcTest instead of @SpringBootTest?",
           "references": [
-            "https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html"
+            "https://docs.spring.io/spring-boot/reference/testing/index.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `@SpringBootTest` for every test. The whole application — database connection included — starts again and again, and the suite gets slow. Use slices for one layer, and keep `@SpringBootTest` for a few end-to-end checks.",
+          "code": "// WRONG: the whole application starts for a controller test\n@SpringBootTest\n@AutoConfigureMockMvc\nclass UserControllerTest { ... }\n\n// RIGHT: only the web layer\n@WebMvcTest(UserController.class)\nclass UserControllerTest { ... }"
         }
       ]
     },
     {
-      "subtitle": "DTOs e Mapeamento",
-      "description": "Não exponha entidades JPA na API.",
+      "subtitle": "Data Validation",
+      "formerSubtitle": "Validação de Dados",
+      "description": "Rejecting invalid input before it reaches the service.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a client sends an empty name or an invalid email. Without validation it reaches the database, or breaks a rule deep inside the code.\n\n**Concept:** Bean Validation (Jakarta Validation, from `spring-boot-starter-validation`) declares rules as annotations: `@NotNull`, `@NotBlank`, `@Size`, `@Email`, `@Min`, `@Positive`, `@Pattern`. `@Valid` on the controller parameter triggers the check, and a failure becomes a 400 Bad Request.\n\n**How it works:** put the rules on the request DTO. `@NotBlank` rejects null, empty and whitespace; `@NotNull` only null. A nested object is validated only if its field also has `@Valid`.",
+          "code": "public record CreateUserRequest(\n    @NotBlank @Size(max = 100) String name,\n    @NotBlank @Email String email,\n    @Min(18) int age,\n    @Valid @NotNull AddressRequest address      // validates the nested object too\n) {}\n\n@PostMapping(\"/users\")\npublic ResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) { ... }\n\n// POST {\"name\":\"\",\"email\":\"x\",\"age\":15,...}  ->  400 Bad Request",
+          "interview_question": "How do you make sure an endpoint's input is valid?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/core/validation/beanvalidation.html",
+            "https://beanvalidation.org/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Annotations that are never checked: `@Valid` missing on the parameter, or the validation starter missing from the project. Nothing fails — the invalid data just goes through.",
+          "code": "// WRONG: without @Valid the annotations on the record are ignored\npublic ResponseEntity<UserResponse> create(@RequestBody CreateUserRequest req) { ... }\n\n<!-- Also required: without this dependency nothing is validated -->\n<dependency>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-validation</artifactId>\n</dependency>"
+        }
+      ]
+    },
+    {
+      "subtitle": "Exception Handling in APIs",
+      "formerSubtitle": "Tratamento de Exceções",
+      "description": "One place that turns exceptions into HTTP responses.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** an order that does not exist should be a clear 404, not a 500 with a stack trace. And a try/catch in every controller is repetitive and inconsistent.\n\n**Concept:** the service throws domain exceptions; a `@RestControllerAdvice` class with `@ExceptionHandler` methods turns each type into a response, in one place for the whole API. `ProblemDetail` (RFC 9457) gives the error body a standard format.\n\n**How it works:** map each expected exception to its status (404, 400, 409), and let a final handler turn anything unexpected into a generic 500, with the details only in the log.",
+          "code": "public class OrderNotFoundException extends RuntimeException {\n    public OrderNotFoundException(Long id) { super(\"Order \" + id + \" not found\"); }\n}\n\n@RestControllerAdvice\npublic class ApiExceptionHandler {\n\n    @ExceptionHandler(OrderNotFoundException.class)\n    ProblemDetail notFound(OrderNotFoundException e) {\n        return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage());\n    }\n\n    @ExceptionHandler(IllegalArgumentException.class)\n    ProblemDetail badRequest(IllegalArgumentException e) {\n        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.getMessage());\n    }\n}\n\n// GET /orders/99 -> 404 {\"title\":\"Not Found\",\"status\":404,\"detail\":\"Order 99 not found\"}",
+          "interview_question": "How do you centralize error handling in a Spring Boot API?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-advice.html",
+            "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `@ControllerAdvice` (without \"Rest\") and returning a String. Like `@Controller`, it treats the String as a view name, so the error handler itself fails. Use `@RestControllerAdvice`.",
+          "code": "// WRONG: the String is resolved as a view name\n@ControllerAdvice\npublic class Handler {\n    @ExceptionHandler(IllegalArgumentException.class)\n    public String handle(IllegalArgumentException e) { return \"Error: \" + e.getMessage(); }\n}\n\n// RIGHT\n@RestControllerAdvice\npublic class Handler { ... }"
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Security Basics",
+      "formerSubtitle": "Spring Security (Básico)",
+      "description": "Authentication and authorization with a filter chain.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** right after adding the dependency, every endpoint returns 401. You need some public routes, others only for logged-in users, and some only for admins.\n\n**Concept:** Spring Security runs as a chain of filters before your controller. Authentication answers \"who are you?\" and authorization \"what can you do?\". You configure a `SecurityFilterChain` bean that says which paths are public and which need a login or a role.\n\n**How it works:** adding `spring-boot-starter-security` protects everything and logs a generated password for a default user — fine for a first try, never for production. Rules are checked in order, so specific paths come first and `anyRequest()` last. APIs usually authenticate with tokens (JWT), covered in the advanced level.",
+          "code": "@Configuration\npublic class SecurityConfig {\n    @Bean\n    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {\n        http.authorizeHttpRequests(auth -> auth\n              .requestMatchers(\"/public/**\").permitAll()\n              .requestMatchers(\"/admin/**\").hasRole(\"ADMIN\")\n              .anyRequest().authenticated())\n            .httpBasic(Customizer.withDefaults());\n        return http.build();\n    }\n\n    @Bean // prototype only: in-memory users\n    public UserDetailsService users() {\n        return new InMemoryUserDetailsManager(\n            User.withUsername(\"ana\").password(\"{noop}secret\").roles(\"USER\").build(),\n            User.withUsername(\"admin\").password(\"{noop}secret\").roles(\"ADMIN\").build());\n    }\n}",
+          "interview_question": "How do you protect endpoints with Spring Security?",
+          "references": [
+            "https://docs.spring.io/spring-security/reference/servlet/getting-started.html",
+            "https://docs.spring.io/spring-security/reference/servlet/authorization/authorize-http-requests.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Putting `anyRequest()` before the specific rules. The rules are evaluated in order, and Spring refuses this configuration at startup.",
+          "code": "// WRONG: startup fails — \"Can't configure requestMatchers after anyRequest\"\nhttp.authorizeHttpRequests(auth -> auth\n    .anyRequest().authenticated()\n    .requestMatchers(\"/public/**\").permitAll());\n\n// RIGHT: specific rules first, anyRequest() last\nhttp.authorizeHttpRequests(auth -> auth\n    .requestMatchers(\"/public/**\").permitAll()\n    .anyRequest().authenticated());"
+        }
+      ]
+    },
+    {
+      "subtitle": "DTOs and Mapping",
+      "formerSubtitle": "DTOs e Mapeamento",
+      "description": "Do not expose JPA entities in the API.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Retornar entidades acopla o contrato da API ao modelo do banco: qualquer mudança na tabela quebra clientes, campos sensíveis (como senha) podem vazar e relacionamentos lazy podem disparar LazyInitializationException ou consultas N+1 na serialização. DTOs (idealmente records) definem exatamente o que entra e sai, permitem validação específica por caso de uso e deixam a entidade livre para evoluir.",
-          "code": "public record UsuarioResponse(Long id, String nome, String email) {\n    static UsuarioResponse from(Usuario u) {\n        return new UsuarioResponse(u.getId(), u.getNome(), u.getEmail());\n    }\n}\n\npublic record CriarUsuarioRequest(@NotBlank String nome, @Email String email) {}\n\n@PostMapping(\"/usuarios\")\nResponseEntity<UsuarioResponse> criar(@Valid @RequestBody CriarUsuarioRequest req) {\n    Usuario salvo = service.criar(req);\n    return ResponseEntity.status(HttpStatus.CREATED).body(UsuarioResponse.from(salvo));\n}",
-          "interview_question": "Por que usar DTOs em vez de retornar entidades JPA nos controllers?",
+          "title": "Explanation",
+          "explanation": "**Problem:** returning entities ties the API contract to the database model. A new column changes the JSON, sensitive fields can leak, and lazy relationships fail during serialization.\n\n**Concept:** a DTO (Data Transfer Object) defines exactly what enters and leaves the API, separately from the entity. Records are a good fit: immutable, short, and easy to validate. Request and response DTOs can differ per use case.\n\n**How it works:** map entity to DTO in the service or with a static factory method (`from`). The entity can change freely as long as the mapping keeps the contract.",
+          "code": "public record UserResponse(Long id, String name, String email) {\n    static UserResponse from(User u) {\n        return new UserResponse(u.getId(), u.getName(), u.getEmail());\n    }\n}\n\npublic record CreateUserRequest(@NotBlank String name, @Email String email) {}\n\n@PostMapping(\"/users\")\nResponseEntity<UserResponse> create(@Valid @RequestBody CreateUserRequest req) {\n    User saved = service.create(req);\n    return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(saved));\n}",
+          "interview_question": "Why use DTOs instead of returning JPA entities from controllers?",
           "references": [
             "https://martinfowler.com/eaaCatalog/dataTransferObject.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Spring Boot Actuator",
-      "description": "Health checks e métricas prontos para produção.",
-      "category": "ferramentas",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "O Actuator expõe endpoints operacionais: /actuator/health (usado por load balancers e probes do Kubernetes), /actuator/info, /actuator/metrics e, com Micrometer, /actuator/prometheus para coleta de métricas. Exponha apenas o necessário e proteja os endpoints sensíveis, pois alguns revelam configurações e detalhes internos da aplicação.",
-          "code": "# application.yml\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: health,info,prometheus\n  endpoint:\n    health:\n      probes:\n        enabled: true   # /actuator/health/liveness e /readiness",
-          "interview_question": "Para que serve o Spring Boot Actuator?",
-          "references": [
-            "https://docs.spring.io/spring-boot/reference/actuator/index.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Migrations com Flyway",
-      "description": "Versionando o schema do banco junto com o código.",
-      "category": "ferramentas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "ddl-auto=update altera o schema de forma implícita, não remove nem renomeia colunas corretamente, não tem histórico nem rollback e pode divergir entre ambientes. Ferramentas como Flyway (ou Liquibase) aplicam scripts versionados em ordem (V1__, V2__...), registram o que já rodou e garantem que todos os ambientes tenham o mesmo schema. Em produção, use ddl-auto=validate para conferir que entidades e tabelas batem.",
-          "code": "-- src/main/resources/db/migration/V1__cria_tabela_pedido.sql\nCREATE TABLE pedido (\n  id BIGSERIAL PRIMARY KEY,\n  cliente_id BIGINT NOT NULL,\n  total NUMERIC(12,2) NOT NULL,\n  criado_em TIMESTAMP NOT NULL DEFAULT now()\n);\n\n-- V2__adiciona_status_pedido.sql\nALTER TABLE pedido ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'CRIADO';",
-          "interview_question": "Por que não usar spring.jpa.hibernate.ddl-auto=update em produção?",
-          "references": [
-            "https://docs.spring.io/spring-boot/how-to/data-initialization.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "Returning the entity directly. Every field goes to the client — including the password hash — and lazy relationships throw `LazyInitializationException` or trigger extra queries while Jackson serializes them.",
+          "code": "// WRONG: the entity goes straight to JSON\n@GetMapping(\"/users/{id}\")\npublic User get(@PathVariable Long id) { return repository.findById(id).orElseThrow(); }\n// -> {\"id\":1,\"name\":\"Ana\",\"passwordHash\":\"$2a$10$...\"}\n\n// RIGHT: a DTO with only the public fields\n@GetMapping(\"/users/{id}\")\npublic UserResponse get(@PathVariable Long id) {\n    return UserResponse.from(repository.findById(id).orElseThrow());\n}"
         }
       ]
     }

@@ -5,67 +5,67 @@
       <span class="material-symbols-outlined text-[16px]" aria-hidden="true">dashboard</span>
       overview / dashboard
     </div>
-    <h1 class="text-headline-lg sm:text-headline-xl tracking-tight text-on-surface">Caderno de Estudos &amp; Engenharia de Software</h1>
+    <h1 class="text-headline-lg sm:text-headline-xl tracking-tight text-on-surface">Study Notes &amp; Software Engineering</h1>
     <p class="text-body-lg text-on-surface-variant">
-      Documentações técnicas sintetizadas, snippets e perguntas de entrevista de backend, infraestrutura e qualidade.
+      Lessons, code snippets and interview questions on backend, infrastructure and quality.
     </p>
   </div>
 
   @if (modules.isLoading()) {
     <div class="flex items-center gap-space-sm text-on-surface-variant" role="status">
       <span class="material-symbols-outlined animate-spin text-primary" aria-hidden="true">progress_activity</span>
-      Carregando tópicos...
+      Loading topics...
     </div>
   } @else if (modules.error()) {
     <div class="p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center gap-space-md" role="alert">
       <span class="material-symbols-outlined text-error" aria-hidden="true">error</span>
-      <p class="flex-1">Não foi possível carregar os tópicos.</p>
-      <button type="button" (click)="modules.reload()" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm">Tentar novamente</button>
+      <p class="flex-1">Could not load the topics.</p>
+      <button type="button" (click)="modules.reload()" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm">Try again</button>
     </div>
   } @else {
     @let s = stats();
     <!-- Stats -->
-    <section aria-label="Resumo do progresso" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
+    <section aria-label="Progress summary" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md">
       <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
         <div class="flex items-center justify-between text-label-ui text-outline">
-          Módulos concluídos
+          Modules completed
           <span class="material-symbols-outlined text-[20px] text-primary" aria-hidden="true">verified</span>
         </div>
         <div class="text-headline-lg text-on-surface">{{ s.modulesDone }} <span class="text-headline-sm text-outline">/ {{ s.modules }}</span></div>
         <div class="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden" aria-hidden="true">
           <div class="h-full bg-primary rounded-full transition-all" [style.width.%]="percent(s.modulesDone, s.modules)"></div>
         </div>
-        <span class="text-label-ui text-outline">{{ percent(s.modulesDone, s.modules) }}% completo</span>
+        <span class="text-label-ui text-outline">{{ percent(s.modulesDone, s.modules) }}% complete</span>
       </div>
 
       <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
         <div class="flex items-center justify-between text-label-ui text-outline">
-          Seções estudadas
+          Sections studied
           <span class="material-symbols-outlined text-[20px] text-secondary" aria-hidden="true">task_alt</span>
         </div>
         <div class="text-headline-lg text-on-surface">{{ s.sectionsStudied }} <span class="text-headline-sm text-outline">/ {{ s.sections }}</span></div>
         <div class="w-full h-1.5 rounded-full bg-surface-container-high overflow-hidden" aria-hidden="true">
           <div class="h-full bg-secondary rounded-full transition-all" [style.width.%]="percent(s.sectionsStudied, s.sections)"></div>
         </div>
-        <span class="text-label-ui text-outline">{{ percent(s.sectionsStudied, s.sections) }}% do conteúdo</span>
+        <span class="text-label-ui text-outline">{{ percent(s.sectionsStudied, s.sections) }}% of the content</span>
       </div>
 
       <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
         <div class="flex items-center justify-between text-label-ui text-outline">
-          Esta semana
+          This week
           <span class="material-symbols-outlined text-[20px] text-tertiary" aria-hidden="true">trending_up</span>
         </div>
-        <div class="text-headline-lg text-on-surface">{{ studiedLastWeek() }} <span class="text-headline-sm text-outline">seções</span></div>
-        <span class="text-label-ui text-outline">marcadas como estudadas nos últimos 7 dias</span>
+        <div class="text-headline-lg text-on-surface">{{ studiedLastWeek() }} <span class="text-headline-sm text-outline">sections</span></div>
+        <span class="text-label-ui text-outline">marked as studied in the last 7 days</span>
       </div>
 
       <div class="p-space-lg rounded-xl bg-surface-container-low shadow-md flex flex-col gap-space-sm">
         <div class="flex items-center justify-between text-label-ui text-outline">
-          Material de estudo
+          Study material
           <span class="material-symbols-outlined text-[20px] text-primary" aria-hidden="true">code</span>
         </div>
         <div class="text-headline-lg text-on-surface">{{ s.snippets }} <span class="text-headline-sm text-outline">snippets</span></div>
-        <span class="text-label-ui text-outline">{{ s.questions }} perguntas de entrevista</span>
+        <span class="text-label-ui text-outline">{{ s.questions }} interview questions</span>
       </div>
     </section>
 

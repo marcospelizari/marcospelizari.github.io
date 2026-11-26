@@ -1,139 +1,104 @@
 {
-  "title": "Git — Avançado",
-  "description": "Histórico limpo, recuperação de erros e fluxos profissionais com Git.",
-  "version": "Git 2.43",
+  "title": "Version Control (Git)",
+  "description": "Keeping a team repository safe: conflicts at scale, hooks, branch protection and signed commits.",
+  "version": "Git 2.43+",
   "resumo": [
-    "Git avançado é sobre manter o histórico útil e saber se recuperar de qualquer erro. Quase nada no Git se perde de verdade: o reflog guarda por onde o HEAD passou.",
-    "Rebase interativo, squash e fixup deixam o histórico legível antes do Pull Request; cherry-pick leva correções pontuais entre branches; bisect encontra o commit que introduziu um bug.",
-    "Em equipes, regras de proteção de branch, revisões obrigatórias e CI verde antes do merge evitam que problemas cheguem à main.",
-    "Hooks e assinatura de commits automatizam verificações locais e garantem a autoria do código."
+    "`zdiff3` shows the ancestor; `rerere` replays known resolutions; in a rebase, ours/theirs are swapped.",
+    "Resolve conflicts file by file — never `checkout --theirs .` on everything.",
+    "Hooks (`core.hooksPath`) are fast local conveniences; CI runs the real checks.",
+    "Protect main: PRs, approvals, required checks, no force push — for admins too.",
+    "CODEOWNERS: the last matching pattern wins — general rules first.",
+    "Sign commits (SSH or GPG) and add the key to GitHub as a signing key."
   ],
   "subsections": [
     {
-      "subtitle": "Rebase Interativo, Squash e Fixup",
-      "description": "Histórico limpo antes do Pull Request.",
-      "category": "pratica",
+      "subtitle": "Advanced Conflict Resolution",
+      "formerSubtitle": "Resolução de Conflitos Avançada",
+      "description": "Tools for complex and repeated conflicts.",
+      "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "git rebase -i permite reordenar, editar, juntar (squash/fixup) e remover commits locais, transformando vários commits de \"WIP\" em poucos commits coerentes. Como rebase reescreve hashes, nunca faça em branches que outras pessoas já usam (como main); na sua branch de feature, após o rebase use --force-with-lease, que recusa o push se alguém tiver enviado commits novos.",
-          "code": "git commit --fixup=a1b2c3d          # marca correção de um commit anterior\ngit rebase -i --autosquash origin/main\n\n# No editor:\n# pick   a1b2c3d feat: cancelamento de pedido\n# fixup  e4f5a6b fixup! feat: cancelamento de pedido\n# reword 9c8d7e6 test: cobre cancelamento\n\ngit push --force-with-lease",
-          "interview_question": "Quando evitar rebase em branches compartilhadas?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a long-running branch is rebased every day, and the same conflict has to be resolved again each time.\n\n**Concept:** conflicts shrink when you integrate often, keep commits small and update your branch with main regularly. The `zdiff3` conflict style also shows the common ancestor, so it is clear what each side changed. `git rerere` remembers how you resolved a conflict and reapplies it when the same conflict comes back. During a rebase, `--ours` and `--theirs` are swapped: \"ours\" is the branch you are rebasing onto, usually main.\n\n**How it works:** after resolving, run the tests: a merge without textual conflicts can still break the logic.",
+          "code": "git config --global merge.conflictstyle zdiff3\ngit config --global rerere.enabled true\n\ngit merge origin/main\ngit checkout --ours   path/file    # in a merge: keep your version (in a rebase, the opposite)\ngit checkout --theirs path/file    # in a merge: keep the incoming version\ngit add path/file && git commit",
+          "interview_question": "Which practices reduce and simplify merge conflicts?",
           "references": [
-            "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"
+            "https://git-scm.com/docs/git-rerere",
+            "https://git-scm.com/docs/git-merge#_how_conflicts_are_presented"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Taking one side for every file to \"finish quickly\". `git checkout --theirs .` throws away all of your changes in conflicting files, not only the conflicting lines. Resolve file by file.",
+          "code": "# WRONG: discards your side of every conflicting file\ngit checkout --theirs .\ngit add . && git commit\n\n# RIGHT: look at each conflict\ngit status                        # list the conflicting files\ngit mergetool                     # or edit them one by one"
         }
       ]
     },
     {
-      "subtitle": "Cherry-pick e Hotfix",
-      "description": "Levando uma correção específica para outra branch.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Cherry-pick aplica um commit específico em outra branch, criando um novo commit com as mesmas mudanças. É útil para levar um hotfix da main para uma branch de release sem trazer funcionalidades não lançadas. Use com moderação: cherry-picks frequentes duplicam commits e podem gerar conflitos repetidos. A opção -x registra a origem na mensagem.",
-          "code": "git switch release/1.4\ngit cherry-pick -x 3f9a2b1          # aplica o hotfix feito na main\ngit cherry-pick a1b2c3d..f6e5d4c    # intervalo de commits\n# Em conflito: resolva, git add, git cherry-pick --continue",
-          "interview_question": "Quando cherry-pick é uma boa solução?",
-          "references": [
-            "https://git-scm.com/docs/git-cherry-pick"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Reflog: Recuperando o \"Perdido\"",
-      "description": "Desfazendo reset, rebase e branches apagadas.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "O reflog registra localmente cada movimento do HEAD (commits, checkouts, resets, rebases) por padrão 90 dias para entradas alcançáveis e 30 dias para commits que ficaram inalcançáveis, como os perdidos em um reset — não demore para recuperar. Encontre o estado anterior e volte para ele com reset ou crie uma branch a partir dele. Funciona também para recuperar uma branch apagada antes do push. Só não ajuda com mudanças que nunca foram commitadas.",
-          "code": "git reflog\n# 3f9a2b1 HEAD@{0}: reset: moving to HEAD~3\n# c7d8e9f HEAD@{1}: commit: feat: relatório de vendas\n\ngit reset --hard HEAD@{1}                 # volta ao estado anterior\ngit switch -c recuperada c7d8e9f          # ou cria uma branch a partir dele",
-          "interview_question": "Como recuperar commits após um git reset --hard acidental?",
-          "references": [
-            "https://git-scm.com/docs/git-reflog"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Git Bisect",
-      "description": "Busca binária pelo commit que introduziu um bug.",
+      "subtitle": "Hooks and Local Automation",
+      "formerSubtitle": "Hooks e Automação Local",
+      "description": "Checks before commit and push.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "git bisect faz uma busca binária no histórico: você marca um commit bom e um ruim, e o Git faz checkout no meio para você testar. Em poucos passos (log2 de N) o commit culpado aparece. Com git bisect run e um script de teste, o processo inteiro é automático.",
-          "code": "git bisect start\ngit bisect bad                 # commit atual tem o bug\ngit bisect good v1.3.0         # esta versão funcionava\n# teste e marque cada passo com: git bisect good | git bisect bad\n\n# Automático: o script retorna 0 (bom) ou diferente de 0 (ruim)\ngit bisect run ./mvnw -q test -Dtest=CheckoutTest\ngit bisect reset",
-          "interview_question": "Como encontrar rapidamente o commit que quebrou uma funcionalidade?",
+          "title": "Explanation",
+          "explanation": "**Problem:** commits with broken formatting and messages outside the convention keep reaching the pull request, and CI fails on trivial things.\n\n**Concept:** hooks are scripts that Git runs on events: `pre-commit` (format and lint), `commit-msg` (validate the message format), `pre-push` (quick tests). They live in `.git/hooks` and are not versioned; to share them with the team, point `core.hooksPath` to a folder in the repository.\n\n**How it works:** hooks are a convenience for developers; CI still runs the real checks, because a hook can always be skipped.",
+          "code": "# .githooks/commit-msg\n#!/bin/sh\nif ! grep -qE '^(feat|fix|docs|refactor|test|chore|ci)(\\(.+\\))?!?: .+' \"$1\"; then\n  echo \"Commit message does not follow Conventional Commits\"\n  exit 1\nfi\n\ngit config core.hooksPath .githooks\nchmod +x .githooks/commit-msg",
+          "interview_question": "What are Git hooks used for?",
           "references": [
-            "https://git-scm.com/docs/git-bisect"
+            "https://git-scm.com/docs/githooks"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A slow `pre-commit` that runs the whole test suite. Every commit takes minutes, so people start using `--no-verify` and the hook protects nothing. Keep hooks to a few seconds; leave the full suite to CI.",
+          "code": "# WRONG: pre-commit\n./mvnw verify          # 6 minutes per commit -> everyone runs git commit --no-verify\n\n# RIGHT: pre-commit only formats and lints changed files; CI runs mvn verify"
         }
       ]
     },
     {
-      "subtitle": "Resolução de Conflitos Avançada",
-      "description": "Ferramentas para conflitos complexos.",
+      "subtitle": "Branch Protection and the PR Flow",
+      "formerSubtitle": "Proteção de Branches e Fluxo de PR",
+      "description": "Guaranteeing quality before the merge.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Integre com frequência (branches curtas), mantenha commits pequenos e atualize sua branch com a main regularmente. O estilo diff3/zdiff3 mostra também a versão ancestral, deixando claro o que cada lado mudou. git rerere memoriza resoluções para reaplicá-las em conflitos repetidos. Depois de resolver, rode os testes: um merge sem conflito textual ainda pode quebrar a lógica. Atenção: durante um rebase, --ours e --theirs se invertem (ours é a branch sobre a qual você está aplicando, normalmente a main).",
-          "code": "git config --global merge.conflictstyle zdiff3\ngit config --global rerere.enabled true\n\ngit merge origin/main\ngit checkout --ours  caminho/arquivo   # no merge: mantém a sua versão (no rebase é o contrário)\ngit checkout --theirs caminho/arquivo  # mantém a versão recebida\ngit add caminho/arquivo && git commit",
-          "interview_question": "Que práticas reduzem e facilitam conflitos de merge?",
+          "title": "Explanation",
+          "explanation": "**Problem:** someone pushes straight to main, or merges with CI red, and production breaks.\n\n**Concept:** protection rules on main: no direct pushes and no force pushes; pull requests with at least one approval; required CI status checks (build and tests); the branch up to date before merging. A `CODEOWNERS` file names required reviewers per area of the code. Squash merging keeps one commit per PR on main, which makes reverts easy.\n\n**How it works:** apply the rules to administrators too, so nobody bypasses them under pressure.",
+          "code": "# .github/CODEOWNERS (later lines take precedence)\n*                                   @platform-team\n/src/main/java/com/shop/payment/    @payments-team\n/infra/                             @platform-team\n*.sql                               @dba-team",
+          "interview_question": "How do you protect the main branch in a team repository?",
           "references": [
-            "https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging"
+            "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches",
+            "https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Hooks e Automação Local",
-      "description": "Verificações antes do commit e do push.",
-      "category": "ferramentas",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Hooks são scripts executados em eventos do Git: pre-commit (formatar e lintar), commit-msg (validar Conventional Commits), pre-push (rodar testes rápidos). Ficam em .git/hooks e não são versionados; para compartilhar com o time, aponte core.hooksPath para uma pasta do repositório. Eles complementam, mas não substituem, as verificações do CI.",
-          "code": "# .githooks/commit-msg\n#!/bin/sh\nif ! grep -qE '^(feat|fix|docs|refactor|test|chore|ci)(\\(.+\\))?!?: .+' \"$1\"; then\n  echo \"Mensagem fora do padrão Conventional Commits\"\n  exit 1\nfi\n\ngit config core.hooksPath .githooks\nchmod +x .githooks/commit-msg",
-          "interview_question": "Para que servem os Git hooks?",
-          "references": [
-            "https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks"
-          ]
+          "title": "Common mistake",
+          "explanation": "A catch-all rule at the end of `CODEOWNERS`. The last matching pattern wins, so `*` at the bottom overrides every specific rule above it, and the payments team is never asked to review payment code. Put the general rule first.",
+          "code": "# WRONG: \"*\" is last, so it wins for every file\n/src/main/java/com/shop/payment/    @payments-team\n*                                   @platform-team\n\n# RIGHT: general first, specific after\n*                                   @platform-team\n/src/main/java/com/shop/payment/    @payments-team"
         }
       ]
     },
     {
-      "subtitle": "Proteção de Branches e Fluxo de PR",
-      "description": "Garantindo qualidade antes do merge.",
+      "subtitle": "Signing Commits",
+      "formerSubtitle": "Assinatura de Commits",
+      "description": "Proving who wrote a commit.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Configure regras de proteção: proibir push direto e force push, exigir Pull Request com pelo menos uma aprovação, exigir status checks do CI (build e testes) e branch atualizada antes do merge. CODEOWNERS define revisores obrigatórios por área do código. Squash merge mantém um commit por PR na main, facilitando reverts.",
-          "code": "# .github/CODEOWNERS\n/src/main/java/com/loja/pagamento/  @time-pagamentos\n/infra/                             @time-plataforma\n*.sql                               @dba-team",
-          "interview_question": "Como proteger a branch main em um repositório de equipe?",
-          "references": [
-            "https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Assinatura de Commits",
-      "description": "Comprovando a autoria do código.",
-      "category": "boas-praticas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Qualquer pessoa pode configurar user.name e user.email com o nome de outra; a assinatura criptográfica (GPG ou SSH) prova que o commit foi feito pelo dono da chave. Plataformas como GitHub exibem o selo \"Verified\" e podem exigir commits assinados na branch protegida — uma defesa da cadeia de suprimentos de software.",
+          "title": "Explanation",
+          "explanation": "**Problem:** anyone can set `user.name` and `user.email` to someone else's and commit as them.\n\n**Concept:** a cryptographic signature (GPG or SSH) proves the commit was made by the owner of the key. GitHub shows a \"Verified\" badge and can require signed commits on protected branches — a supply-chain defense.\n\n**How it works:** with SSH signing, the same kind of key you already use for push can sign commits.",
           "code": "git config --global gpg.format ssh\ngit config --global user.signingkey ~/.ssh/id_ed25519.pub\ngit config --global commit.gpgsign true\n\ngit log --show-signature -1",
-          "interview_question": "Por que assinar commits?",
+          "interview_question": "Why sign commits?",
           "references": [
-            "https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification"
+            "https://docs.github.com/en/authentication/managing-commit-signature-verification/about-commit-signature-verification",
+            "https://git-scm.com/docs/git-config#Documentation/git-config.txt-gpgformat"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Adding the SSH key to GitHub only as an authentication key. Push works, but commits show \"Unverified\", because GitHub only trusts keys added as signing keys. Add the same public key again with the type \"Signing key\".",
+          "code": "# Commits show \"Unverified\" on GitHub\n\n# RIGHT: GitHub → Settings → SSH and GPG keys → New SSH key\n#        Key type: Signing Key   (in addition to the Authentication Key)\ngh ssh-key add ~/.ssh/id_ed25519.pub --type signing"
         }
       ]
     }

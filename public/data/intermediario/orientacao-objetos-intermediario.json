@@ -1,0 +1,205 @@
+{
+  "title": "Object-Oriented Programming",
+  "description": "Modeling with modern Java, the SOLID principles in practice and the most used design patterns.",
+  "version": "Java 21",
+  "resumo": [
+    "Sealed types list exactly who may implement them; a switch over them is exhaustive without `default`.",
+    "Pattern matching tests a type and binds a variable in one step; specific cases before general ones.",
+    "High cohesion, low coupling: depend on interfaces, receive dependencies in the constructor.",
+    "SRP: one reason to change (not one method). OCP: extend with new implementations, not edits.",
+    "LSP: no `UnsupportedOperationException` for your own contract — split it (ISP). DIP: the domain owns the interface.",
+    "Strategy in Spring: inject `Map<String, Interface>`; unknown keys fail loudly.",
+    "Builder for many optional parameters, validating in `build()`; static factories (`of`, `from`) for simple cases."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Sealed Classes",
+      "formerLevel": "essencial",
+      "description": "Closing a hierarchy to a known set of types.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a payment can only be Pix, card or bank slip. With an open interface anyone can add a new type, and code that handles \"every type\" silently misses it.\n\n**Concept:** a `sealed` class or interface lists in `permits` exactly which types may extend or implement it. Each permitted subtype must be `final`, `sealed` or `non-sealed`. Because the compiler knows the full set, a `switch` over it can be exhaustive without `default`.\n\n**How it works:** combine sealed interfaces with records to model \"one of these options\" in the domain; the compiler then checks that every option is handled.",
+          "code": "public sealed interface Payment permits Pix, Card, BankSlip {}\npublic record Pix(String key) implements Payment {}\npublic record Card(String number, int installments) implements Payment {}\npublic record BankSlip(LocalDate dueDate) implements Payment {}\n\nString describe(Payment p) {\n    return switch (p) {                  // no default: the compiler knows all three\n        case Pix pix -> \"Pix \" + pix.key();\n        case Card c -> c.installments() + \"x on card\";\n        case BankSlip b -> \"Bank slip due \" + b.dueDate();\n    };\n}",
+          "interview_question": "How do sealed classes help with domain modeling?",
+          "references": [
+            "https://openjdk.org/jeps/409",
+            "https://docs.oracle.com/en/java/javase/21/language/sealed-classes-and-interfaces.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Adding `default` to a switch over a sealed type. It throws away the compile-time check: add a new payment type and the switch still compiles, quietly treating it as \"other\".",
+          "code": "// WRONG: default hides new types\nreturn switch (p) {\n    case Pix pix -> \"Pix\";\n    default -> \"other\";\n};\n\n// RIGHT: list every case; a new type makes this switch fail to compile until handled"
+        }
+      ]
+    },
+    {
+      "subtitle": "Pattern Matching",
+      "formerLevel": "essencial",
+      "description": "Testing a type and using it in one step.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** checking a type and then casting — `if (obj instanceof String) { String s = (String) obj; }` — repeats the type and makes it easy to cast to the wrong one.\n\n**Concept:** pattern matching for `instanceof` (Java 16) tests the type and declares a variable in one step. Pattern matching for `switch` (Java 21) chooses by type, with guards (`when`) and record patterns that unpack a record's components.\n\n**How it works:** use it at the edges of the system, where values of different types arrive. When the behavior belongs to the type itself, a method on the type (polymorphism) is still better than a switch.",
+          "code": "if (obj instanceof String s && !s.isBlank()) {     // test + cast + variable\n    System.out.println(s.toUpperCase());\n}\n\nrecord Point(int x, int y) {}\n\nString format(Object value) {\n    return switch (value) {\n        case null -> \"null\";\n        case Integer i when i > 1000 -> \"big number \" + i;\n        case Integer i -> \"number \" + i;\n        case String s -> \"text \" + s;\n        case Point(int x, int y) -> \"point \" + x + \",\" + y;   // record pattern\n        default -> value.toString();\n    };\n}",
+          "interview_question": "How does pattern matching make type checks safer and more readable?",
+          "references": [
+            "https://openjdk.org/jeps/394",
+            "https://openjdk.org/jeps/441",
+            "https://openjdk.org/jeps/440"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Putting a general case before a more specific one. The specific case could never run, so the compiler rejects the switch. Specific (guarded) cases go first.",
+          "code": "// WRONG: does not compile — \"this case label is dominated by a preceding case label\"\ncase Integer i -> \"number \" + i;\ncase Integer i when i > 1000 -> \"big number \" + i;\n\n// RIGHT: specific first\ncase Integer i when i > 1000 -> \"big number \" + i;\ncase Integer i -> \"number \" + i;"
+        }
+      ]
+    },
+    {
+      "subtitle": "Cohesion and Coupling",
+      "formerSubtitle": "Coesão e Acoplamento",
+      "formerLevel": "essencial",
+      "description": "Two measures of a design that is easy to change.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a change in the report format breaks email sending; testing one class needs a real database. Both are signs of a design that is hard to change.\n\n**Concept:** cohesion is how related a class's responsibilities are: a highly cohesive class does one thing well. Coupling is how much a class depends on the details of others: with low coupling you can replace one part without a cascade of changes. The goal is high cohesion and low coupling.\n\n**How it works:** depend on interfaces, receive dependencies through the constructor, and avoid catch-all \"Utils\" or \"Manager\" classes.",
+          "code": "// Tightly coupled: creates the concrete dependency itself\nclass ReportServiceCoupled {\n    private final MySqlSalesDao dao = new MySqlSalesDao();\n}\n\n// Loosely coupled: depends on an abstraction, received in the constructor\nclass ReportService {\n    private final SalesRepository sales;\n    ReportService(SalesRepository sales) { this.sales = sales; }\n}",
+          "interview_question": "What does \"high cohesion and low coupling\" mean?",
+          "references": [
+            "https://martinfowler.com/ieeeSoftware/coupling.pdf",
+            "https://en.wikipedia.org/wiki/Cohesion_(computer_science)"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A \"Manager\" class that does everything — saving, emailing, generating PDFs, calculating tax. It has many reasons to change, and every change risks the others. Split it so each class has one reason to change.",
+          "code": "// WRONG: low cohesion\nclass OrderManager {\n    void save(Order o) { ... }\n    void sendEmail(Order o) { ... }\n    byte[] generatePdf(Order o) { ... }\n    BigDecimal calculateTax(Order o) { ... }\n}\n\n// RIGHT: one reason to change per class\nclass OrderRepository { ... }\nclass OrderNotifier { ... }\nclass InvoicePdf { ... }\nclass TaxCalculator { ... }"
+        }
+      ]
+    },
+    {
+      "subtitle": "Introduction to SOLID",
+      "formerSubtitle": "Introdução ao SOLID",
+      "formerLevel": "essencial",
+      "description": "Five guidelines for classes that are easy to change.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** code that works today, but where every change breaks something else. SOLID are five guidelines to keep classes easy to change.\n\n**Concept:** S — Single Responsibility: a class has one reason to change. O — Open/Closed: extend behavior by adding code, not by editing code that works. L — Liskov Substitution: a subtype must work wherever its base type is expected. I — Interface Segregation: small, focused interfaces. D — Dependency Inversion: high-level code depends on abstractions, not on implementations; Spring's dependency injection applies it.\n\n**How it works:** use them as questions during design and code review, not as rules to apply everywhere — over-applying them adds abstractions nobody needs.",
+          "code": "// ISP: instead of one \"fat\" interface...\ninterface Printer { void print(); void scan(); void fax(); }\n\n// ...small, focused interfaces\ninterface Prints { void print(); }\ninterface Scans { void scan(); }\n\nclass SimplePrinter implements Prints {\n    public void print() { ... }        // no empty scan() or fax() to implement\n}\n\n// DIP: the service depends on an interface; Spring injects the implementation\nclass InvoiceService {\n    private final Prints printer;\n    InvoiceService(Prints printer) { this.printer = printer; }\n}",
+          "interview_question": "Briefly explain each letter of SOLID.",
+          "references": [
+            "https://en.wikipedia.org/wiki/SOLID"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Breaking Liskov. The classic case is `Square extends Rectangle`: keeping the sides equal breaks code written for `Rectangle`. If a subtype cannot keep the base type's promises, it should not extend it.",
+          "code": "class Rectangle {\n    protected int width, height;\n    void setWidth(int w) { width = w; }\n    void setHeight(int h) { height = h; }\n    int area() { return width * height; }\n}\n\n// WRONG: a Square that keeps both sides equal\nclass Square extends Rectangle {\n    @Override void setWidth(int w) { width = w; height = w; }\n    @Override void setHeight(int h) { width = h; height = h; }\n}\n\nRectangle r = new Square();\nr.setWidth(5);\nr.setHeight(4);\nr.area();   // 16, but anyone using a Rectangle expects 20\n\n// RIGHT: no inheritance between them; both implement a Shape with area()"
+        }
+      ]
+    },
+    {
+      "subtitle": "SRP and OCP in Practice",
+      "formerSubtitle": "SRP e OCP na Prática",
+      "formerLevel": "avancado",
+      "description": "One reason to change; extend without editing.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** `OrderService` calculates the total, saves to the database, generates the invoice PDF and sends the email. It has 600 lines and four reasons to change, and each change risks the other three.\n\n**Concept:** the Single Responsibility Principle says a class should have one reason to change — one group of people asking for changes to it. The Open/Closed Principle says new behavior should come in as new code (a new implementation) instead of edits to code that is already tested.\n\n**How it works:** extract each responsibility into a collaborator and let the service orchestrate. A new notification channel is then a new `Notifier` implementation; `OrderService` does not change.",
+          "code": "// Before: the class that does everything\nclass OrderService {\n    void complete(Order o) {\n        // calculates total, saves, generates PDF, sends email...\n    }\n}\n\n// After: responsibilities separated and injected\nclass OrderService {\n    private final OrderRepository repository;\n    private final InvoiceGenerator invoices;\n    private final List<Notifier> notifiers;      // OCP: add a channel = add a bean\n\n    void complete(Order o) {\n        repository.save(o);\n        invoices.generate(o);\n        notifiers.forEach(n -> n.orderCompleted(o));\n    }\n}",
+          "interview_question": "Give an example of an SRP violation and how you would fix it.",
+          "references": [
+            "https://en.wikipedia.org/wiki/Single-responsibility_principle",
+            "https://en.wikipedia.org/wiki/Open%E2%80%93closed_principle"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Reading SRP as \"one method per class\". The code splinters into dozens of tiny classes that only make sense together, and following one feature means opening ten files. The unit of SRP is a reason to change, not a method.",
+          "code": "// WRONG: SRP taken literally\nOrderTotalCalculator, OrderTotalRounder, OrderTotalTaxApplier, OrderTotalFormatter ...\n\n// RIGHT: one class per reason to change\nOrderPricing        // everything about how an order's price is calculated\nInvoiceGenerator    // everything about the invoice document"
+        }
+      ]
+    },
+    {
+      "subtitle": "LSP, ISP and DIP",
+      "formerSubtitle": "LSP, ISP e DIP",
+      "formerLevel": "avancado",
+      "description": "Safe substitution, lean interfaces and inverted dependencies.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** subclasses that throw \"not supported\", interfaces with twelve methods that most implementations leave empty, and services that create their own database client.\n\n**Concept:** Liskov Substitution: a subtype must work wherever its base type is expected, with no surprises — no stricter inputs, no weaker guarantees, no `UnsupportedOperationException`. Interface Segregation: small interfaces shaped for each client, so nobody implements methods they do not need. Dependency Inversion: high-level policy owns the abstraction, and low-level details implement it.\n\n**How it works:** with DIP, the domain declares `PaymentGateway`; the infrastructure provides `PixGateway`. The checkout depends only on the interface, so it can be tested with a fake and the provider can change.",
+          "code": "// DIP: the high-level code owns and depends on the abstraction\ninterface PaymentGateway { Receipt charge(BigDecimal amount); }\n\nclass PixGateway implements PaymentGateway {             // a detail, in the infrastructure\n    public Receipt charge(BigDecimal amount) { /* calls the PIX API */ }\n}\n\nclass Checkout {\n    private final PaymentGateway gateway;\n    Checkout(PaymentGateway gateway) { this.gateway = gateway; }\n}\n\n// ISP: clients that only read get a read-only interface\ninterface ProductReader { Optional<Product> find(String sku); }\ninterface ProductWriter { void save(Product product); }",
+          "interview_question": "Explain the Liskov Substitution Principle with an example of a violation.",
+          "references": [
+            "https://en.wikipedia.org/wiki/Liskov_substitution_principle",
+            "https://en.wikipedia.org/wiki/Dependency_inversion_principle"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An implementation that throws for a method of its contract. Code written for the interface breaks with this one type. Split the contract (ISP), so each type only promises what it can do.",
+          "code": "// WRONG: an append-only storage that \"implements\" delete\ninterface Storage { void save(File f); void delete(String id); }\nclass ArchiveStorage implements Storage {\n    public void delete(String id) { throw new UnsupportedOperationException(\"append-only\"); }\n}\nvoid cleanUp(Storage s) { s.delete(tempId); }   // works for every Storage except this one\n\n// RIGHT\ninterface Writable  { void save(File f); }\ninterface Deletable { void delete(String id); }\nclass ArchiveStorage implements Writable { ... }"
+        }
+      ]
+    },
+    {
+      "subtitle": "Strategy with Spring",
+      "formerSubtitle": "Strategy",
+      "formerLevel": "avancado",
+      "description": "Interchangeable algorithms, chosen at runtime without a switch.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** discount campaigns are chosen with a `switch` on the campaign code. Every month a new campaign edits the same `switch`.\n\n**Concept:** the Strategy pattern puts each algorithm in its own class behind a common interface, and the caller picks one at runtime. In Spring, every implementation can be injected at once as a `Map<String, Interface>`, keyed by bean name — the `switch` disappears.\n\n**How it works:** a new campaign is a new `@Component` with its name; `PriceService` does not change.",
+          "code": "interface DiscountPolicy {\n    BigDecimal apply(BigDecimal amount);\n}\n\n@Component(\"BLACK_FRIDAY\")\nclass BlackFridayDiscount implements DiscountPolicy {\n    public BigDecimal apply(BigDecimal v) { return v.multiply(new BigDecimal(\"0.70\")); }\n}\n\n@Component(\"NONE\")\nclass NoDiscount implements DiscountPolicy {\n    public BigDecimal apply(BigDecimal v) { return v; }\n}\n\n@Service\nclass PriceService {\n    private final Map<String, DiscountPolicy> policies;   // all beans, keyed by name\n    PriceService(Map<String, DiscountPolicy> policies) { this.policies = policies; }\n\n    BigDecimal price(BigDecimal amount, String campaign) {\n        DiscountPolicy policy = Optional.ofNullable(policies.get(campaign))\n            .orElseThrow(() -> new IllegalArgumentException(\"Unknown campaign: \" + campaign));\n        return policy.apply(amount);\n    }\n}",
+          "interview_question": "When should you use Strategy instead of an if/else chain?",
+          "references": [
+            "https://refactoring.guru/design-patterns/strategy"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A silent fallback for an unknown key. A typo in the campaign code (\"BLACKFRIDAY\") quietly means \"no discount\", and nobody notices until customers complain. Unknown keys should fail loudly.",
+          "code": "// WRONG: a typo silently becomes \"no discount\"\npolicies.getOrDefault(campaign, policies.get(\"NONE\")).apply(amount);\n\n// RIGHT: fail with a clear error (as in PriceService above)"
+        }
+      ]
+    },
+    {
+      "subtitle": "Factory and Builder",
+      "formerSubtitle": "Factory e Builder",
+      "formerLevel": "avancado",
+      "description": "Encapsulating how objects are created.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** `new Order(null, null, true, 3)` — what does `true` mean? And which shipping client should be created for this carrier?\n\n**Concept:** a Factory hides which concrete class is created — for example, choosing the shipping client by carrier — so callers depend only on the interface. A Builder creates objects with many optional parameters step by step, avoiding \"telescoping\" constructors and unreadable calls. For simple objects, prefer records and static factory methods (`of`, `from`).\n\n**How it works:** Lombok's `@Builder`, or a static nested `Builder` class, provides the fluent API; `build()` is where the object is validated.",
+          "code": "// Builder\nNotification n = Notification.builder()\n    .recipient(\"ana@example.com\")\n    .subject(\"Order shipped\")\n    .priority(Priority.HIGH)\n    .build();\n\n// Static factory method\npublic record Money(BigDecimal amount, Currency currency) {\n    public static Money reais(String amount) {\n        return new Money(new BigDecimal(amount), Currency.getInstance(\"BRL\"));\n    }\n}\n\n// Factory: callers never see the concrete class\nShippingClient client = shippingClients.forCarrier(order.carrier());",
+          "interview_question": "When should you use a Builder instead of a constructor?",
+          "references": [
+            "https://refactoring.guru/design-patterns/builder",
+            "https://refactoring.guru/design-patterns/factory-method"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A builder whose `build()` accepts anything. The constructor's validation is gone, and invalid objects appear again. Check the required fields in `build()`.",
+          "code": "// WRONG: a notification with no recipient\nNotification n = Notification.builder().subject(\"Hi\").build();\n\n// RIGHT\npublic Notification build() {\n    if (recipient == null) throw new IllegalStateException(\"recipient is required\");\n    return new Notification(recipient, subject, priority);\n}"
+        }
+      ]
+    }
+  ]
+}

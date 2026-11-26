@@ -1,143 +1,196 @@
 {
-  "title": "Performance e Otimização",
-  "description": "Técnicas para medir e tornar aplicações Java backend rápidas e escaláveis.",
-  "version": "Java 21, Spring Boot 3.3.x",
+  "title": "Performance & Optimization",
+  "description": "Measuring and improving performance: targets, queries, caching, pools, profiling and benchmarks.",
+  "version": "Java 21, Spring Boot 3",
   "resumo": [
-    "Otimizar começa por medir: sem métricas e profiling, a tendência é otimizar o lugar errado. O objetivo é atender aos SLOs de latência e throughput com o menor custo.",
-    "Na maioria das APIs, o gargalo está no I/O — banco de dados, chamadas remotas e serialização —, não na CPU. Consultas eficientes, cache e chamadas paralelas costumam render mais que micro-otimizações.",
-    "Na JVM, alocação excessiva pressiona o Garbage Collector, e pools mal dimensionados geram filas invisíveis. Profilers e ferramentas como JFR mostram onde o tempo realmente vai.",
-    "Testes de carga e benchmarks (JMH) confirmam que a mudança melhorou de verdade — e evitam regressões quando entram no pipeline."
+    "Define a target and measure first; track percentiles (p95, p99), never only the average.",
+    "Little's Law: concurrency = throughput × latency — pools must hold the requests in flight.",
+    "Most latency is the database: fetch joins, projections, pagination; insert batching needs SEQUENCE ids, not IDENTITY.",
+    "Cache with TTL, size limit and `sync = true`; cache immutable values only.",
+    "Move non-urgent work off the request (a durable queue); run independent calls in parallel; bound every queue.",
+    "Pools: small and measured; instances × pool size must stay under `max_connections`.",
+    "Profile with JFR or async-profiler under realistic load; benchmark with JMH, returning the result.",
+    "Change one thing at a time and measure again."
   ],
   "subsections": [
     {
-      "subtitle": "Fundamentos de Performance",
-      "description": "Latência, throughput e a Lei de Little.",
+      "subtitle": "Performance Fundamentals",
+      "formerSubtitle": "Fundamentos de Performance",
+      "description": "Latency, throughput and Little's Law.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Defina a meta (ex.: p99 abaixo de 300 ms com 500 req/s) e meça antes de mudar. Latência é o tempo de uma requisição; throughput, quantas são atendidas por segundo. A Lei de Little (L = λ × W) relaciona concorrência, vazão e tempo: com 500 req/s e 200 ms de latência, há em média 100 requisições em andamento — e o pool de threads e conexões precisa comportá-las. Otimize o maior gargalo primeiro e meça de novo.",
-          "code": "Meta:        p99 < 300ms com 500 req/s\nConcorrência média (Lei de Little): 500 req/s x 0.2s = 100 requisições simultâneas\nCiclo:       medir -> identificar gargalo -> otimizar um ponto -> medir novamente",
-          "interview_question": "O que você considera ao otimizar a performance de uma aplicação?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the team \"optimizes\" for a week and nobody can say whether the system got faster, because nobody defined what fast means.\n\n**Concept:** set a target first (for example, p99 under 300 ms at 500 requests per second) and measure before changing anything. Latency is how long one request takes; throughput is how many are served per second. Little's Law (L = λ × W) relates concurrency, throughput and time: at 500 req/s and 200 ms of latency, there are 100 requests in progress on average — and thread and connection pools must hold them.\n\n**How it works:** optimize the biggest bottleneck first, then measure again: measure → find the bottleneck → change one thing → measure.",
+          "code": "Target:       p99 < 300ms at 500 req/s\nAverage concurrency (Little's Law): 500 req/s x 0.2s = 100 requests in flight\nCycle:        measure -> find the bottleneck -> optimize one point -> measure again",
+          "interview_question": "What do you consider when optimizing an application's performance?",
           "references": [
             "https://www.brendangregg.com/methodology.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Looking only at average latency. An average of 120 ms can hide 5% of users waiting 4 seconds — and those are often your biggest customers, with the largest carts. Track percentiles (p95, p99).",
+          "code": "WRONG: \"average latency 120 ms — all good\"\n\nRIGHT: p50 = 80 ms, p95 = 900 ms, p99 = 4.1 s\n       -> 1 in 100 requests takes over 4 seconds"
         }
       ]
     },
     {
-      "subtitle": "Otimização de Consultas",
-      "description": "Eliminando N+1 e buscando só o necessário.",
+      "subtitle": "Query Optimization",
+      "formerSubtitle": "Otimização de Consultas",
+      "description": "Removing N+1 and fetching only what is needed.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use fetch join ou @EntityGraph quando precisar dos relacionamentos, projeções em DTO para listagens e paginação sempre. Para escritas em massa, ative o batching do Hibernate em vez de salvar item a item — ele só agrupa INSERTs quando o id usa SEQUENCE; com GenerationType.IDENTITY o batch de insert fica desligado. Confirme cada mudança com o log de SQL e EXPLAIN ANALYZE: menos consultas e planos com índice são o objetivo.",
-          "code": "@Repository\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    @Query(\"SELECT p FROM Produto p JOIN FETCH p.categoria WHERE p.categoria.nome = :categoria\")\n    List<Produto> findByCategoria(@Param(\"categoria\") String categoria);\n}\n\n# application.yml: inserts e updates em lote (inserts só com id por SEQUENCE, não IDENTITY)\nspring.jpa.properties.hibernate.jdbc.batch_size: 50\nspring.jpa.properties.hibernate.order_inserts: true",
-          "interview_question": "Como você evitaria o problema N+1 em consultas JPA?",
+          "title": "Explanation",
+          "explanation": "**Problem:** most backend latency is spent waiting for the database: too many queries, too much data per query, or one insert per row.\n\n**Concept:** use a fetch join or `@EntityGraph` when you need the relationships, DTO projections for listings, and pagination everywhere. For bulk writes, turn on Hibernate batching instead of saving row by row. Confirm every change with the SQL log and `EXPLAIN ANALYZE`: fewer queries and plans that use indexes are the goal.\n\n**How it works:** batching sends many inserts or updates in one round trip; `order_inserts` groups them by table so batches stay large.",
+          "code": "@Repository\npublic interface ProductRepository extends JpaRepository<Product, Long> {\n    @Query(\"SELECT p FROM Product p JOIN FETCH p.category WHERE p.category.name = :category\")\n    List<Product> findByCategory(@Param(\"category\") String category);\n}\n\n# application.yml: inserts and updates in batches\nspring.jpa.properties.hibernate.jdbc.batch_size: 50\nspring.jpa.properties.hibernate.order_inserts: true",
+          "interview_question": "How would you avoid the N+1 problem in JPA queries?",
           "references": [
-            "https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html"
+            "https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html",
+            "https://docs.jboss.org/hibernate/orm/6.5/userguide/html_single/Hibernate_User_Guide.html#batch"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Expecting insert batching with `GenerationType.IDENTITY`. Hibernate must run each insert immediately to get the generated id, so it silently turns insert batching off. Use a sequence.",
+          "code": "// WRONG: batch_size is ignored for inserts\n@Id @GeneratedValue(strategy = GenerationType.IDENTITY)\nprivate Long id;\n\n// RIGHT: ids come from a sequence, inserts can be batched\n@Id @GeneratedValue(strategy = GenerationType.SEQUENCE)\nprivate Long id;"
         }
       ]
     },
     {
       "subtitle": "Caching",
-      "description": "Local, distribuído e suas armadilhas.",
+      "description": "Local, distributed, and the traps of both.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Para leituras frequentes de dados que mudam pouco e são caros de obter. Caffeine é um cache local muito rápido; Redis é distribuído e compartilhado entre instâncias. Sempre defina TTL e tamanho máximo, invalide em escritas e proteja-se do cache stampede (muitas requisições recalculando a mesma chave quando ela expira) com sincronização por chave.",
-          "code": "@Service\npublic class ProdutoService {\n    @Cacheable(value = \"produtos\", key = \"#categoria\", sync = true) // evita stampede\n    public List<ProdutoResponse> listar(String categoria) {\n        return repository.findByCategoria(categoria).stream().map(ProdutoResponse::from).toList();\n    }\n}\n\n# application.yml (Caffeine)\nspring.cache.caffeine.spec: maximumSize=10000,expireAfterWrite=10m",
-          "interview_question": "Quando você usaria caching em uma aplicação?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the same expensive query runs thousands of times a minute for data that changes a few times a day.\n\n**Concept:** cache data that is read often, changes rarely and is expensive to get. Caffeine is a very fast local cache; Redis is distributed and shared between instances. Always set a TTL and a maximum size, evict on writes, and protect against cache stampede — many requests recomputing the same key when it expires — with per-key synchronization.\n\n**How it works:** `@Cacheable(sync = true)` lets only one thread compute a missing key while the others wait for its result.",
+          "code": "@Service\npublic class ProductService {\n    @Cacheable(value = \"products\", key = \"#category\", sync = true)   // prevents stampede\n    public List<ProductResponse> list(String category) {\n        return repository.findByCategory(category).stream().map(ProductResponse::from).toList();\n    }\n}\n\n# application.yml (Caffeine)\nspring.cache.caffeine.spec: maximumSize=10000,expireAfterWrite=10m",
+          "interview_question": "When would you use caching in an application?",
           "references": [
             "https://docs.spring.io/spring-boot/reference/io/caching.html",
             "https://github.com/ben-manes/caffeine"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Caching mutable objects in a local cache. The cache returns the same instance to every caller, so one caller that changes it changes it for everyone. Cache immutable values (records, `List.of`/`toList()`).",
+          "code": "// WRONG: a mutable list from the cache\nList<ProductResponse> list = service.list(\"books\");\nlist.removeIf(p -> !p.available());   // removes them from the cached list for every user\n\n// RIGHT: return immutable data (.toList() above), copy before changing\nList<ProductResponse> available = new ArrayList<>(service.list(\"books\"));"
         }
       ]
     },
     {
-      "subtitle": "Assincronismo e Paralelismo de I/O",
-      "description": "Não bloquear a resposta com o que pode esperar.",
+      "subtitle": "Asynchronous Work and Parallel I/O",
+      "formerSubtitle": "Assincronismo e Paralelismo de I/O",
+      "description": "Not making the response wait for what can wait.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Tarefas que o usuário não precisa esperar — e-mail, nota fiscal, reindexação — saem do caminho da requisição via @Async ou, melhor, uma fila durável. Chamadas independentes a outros serviços podem ser feitas em paralelo com CompletableFuture, reduzindo a latência total ao tempo da mais lenta. Virtual threads tornam esse modelo barato sem programação reativa.",
-          "code": "@Service\npublic class EmailService {\n    @Async\n    public CompletableFuture<Void> enviarEmail(String destinatario) {\n        mailSender.send(montarMensagem(destinatario));\n        return CompletableFuture.completedFuture(null);\n    }\n}\n\n// Paralelo: latência total ≈ a chamada mais lenta, não a soma\nvar frete = CompletableFuture.supplyAsync(() -> freteClient.calcular(cep), executor);\nvar estoque = CompletableFuture.supplyAsync(() -> estoqueClient.consultar(sku), executor);\nResumo resumo = frete.thenCombine(estoque, Resumo::new).join();",
-          "interview_question": "Como o assincronismo pode melhorar a performance de uma API?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the checkout response waits for the confirmation email, the invoice and a call to the loyalty service — none of which the user needs to see.\n\n**Concept:** work the user does not need to wait for — email, invoices, reindexing — leaves the request path through `@Async` or, better, a durable queue. Independent calls to other services can run in parallel with `CompletableFuture`, so the total latency is that of the slowest call, not the sum. Virtual threads make this style cheap without reactive programming.\n\n**How it works:** a durable queue survives restarts; `@Async` tasks live in memory and disappear if the instance stops.",
+          "code": "@Service\npublic class EmailService {\n    @Async\n    public CompletableFuture<Void> send(String recipient) {\n        mailSender.send(buildMessage(recipient));\n        return CompletableFuture.completedFuture(null);\n    }\n}\n\n// Parallel: total latency ≈ the slowest call, not the sum\nvar shipping = CompletableFuture.supplyAsync(() -> shippingClient.calculate(zip), executor);\nvar stock = CompletableFuture.supplyAsync(() -> stockClient.check(sku), executor);\nSummary summary = shipping.thenCombine(stock, Summary::new).join();",
+          "interview_question": "How can asynchronous processing improve an API's performance?",
           "references": [
-            "https://docs.spring.io/spring-framework/reference/integration/scheduling.html#scheduling-annotation-support-async"
+            "https://docs.spring.io/spring-framework/reference/integration/scheduling.html#scheduling-annotation-support-async",
+            "https://docs.spring.io/spring-boot/reference/features/task-execution-and-scheduling.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Leaving the `@Async` executor's queue unbounded. Under overload, tasks pile up in memory instead of being rejected, latency grows without limit, and eventually the instance runs out of memory. Bound the queue and decide what happens when it is full.",
+          "code": "# WRONG: the default queue capacity is unbounded\n\n# RIGHT\nspring:\n  task:\n    execution:\n      pool:\n        core-size: 8\n        max-size: 16\n        queue-capacity: 500"
         }
       ]
     },
     {
-      "subtitle": "Pools: Threads e Conexões",
-      "description": "Dimensionando recursos compartilhados.",
+      "subtitle": "Pools: Threads and Connections",
+      "formerSubtitle": "Pools: Threads e Conexões",
+      "description": "Sizing shared resources.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O banco tem capacidade limitada; conexões demais causam disputa por CPU, disco e locks, e a latência sobe para todos. Comece pequeno (perto de núcleos x 2 do banco) e meça. Observe a espera por conexão (hikaricp.connections.pending): espera alta com banco ocioso indica transações longas ou conexões retidas, não pool pequeno. O mesmo vale para pools de threads: filas sem limite escondem sobrecarga até estourar a memória.",
-          "code": "spring:\n  datasource:\n    hikari:\n      maximum-pool-size: 10\n      connection-timeout: 2000\n      leak-detection-threshold: 10000   # loga conexões retidas por mais de 10s\n  threads:\n    virtual:\n      enabled: true",
-          "interview_question": "Por que aumentar o pool de conexões nem sempre melhora a performance?",
+          "title": "Explanation",
+          "explanation": "**Problem:** requests slow down under load; someone raises the connection pool to 100, and it gets worse.\n\n**Concept:** a database has limited capacity: too many connections compete for CPU, disk and locks, and latency goes up for everyone. Start small (around twice the database's CPU cores) and measure. Watch the wait for a connection (`hikaricp.connections.pending`): a long wait while the database is idle means long transactions or connections being held, not a small pool. The same goes for thread pools: unbounded queues hide overload until memory runs out.\n\n**How it works:** `leak-detection-threshold` logs connections held longer than expected, which usually points at the real problem.",
+          "code": "spring:\n  datasource:\n    hikari:\n      maximum-pool-size: 10\n      connection-timeout: 2000\n      leak-detection-threshold: 10000   # logs connections held for more than 10s\n  threads:\n    virtual:\n      enabled: true",
+          "interview_question": "Why doesn't a bigger connection pool always improve performance?",
           "references": [
             "https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Sizing the pool per instance and forgetting the others. 10 instances × 50 connections is 500, above PostgreSQL's default `max_connections` of 100: new connections are refused when the system scales out. Size the total across instances.",
+          "code": "# WRONG: maximum-pool-size 50 on 10 pods\nFATAL: sorry, too many clients already\n\n# RIGHT: (instances × pool size) < max_connections, with room for admin tools\n#        10 pods × 8 = 80 connections"
         }
       ]
     },
     {
-      "subtitle": "Profiling e Monitoramento da JVM",
-      "description": "Descobrindo onde o tempo é gasto.",
+      "subtitle": "Profiling and Monitoring the JVM",
+      "formerSubtitle": "Profiling e Monitoramento da JVM",
+      "description": "Finding where the time really goes.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Em produção, métricas via Micrometer e Prometheus mostram latência, GC e pools ao longo do tempo. Para encontrar o código responsável, use profilers: Java Flight Recorder (baixo overhead, seguro em produção) analisado no JDK Mission Control, async-profiler gerando flame graphs de CPU e alocação, e VisualVM para exploração local. Um flame graph mostra rapidamente quais métodos dominam o tempo.",
-          "code": "# Gravação JFR de 2 minutos em produção\njcmd <pid> JFR.start duration=120s filename=/tmp/checkout.jfr\n\n# Flame graph de CPU com async-profiler\nasprof -d 30 -e cpu -f /tmp/flame.html <pid>\n\n# Métricas da JVM expostas pelo Actuator\nGET /actuator/metrics/jvm.gc.pause\nGET /actuator/metrics/jvm.memory.used",
-          "interview_question": "Quais ferramentas você usaria para monitorar e investigar uma aplicação Java?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the metrics say checkout is slow; they do not say which method is responsible.\n\n**Concept:** in production, metrics from Micrometer and Prometheus show latency, GC and pools over time. To find the code responsible, use profilers: Java Flight Recorder (low overhead, safe in production) analyzed with JDK Mission Control; async-profiler for CPU and allocation flame graphs; VisualVM for local exploration. A flame graph shows at a glance which methods dominate the time.\n\n**How it works:** profile under realistic load: a profile of an idle application shows nothing useful.",
+          "code": "# 2-minute JFR recording in production\njcmd <pid> JFR.start duration=120s filename=/tmp/checkout.jfr\n\n# CPU flame graph with async-profiler\nasprof -d 30 -e cpu -f /tmp/flame.html <pid>\n\n# JVM metrics exposed by Actuator\nGET /actuator/metrics/jvm.gc.pause\nGET /actuator/metrics/jvm.memory.used",
+          "interview_question": "Which tools would you use to monitor and investigate a Java application?",
           "references": [
             "https://github.com/async-profiler/async-profiler",
             "https://docs.oracle.com/en/java/java-components/jdk-mission-control/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Profiling on a laptop with a tiny dataset. With 50 rows, the query that is slow in production never shows up, and the profile points at JSON serialization instead. Profile with production-like data and load, or in production with JFR.",
+          "code": "WRONG: local profile, 50 orders -> \"Jackson is the bottleneck\"\nRIGHT: JFR in production, 2 minutes at peak -> 70% of the time in one JDBC query"
         }
       ]
     },
     {
-      "subtitle": "Benchmarks com JMH",
-      "description": "Medindo micro-otimizações corretamente.",
+      "subtitle": "Benchmarks with JMH",
+      "formerSubtitle": "Benchmarks com JMH",
+      "description": "Measuring micro-optimizations correctly.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A JVM faz JIT, inlining e eliminação de código morto: um laço \"medido\" pode ser otimizado até sumir, e as primeiras execuções rodam interpretadas. O JMH (Java Microbenchmark Harness) cuida de warmup, múltiplas iterações, forks e do Blackhole que impede a eliminação de código, gerando números confiáveis. Use-o para decisões de baixo nível, como escolher entre duas implementações.",
-          "code": "@BenchmarkMode(Mode.AverageTime)\n@OutputTimeUnit(TimeUnit.NANOSECONDS)\n@Warmup(iterations = 3)\n@Measurement(iterations = 5)\n@State(Scope.Benchmark)\npublic class ConcatenacaoBenchmark {\n    List<String> palavras = Collections.nCopies(1000, \"java\");\n\n    @Benchmark\n    public String stringBuilder() {\n        StringBuilder sb = new StringBuilder();\n        for (String p : palavras) sb.append(p);\n        return sb.toString();\n    }\n\n    @Benchmark\n    public String join() {\n        return String.join(\"\", palavras);\n    }\n}",
-          "interview_question": "Por que medir com System.currentTimeMillis em um laço gera resultados enganosos?",
+          "title": "Explanation",
+          "explanation": "**Problem:** \"I measured it with a loop and `System.currentTimeMillis()`, and the new version is 40 times faster\" — usually it is not.\n\n**Concept:** the JVM does JIT compilation, inlining and dead-code elimination: a \"measured\" loop can be optimized away entirely, and the first runs are interpreted. JMH (Java Microbenchmark Harness) handles warmup, multiple iterations, forks and the `Blackhole` that prevents dead-code elimination, producing numbers you can trust. Use it for low-level decisions, such as choosing between two implementations.\n\n**How it works:** return the result from the benchmark method (or consume it with a `Blackhole`), so the JIT cannot remove the work.",
+          "code": "@BenchmarkMode(Mode.AverageTime)\n@OutputTimeUnit(TimeUnit.NANOSECONDS)\n@Warmup(iterations = 3)\n@Measurement(iterations = 5)\n@State(Scope.Benchmark)\npublic class ConcatBenchmark {\n    List<String> words = Collections.nCopies(1000, \"java\");\n\n    @Benchmark\n    public String stringBuilder() {\n        StringBuilder sb = new StringBuilder();\n        for (String w : words) sb.append(w);\n        return sb.toString();            // returned: the JIT cannot drop the work\n    }\n\n    @Benchmark\n    public String join() {\n        return String.join(\"\", words);\n    }\n}",
+          "interview_question": "Why does timing a loop with System.currentTimeMillis give misleading results?",
           "references": [
             "https://github.com/openjdk/jmh"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A benchmark that does not use its result. The JIT notices the value is never read, removes the computation, and the benchmark measures an empty method.",
+          "code": "// WRONG: the result is discarded -> dead-code elimination\n@Benchmark\npublic void join() {\n    String.join(\"\", words);\n}\n\n// RIGHT: return it, or blackhole.consume(...)\n@Benchmark\npublic String join() {\n    return String.join(\"\", words);\n}"
         }
       ]
     },
     {
-      "subtitle": "Recursos para Prática",
-      "description": "Ferramentas e materiais para estudar performance.",
+      "subtitle": "Practice Resources",
+      "formerSubtitle": "Recursos para Prática",
+      "description": "Tools and a setup for studying performance hands-on.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Monte um ambiente reproduzível com Docker Compose (aplicação, PostgreSQL, Redis, Prometheus e Grafana), gere carga com k6, Gatling ou JMeter e observe os dashboards enquanto aplica uma otimização por vez. VisualVM e JDK Mission Control ajudam a ver a JVM; o blog da Baeldung e a documentação do Spring têm guias práticos de cache, JPA e tuning.",
-          "code": "docker compose up -d app postgres redis prometheus grafana\nk6 run carga-produtos.js\n# Observe p95/p99, erros e pool de conexões no Grafana\n# Aplique uma otimização (índice, cache, fetch join) e repita o teste",
-          "interview_question": "Como você testaria a performance de uma aplicação backend?",
+          "title": "Explanation",
+          "explanation": "**Problem:** performance is learned by measuring real systems under load, not by reading about it.\n\n**Concept:** set up a reproducible environment with Docker Compose (the application, PostgreSQL, Redis, Prometheus and Grafana), generate load with k6, Gatling or JMeter, and watch the dashboards while you apply one optimization at a time. VisualVM and JDK Mission Control show what the JVM is doing.\n\n**How it works:** write down the numbers before and after each change; that record is what you will explain in an interview.",
+          "code": "docker compose up -d app postgres redis prometheus grafana\nk6 run load-products.js\n# Watch p95/p99, errors and the connection pool in Grafana\n# Apply one optimization (index, cache, fetch join) and run the test again",
+          "interview_question": "How would you test the performance of a backend application?",
           "references": [
-            "https://www.baeldung.com/",
+            "https://grafana.com/docs/k6/latest/",
             "https://jmeter.apache.org/",
             "https://visualvm.github.io/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Changing several things at once. The numbers improve, but nobody knows which change helped, which did nothing and which made something worse. One change per test run.",
+          "code": "WRONG: add an index + a cache + a bigger pool -> p99 improved... why?\n\nRIGHT: index -> measure -> cache -> measure -> pool -> measure"
         }
       ]
     }

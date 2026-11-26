@@ -1,206 +1,260 @@
 {
-  "title": "Testes em Java",
-  "description": "Boas práticas de testes automatizados, com foco em JUnit 5 e Mockito para aplicações Java.",
-  "version": "JUnit 5.10, Mockito 5.x",
+  "title": "Automated Testing",
+  "description": "Automated tests in Java with JUnit 5, Mockito, AssertJ and Spring Boot.",
+  "version": "JUnit 5, Mockito 5, Spring Boot 3.4+",
   "resumo": [
-    "Pirâmide: muitos testes unitários, alguns de integração, poucos end-to-end.",
-    "Unitário testa uma classe isolada; o Mockito substitui as dependências (`when`, `verify`).",
-    "Estrutura AAA: Arrange, Act, Assert. TDD: escreva o teste antes do código.",
-    "`@ParameterizedTest` + `@CsvSource`: um teste, várias entradas.",
-    "AssertJ (`assertThat`) gera mensagens de erro claras.",
-    "No Spring, slices (`@WebMvcTest`, `@DataJpaTest`) são rápidos; `@SpringBootTest` sobe tudo.",
-    "MockMvc não é end-to-end: E2E sobe a aplicação numa porta real (RANDOM_PORT) ou usa Karate.",
-    "Cobertura (JaCoCo) mostra o que rodou, não o que foi verificado."
+    "Pyramid: many unit tests, some integration tests, few end-to-end tests.",
+    "Every test asserts something; a test without an assertion proves nothing.",
+    "Unit tests check one class's public behavior; Mockito replaces its dependencies (`when`, `verify` only when the interaction is the behavior).",
+    "Structure: Arrange, Act, Assert — one behavior per test. TDD: red, green, refactor.",
+    "`@ParameterizedTest` + `@CsvSource`: one test, many inputs, each reported separately.",
+    "AssertJ (`assertThat`) for clear failures; `isEqualByComparingTo` for BigDecimal.",
+    "MockMvc is not end-to-end: E2E runs on a random port, or uses Karate.",
+    "Coverage shows what ran, not what was checked."
   ],
   "subsections": [
     {
-      "subtitle": "O que são Testes Automatizados?",
-      "description": "Definição geral de testes automatizados.",
+      "subtitle": "What Are Automated Tests?",
+      "formerSubtitle": "O que são Testes Automatizados?",
+      "description": "Code that checks your code on every build.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Testes automatizados são essenciais em projetos ágeis porque permitem verificação rápida de mudanças, facilitando iterações frequentes e reduzindo riscos em deploys contínuos.",
-          "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass ExemploTest {\n  @Test\n  void verificaCondicao() {\n    assertTrue(true); // Exemplo simples\n  }\n}",
-          "interview_question": "Por que testes automatizados são essenciais em projetos ágeis?",
+          "title": "Explanation",
+          "explanation": "**Problem:** testing by hand after every change is slow, so it gets skipped. Then a change breaks something that used to work, and nobody notices until a user does — and refactoring becomes scary.\n\n**Concept:** an automated test is code that runs your code and checks the result. It runs on every build, protects against regressions, and documents how the code is supposed to behave. In Java the standard is JUnit 5: a method annotated with `@Test` and assertions such as `assertEquals`.\n\n**How it works:** tests run with `./mvnw test` on your machine and in CI on every push. A failing test stops the build before the bug is merged.",
+          "code": "class ShippingEstimatorTest {\n    @Test\n    void estimatesThreeBusinessDaysForSaoPaulo() {\n        ShippingEstimator estimator = new ShippingEstimator();\n        assertEquals(3, estimator.businessDays(\"SP\"));\n    }\n}\n\n$ ./mvnw test\n[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0",
+          "interview_question": "Why are automated tests essential in agile projects?",
           "references": [
             "https://junit.org/junit5/docs/current/user-guide/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A test with no assertion. It runs the code and passes whatever the code returns, so it only proves that nothing threw an exception.",
+          "code": "// WRONG: passes even if create() returns garbage\n@Test\nvoid createsOrder() {\n    service.create(request);\n}\n\n// RIGHT: check the outcome\n@Test\nvoid createsOrder() {\n    OrderResponse order = service.create(request);\n    assertEquals(\"CREATED\", order.status());\n}"
         }
       ]
     },
     {
-      "subtitle": "Testes Unitários",
-      "description": "Validação de unidades isoladas do código.",
+      "subtitle": "Unit Tests",
+      "formerSubtitle": "Testes Unitários",
+      "description": "One class at a time, in milliseconds.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Testar uma unidade foca em métodos isolados, enquanto testar um sistema inteiro verifica interações entre componentes, sendo mais complexo e lento.",
-          "code": "import org.junit.jupiter.api.DisplayName;\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  @DisplayName(\"Testa soma de dois números\")\n  void testSoma() {\n    Calc calc = new Calc();\n    assertEquals(4, calc.soma(2, 2));\n  }\n}\nclass Calc {\n  int soma(int a, int b) { return a + b; }\n}",
-          "interview_question": "Qual a diferença entre testar uma unidade e testar um sistema inteiro?",
+          "title": "Explanation",
+          "explanation": "**Problem:** there is a bug in the discount rule, and finding it means starting the whole application and clicking through three screens.\n\n**Concept:** a unit test checks one unit — a class or a method — in isolation, in milliseconds, without a database or network. Each test checks one behavior, and its name says which. `@DisplayName` gives readable names in reports, and `assertThrows` checks that an error is raised.\n\n**How it works:** test the public behavior of the class: given this input, expect this result or this exception.",
+          "code": "class DiscountPolicyTest {\n    private final DiscountPolicy policy = new DiscountPolicy();\n\n    @Test\n    @DisplayName(\"10% off for orders above 100\")\n    void discountAboveOneHundred() {\n        assertEquals(new BigDecimal(\"18.00\"), policy.discountFor(new BigDecimal(\"180.00\")));\n    }\n\n    @Test\n    void rejectsNegativeTotals() {\n        assertThrows(IllegalArgumentException.class,\n                     () -> policy.discountFor(new BigDecimal(\"-1\")));\n    }\n}",
+          "interview_question": "What is the difference between testing a unit and testing the whole system?",
           "references": [
             "https://junit.org/junit5/docs/current/user-guide/#writing-tests"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Testing private methods or implementation details. The tests break on every refactor even when the behavior is unchanged. Test through the public methods; the private helpers are covered by them.",
+          "code": "// WRONG: reaching into a private method with reflection\nMethod m = DiscountPolicy.class.getDeclaredMethod(\"roundDown\", BigDecimal.class);\nm.setAccessible(true);\n\n// RIGHT: test the public behavior that uses it\nassertEquals(new BigDecimal(\"18.00\"), policy.discountFor(new BigDecimal(\"180.00\")));"
         }
       ]
     },
     {
-      "subtitle": "Mocking com Mockito",
-      "description": "Simulação de dependências em testes unitários com Mockito.",
+      "subtitle": "Mocking with Mockito",
+      "formerSubtitle": "Mocking com Mockito",
+      "description": "Replacing dependencies with controllable fakes.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Mocking é a técnica de criar objetos simulados (mocks) para substituir dependências reais em testes unitários, permitindo isolar a unidade testada. Com Mockito, você cria mocks, define comportamentos (ex.: retorno de métodos) e verifica interações (ex.: chamadas de métodos). Isso é essencial para testar lógica de negócios sem depender de bancos de dados, APIs ou outros sistemas externos.",
-          "code": "import org.junit.jupiter.api.Test;\nimport org.mockito.Mockito;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\nclass UserServiceTest {\n  @Test\n  void testGetUserName() {\n    // Arrange: Criar mock do repositório\n    UserRepository repo = Mockito.mock(UserRepository.class);\n    when(repo.findNameById(1L)).thenReturn(\"João\");\n    UserService service = new UserService(repo);\n\n    // Act: Chamar método do serviço\n    String name = service.getUserName(1L);\n\n    // Assert: Verificar resultado e interação\n    assertEquals(\"João\", name);\n    verify(repo).findNameById(1L); // Verifica se o método foi chamado\n  }\n}\ninterface UserRepository {\n  String findNameById(Long id);\n}\nclass UserService {\n  private UserRepository repo;\n  UserService(UserRepository repo) { this.repo = repo; }\n  String getUserName(Long id) { return repo.findNameById(id); }\n}",
-          "interview_question": "O que é mocking e como o Mockito facilita testes unitários?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the service you want to test calls the database and a payment API. If either is down, the test fails even though your logic is right — and it is slow.\n\n**Concept:** a mock is a fake object that replaces a real dependency in a unit test. With Mockito you create the mock, define what its methods return (`when(...).thenReturn(...)`), and check interactions when they matter (`verify`). The class under test gets the mock through its constructor.\n\n**How it works:** mock the dependencies at the boundary — repositories, HTTP clients, message senders — not value objects or the class you are testing.",
+          "code": "class UserServiceTest {\n    @Test\n    void returnsTheUserName() {\n        // Arrange\n        UserRepository repo = Mockito.mock(UserRepository.class);\n        when(repo.findNameById(1L)).thenReturn(\"Ana\");\n        UserService service = new UserService(repo);\n\n        // Act\n        String name = service.getUserName(1L);\n\n        // Assert\n        assertEquals(\"Ana\", name);\n    }\n\n    @Test\n    void sendsWelcomeEmailOnSignUp() {\n        EmailSender email = Mockito.mock(EmailSender.class);\n        new SignUpService(email).signUp(\"ana@example.com\");\n        verify(email).sendWelcome(\"ana@example.com\");   // the interaction IS the behavior\n    }\n}",
+          "interview_question": "What is mocking, and how does Mockito help unit tests?",
           "references": [
             "https://site.mockito.org/",
-            "https://junit.org/junit5/docs/current/user-guide/#writing-tests-mocking"
+            "https://javadoc.io/doc/org.mockito/mockito-core/latest/org/mockito/Mockito.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Verifying every internal call. The test describes how the code works instead of what it does, so any refactor breaks it. Assert the result, and verify only the interactions that are the behavior itself, such as an email being sent.",
+          "code": "// WRONG: over-specified\nverify(repo).findById(1L);\nverify(repo, never()).save(any());\nverify(mapper).toResponse(any());\nverifyNoMoreInteractions(repo, mapper);\n\n// RIGHT\nassertEquals(\"Ana\", service.find(1L).name());"
         }
       ]
     },
     {
-      "subtitle": "Testes de Integração",
-      "description": "Validação da integração entre módulos.",
+      "subtitle": "Integration Tests",
+      "formerSubtitle": "Testes de Integração",
+      "description": "Several components together, with real infrastructure.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use testes de integração quando precisa verificar interações reais entre componentes, como serviço e banco, enquanto testes unitários isolam unidades para velocidade e foco em lógica específica.",
-          "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\n\n@SpringBootTest // contexto real do Spring + banco configurado para teste\nclass UserServiceIT {\n  @Autowired\n  private UserService service;\n\n  @Test\n  void deveSalvarEBuscarUsuario() {\n    User salvo = service.criar(\"Ana\");            // cria o próprio dado\n    assertNotNull(service.findById(salvo.id()));\n  }\n}",
-          "interview_question": "Quando usar testes de integração em vez de unitários?",
+          "title": "Explanation",
+          "explanation": "**Problem:** every unit test passes, but the query has a typo, the JSON mapping is wrong, or the transaction configuration is broken. Only running the real pieces together shows it.\n\n**Concept:** an integration test checks several components working together, with real infrastructure: the Spring context, a real database, JSON serialization. `@SpringBootTest` starts the whole application; `@DataJpaTest` starts only the persistence layer. Testcontainers (Intermediate level) runs the same database as production in Docker.\n\n**How it works:** keep integration tests for the places where pieces meet — queries, mappings, configuration — and keep the rules in unit tests.",
+          "code": "@SpringBootTest              // real Spring context + the test database\nclass UserServiceIT {\n    @Autowired\n    private UserService service;\n\n    @Test\n    void savesAndFindsAUser() {\n        User saved = service.create(\"Ana\");        // creates its own data\n        assertNotNull(service.findById(saved.id()));\n    }\n}",
+          "interview_question": "When should you use integration tests instead of unit tests?",
           "references": [
-            "https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"
+            "https://docs.spring.io/spring-boot/reference/testing/index.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Tests that depend on data left by other tests. A test passes alone and fails in the full suite, depending on the order. Each test creates its own data and cleans up.",
+          "code": "// WRONG: passes alone, fails when another test saved a user first\nassertEquals(1, repository.count());\n\n// RIGHT\n@BeforeEach\nvoid clean() { repository.deleteAll(); }"
         }
       ]
     },
     {
-      "subtitle": "Testes de API (End-to-End)",
-      "description": "Testes de APIs REST em aplicações.",
+      "subtitle": "API Tests (End-to-End)",
+      "formerSubtitle": "Testes de API (End-to-End)",
+      "description": "Calling the running application over real HTTP.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O MockMvc testa o controller sem subir servidor HTTP — é um teste de integração da camada web, não end-to-end. Um teste end-to-end sobe a aplicação em uma porta real (webEnvironment = RANDOM_PORT) e a chama por HTTP com TestRestTemplate, RestAssured ou Karate, como um cliente faria.",
-          "code": "import org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.boot.test.web.client.TestRestTemplate;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.ResponseEntity;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\n@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)\nclass ApiTest {\n  @Autowired\n  private TestRestTemplate restTemplate;\n\n  @Test\n  void testGetUser() {\n    ResponseEntity<String> resp = restTemplate.getForEntity(\"/api/users/1\", String.class);\n    assertEquals(HttpStatus.OK, resp.getStatusCode());\n  }\n}",
-          "interview_question": "Como testar uma API REST de forma automatizada?",
+          "title": "Explanation",
+          "explanation": "**Problem:** you want to know the API works the way a client sees it: a real HTTP request, the full stack, the real JSON.\n\n**Concept:** MockMvc tests the controller without starting an HTTP server — it is an integration test of the web layer, not end-to-end. An end-to-end test starts the application on a real port (`webEnvironment = RANDOM_PORT`) and calls it over HTTP with `TestRestTemplate`, RestAssured or Karate, as a client would.\n\n**How it works:** with a random port, `TestRestTemplate` already knows the base URL, so the test only uses paths.",
+          "code": "@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)\nclass ApiTest {\n    @Autowired\n    private TestRestTemplate restTemplate;\n\n    @Test\n    void getsAUser() {\n        ResponseEntity<String> resp = restTemplate.getForEntity(\"/api/users/1\", String.class);\n        assertEquals(HttpStatus.OK, resp.getStatusCode());\n    }\n}",
+          "interview_question": "How do you test a REST API automatically?",
           "references": [
-            "https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-testing"
+            "https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A fixed port such as `localhost:8080` in the test. It fails when the port is busy, and two builds cannot run at the same time. Use a random port and the client that already knows it.",
+          "code": "// WRONG\nnew RestTemplate().getForEntity(\"http://localhost:8080/api/users/1\", String.class);\n\n// RIGHT: RANDOM_PORT + the injected TestRestTemplate\nrestTemplate.getForEntity(\"/api/users/1\", String.class);"
         }
       ]
     },
     {
-      "subtitle": "Testes de API com Karate",
-      "description": "Testar endpoints HTTP escrevendo cenários em linguagem simples.",
+      "subtitle": "API Tests with Karate",
+      "formerSubtitle": "Testes de API com Karate",
+      "description": "HTTP tests written as readable scenarios.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Karate é um framework de testes de API em que os cenários são escritos em arquivos .feature, com a sintaxe Given/When/Then do Gherkin, sem precisar escrever classes Java para cada requisição. A variável baseUrl vem do arquivo karate-config.js. Ele já entende JSON: você compara a resposta inteira com match e usa marcadores como #number, #string e #notnull para campos que mudam a cada execução, como IDs e datas. Diferente do MockMvc, que testa o controller por dentro da aplicação, o Karate chama a API de fora, por HTTP, como um cliente real faria. Os testes rodam pelo JUnit 5, então entram no mvn test e no CI como qualquer outro teste.",
-          "code": "// src/test/java/karate-config.js\nfunction fn() {\n  return { baseUrl: 'http://localhost:8080' };\n}\n\n# src/test/java/clientes/clientes.feature\nFeature: API de clientes\n\n  Background:\n    * url baseUrl\n\n  Scenario: criar e buscar um cliente\n    Given path 'clientes'\n    And request { nome: 'Ana', email: 'ana@exemplo.com' }\n    When method post\n    Then status 201\n    And match response == { id: '#number', nome: 'Ana', email: 'ana@exemplo.com' }\n    * def id = response.id\n\n    Given path 'clientes', id\n    When method get\n    Then status 200\n    And match response.nome == 'Ana'\n\n  Scenario: rejeitar e-mail inválido\n    Given path 'clientes'\n    And request { nome: 'Ana', email: 'invalido' }\n    When method post\n    Then status 400\n\n// src/test/java/clientes/ClientesTest.java\nclass ClientesTest {\n    @Karate.Test\n    Karate clientes() {\n        return Karate.run(\"clientes\").relativeTo(getClass());\n    }\n}\n\n<!-- pom.xml -->\n<dependency>\n  <groupId>io.karatelabs</groupId>\n  <artifactId>karate-junit5</artifactId>\n  <version>1.5.1</version>\n  <scope>test</scope>\n</dependency>",
-          "interview_question": "Qual a diferença entre testar uma API com Karate e com MockMvc?",
+          "title": "Explanation",
+          "explanation": "**Problem:** API tests in Java need a lot of setup code for each request, and testers who do not write Java cannot follow them.\n\n**Concept:** Karate is an API testing framework where scenarios are written in `.feature` files with the Given/When/Then syntax, without a Java class per request. It understands JSON natively: `match` compares the whole response, and markers such as `#number`, `#string` and `#notnull` cover fields that change on every run, like ids and dates. Unlike MockMvc, Karate calls the API from outside, over HTTP. It runs through JUnit 5, so it is part of `mvn test` and CI.\n\n**How it works:** the base URL comes from `karate-config.js`, so the same scenarios run against any environment.",
+          "code": "// src/test/java/karate-config.js\nfunction fn() {\n  return { baseUrl: 'http://localhost:8080' };\n}\n\n# src/test/java/customers/customers.feature\nFeature: customers API\n\n  Background:\n    * url baseUrl\n\n  Scenario: create and find a customer\n    Given path 'customers'\n    And request { name: 'Ana', email: 'ana@example.com' }\n    When method post\n    Then status 201\n    And match response == { id: '#number', name: 'Ana', email: 'ana@example.com' }\n    * def id = response.id\n\n    Given path 'customers', id\n    When method get\n    Then status 200\n    And match response.name == 'Ana'\n\n  Scenario: reject an invalid email\n    Given path 'customers'\n    And request { name: 'Ana', email: 'invalid' }\n    When method post\n    Then status 400\n\n// src/test/java/customers/CustomersTest.java\nclass CustomersTest {\n    @Karate.Test\n    Karate customers() {\n        return Karate.run(\"customers\").relativeTo(getClass());\n    }\n}",
+          "interview_question": "What is the difference between testing an API with Karate and with MockMvc?",
           "references": [
             "https://github.com/karatelabs/karate",
             "https://docs.karatelabs.io/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Scenarios that depend on each other — scenario 2 uses the id created by scenario 1. They fail when run in parallel or alone. Each scenario creates the data it needs.",
+          "code": "# WRONG\nScenario: create a customer\n  ... * def id = response.id\nScenario: find the customer          # uses id from the previous scenario\n  Given path 'customers', id\n\n# RIGHT: create and find in the same scenario (as above),\n# or create the data in Background / with a reusable feature"
         }
       ]
     },
     {
-      "subtitle": "Cobertura de Testes",
-      "description": "Métricas para avaliar a qualidade dos testes.",
+      "subtitle": "Test Coverage",
+      "formerSubtitle": "Cobertura de Testes",
+      "description": "What the tests run — not what they check.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Ter 80% de cobertura de testes significa que 80% do código é executado durante os testes, cobrindo linhas ou branches, mas não garante que os testes sejam eficazes ou cubram todos os cenários.",
-          "code": "<!-- pom.xml: o plugin só mede se tiver as executions -->\n<plugin>\n  <groupId>org.jacoco</groupId>\n  <artifactId>jacoco-maven-plugin</artifactId>\n  <version>0.8.12</version>\n  <executions>\n    <execution>\n      <goals><goal>prepare-agent</goal></goals>   <!-- instrumenta os testes -->\n    </execution>\n    <execution>\n      <id>report</id>\n      <phase>verify</phase>\n      <goals><goal>report</goal></goals>          <!-- target/site/jacoco/index.html -->\n    </execution>\n  </executions>\n</plugin>",
-          "interview_question": "O que significa ter 80% de cobertura de testes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** how much of the code is tested at all? Without a measure, whole classes can have no tests and nobody knows.\n\n**Concept:** coverage measures which lines (or branches) ran during the tests. JaCoCo generates a report that shows the untested parts, for example an `if` branch that never ran. 80% coverage means 80% of the code ran — not that it was checked, nor that the important scenarios are covered.\n\n**How it works:** use the report to find untested areas, and focus on business rules and error paths rather than the number.",
+          "code": "<!-- pom.xml: the plugin only measures with these executions -->\n<plugin>\n  <groupId>org.jacoco</groupId>\n  <artifactId>jacoco-maven-plugin</artifactId>\n  <version>0.8.12</version>\n  <executions>\n    <execution>\n      <goals><goal>prepare-agent</goal></goals>   <!-- instruments the tests -->\n    </execution>\n    <execution>\n      <id>report</id>\n      <phase>verify</phase>\n      <goals><goal>report</goal></goals>          <!-- target/site/jacoco/index.html -->\n    </execution>\n  </executions>\n</plugin>",
+          "interview_question": "What does 80% test coverage mean?",
           "references": [
             "https://www.jacoco.org/jacoco/trunk/doc/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Chasing 100% with tests for getters, setters and generated code. The number goes up, time goes into code that cannot break, and the risky rules are no better tested.",
+          "code": "// WRONG: tests written for the number\n@Test void getName() { assertEquals(\"Ana\", new User(\"Ana\").getName()); }\n\n// RIGHT: spend the effort on rules and edge cases\n@Test void rejectsOrderWithoutItems() { ... }\n@Test void appliesFreeShippingAbove200() { ... }"
         }
       ]
     },
     {
-      "subtitle": "Boas Práticas (AAA e TDD)",
-      "description": "Padrões para escrever testes eficazes.",
+      "subtitle": "Good Practices: AAA and TDD",
+      "formerSubtitle": "Boas Práticas (AAA e TDD)",
+      "description": "A clear structure for tests, and tests that drive the design.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "TDD impacta o desenvolvimento ao escrever testes antes do código, guiando o design, reduzindo bugs e promovendo código testável e modular.",
-          "code": "import org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @Test\n  void testSoma() {\n    // Arrange\n    Calc calc = new Calc();\n    // Act\n    int result = calc.soma(2, 3);\n    // Assert\n    assertEquals(5, result);\n  }\n}",
-          "interview_question": "Como o TDD impacta o desenvolvimento de software?"
+          "title": "Explanation",
+          "explanation": "**Problem:** long tests that mix setup, actions and checks are hard to read, and when one fails nobody knows what it was testing.\n\n**Concept:** AAA structures every test in three parts: Arrange (prepare the scenario), Act (run the behavior, once), Assert (check the result). TDD (Test-Driven Development) writes the test before the code, in a short cycle: red (a failing test), green (the simplest code that passes), refactor (clean up with the tests as a safety net).\n\n**How it works:** TDD makes you decide what the code should do before how, and it tends to produce small, testable classes.",
+          "code": "class CalculatorTest {\n    @Test\n    void addsTwoNumbers() {\n        // Arrange\n        Calculator calc = new Calculator();\n        // Act\n        int result = calc.add(2, 3);\n        // Assert\n        assertEquals(5, result);\n    }\n}\n\nTDD cycle:\n  1. red      write a test for the next behavior; it fails\n  2. green    write the simplest code that makes it pass\n  3. refactor improve the code; the tests stay green",
+          "interview_question": "How does TDD affect software development?",
+          "references": [
+            "https://martinfowler.com/bliki/TestDrivenDevelopment.html",
+            "https://xp123.com/3a-arrange-act-assert/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "One test that checks many unrelated behaviors, with several Acts. When it fails, the name does not say what broke, and the first failure hides the rest. One behavior per test.",
+          "code": "// WRONG\n@Test\nvoid orderWorks() {\n    order.addItem(book);         assertEquals(1, order.items().size());\n    order.applyCoupon(\"OFF10\");  assertEquals(\"90.00\", order.total().toString());\n    order.cancel();              assertEquals(CANCELLED, order.status());\n}\n\n// RIGHT: addsItem(), appliesCoupon(), cancelsOrder() — one behavior each"
         }
       ]
     },
     {
-      "subtitle": "Testes Parametrizados",
-      "description": "Testes com múltiplos casos de entrada.",
+      "subtitle": "Parameterized Tests",
+      "formerSubtitle": "Testes Parametrizados",
+      "description": "One test, many inputs.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use testes parametrizados quando precisa validar uma função com múltiplos inputs, em vez de testes individuais, reduzindo duplicação e cobrindo mais cenários com menos código.",
-          "code": "import org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.CsvSource;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nclass CalcTest {\n  @ParameterizedTest\n  @CsvSource({\"2, 2, 4\", \"3, 3, 6\", \"0, 5, 5\"})\n  void testSoma(int a, int b, int expected) {\n    Calc calc = new Calc();\n    assertEquals(expected, calc.soma(a, b));\n  }\n}",
-          "interview_question": "Quando usar testes parametrizados em vez de testes individuais?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the same validation must be checked with ten inputs. Ten copies of the test are noise; a loop hides which case failed.\n\n**Concept:** `@ParameterizedTest` runs one test method once per set of arguments. Sources: `@ValueSource` (single values), `@CsvSource` (rows of values), `@MethodSource` (arguments built in a method). Each case appears separately in the report.\n\n**How it works:** use it whenever a function has many input/output cases — validations, calculations, conversions.",
+          "code": "class CalculatorTest {\n    @ParameterizedTest\n    @CsvSource({\"2, 2, 4\", \"3, 3, 6\", \"0, 5, 5\", \"-1, 1, 0\"})\n    void adds(int a, int b, int expected) {\n        assertEquals(expected, new Calculator().add(a, b));\n    }\n\n    @ParameterizedTest\n    @ValueSource(strings = {\"\", \" \", \"invalid\", \"a@\"})\n    void rejectsInvalidEmails(String email) {\n        assertFalse(EmailValidator.isValid(email));\n    }\n}",
+          "interview_question": "When should you use parameterized tests instead of separate tests?",
           "references": [
             "https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A loop inside one test. The first failing case stops the test, the others never run, and the report does not say which input failed.",
+          "code": "// WRONG\n@Test\nvoid rejectsInvalidEmails() {\n    for (String email : List.of(\"\", \" \", \"invalid\", \"a@\")) {\n        assertFalse(EmailValidator.isValid(email));\n    }\n}\n\n// RIGHT: @ParameterizedTest + @ValueSource (as above) — one report line per input"
         }
       ]
     },
     {
-      "subtitle": "Pirâmide de Testes",
-      "description": "Quantos testes de cada tipo escrever.",
+      "subtitle": "The Test Pyramid",
+      "formerSubtitle": "Pirâmide de Testes",
+      "description": "How many tests of each kind to write.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A pirâmide recomenda muitos testes unitários (rápidos, baratos, isolados), uma quantidade média de testes de integração (componentes reais, como banco e HTTP) e poucos testes end-to-end (lentos e frágeis, mas que validam o fluxo completo). Inverter a pirâmide — muitos E2E e poucos unitários — gera suítes lentas e instáveis, que atrasam o feedback do CI.",
-          "code": "    /\\        E2E: poucos, fluxos críticos (ex.: checkout)\n   /  \\\n  /----\\      Integração: banco, HTTP, mensageria\n /      \\\n/--------\\    Unitários: regras de negócio, muitos e rápidos",
-          "interview_question": "O que é a pirâmide de testes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a suite made mostly of end-to-end tests takes 40 minutes and fails randomly, so people stop trusting it.\n\n**Concept:** the pyramid recommends many unit tests (fast, cheap, isolated), a moderate number of integration tests (real components such as the database and HTTP), and few end-to-end tests (slow and fragile, but they check the complete flow).\n\n**How it works:** push each check down to the lowest level that can catch it: a rule in a unit test, a query in an integration test, and only the critical flows — such as checkout — end-to-end.",
+          "code": "    /\\        E2E: few, critical flows (e.g. checkout)\n   /  \\\n  /----\\      Integration: database, HTTP, messaging\n /      \\\n/--------\\    Unit: business rules, many and fast",
+          "interview_question": "What is the test pyramid?",
           "references": [
             "https://martinfowler.com/articles/practical-test-pyramid.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "The inverted pyramid, or \"ice-cream cone\": many end-to-end and manual tests, few unit tests. Feedback is slow, failures are hard to locate, and the suite is flaky.",
+          "code": "WRONG (ice-cream cone):          RIGHT (pyramid):\n  manual tests    ██████████        E2E          ██\n  E2E             ████████          integration  ██████\n  integration     ████              unit         ██████████████\n  unit            ██"
         }
       ]
     },
     {
-      "subtitle": "Asserções Expressivas com AssertJ",
-      "description": "Testes que se leem como especificação.",
+      "subtitle": "Expressive Assertions with AssertJ",
+      "formerSubtitle": "Asserções Expressivas com AssertJ",
+      "description": "Tests that read like a specification.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "AssertJ (incluído no spring-boot-starter-test) usa uma API fluente, encadeável e com mensagens de erro muito mais claras. Permite verificar coleções, exceções e objetos campo a campo de forma legível, deixando o teste mais próximo de uma especificação do comportamento.",
-          "code": "import static org.assertj.core.api.Assertions.*;\n\n@Test\nvoid deveCalcularTotalDoPedido() {\n    Pedido pedido = new Pedido(List.of(item(\"livro\", \"50.00\"), item(\"caneta\", \"5.00\")));\n\n    assertThat(pedido.total()).isEqualByComparingTo(\"55.00\");\n    assertThat(pedido.itens()).hasSize(2)\n                              .extracting(Item::nome)\n                              .containsExactly(\"livro\", \"caneta\");\n}\n\n@Test\nvoid deveRejeitarQuantidadeNegativa() {\n    assertThatThrownBy(() -> new Item(\"livro\", -1))\n        .isInstanceOf(IllegalArgumentException.class)\n        .hasMessageContaining(\"quantidade\");\n}",
-          "interview_question": "Que vantagem o AssertJ oferece sobre assertEquals?",
+          "title": "Explanation",
+          "explanation": "**Problem:** `assertEquals(true, list.contains(x))` fails with \"expected true but was false\" — which says nothing about what went wrong.\n\n**Concept:** AssertJ (included in `spring-boot-starter-test`) has a fluent, chainable API with much clearer failure messages. It checks collections, exceptions and objects field by field in a readable way.\n\n**How it works:** start with `assertThat(actual)` and chain the expectation; for exceptions, use `assertThatThrownBy`.",
+          "code": "import static org.assertj.core.api.Assertions.*;\n\n@Test\nvoid calculatesOrderTotal() {\n    Order order = new Order(List.of(item(\"book\", \"50.00\"), item(\"pen\", \"5.00\")));\n\n    assertThat(order.total()).isEqualByComparingTo(\"55.00\");\n    assertThat(order.items()).hasSize(2)\n                             .extracting(Item::name)\n                             .containsExactly(\"book\", \"pen\");\n}\n\n@Test\nvoid rejectsNegativeQuantity() {\n    assertThatThrownBy(() -> new Item(\"book\", -1))\n        .isInstanceOf(IllegalArgumentException.class)\n        .hasMessageContaining(\"quantity\");\n}",
+          "interview_question": "What advantage does AssertJ have over assertEquals?",
           "references": [
             "https://assertj.github.io/doc/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Testes de Slice no Spring",
-      "description": "@WebMvcTest e @DataJpaTest: só o necessário.",
-      "category": "pratica",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "@SpringBootTest sobe o contexto inteiro da aplicação — completo, porém lento. Os \"slices\" carregam apenas uma camada: @WebMvcTest sobe controllers, filtros e serialização JSON (os services viram mocks com @MockitoBean); @DataJpaTest sobe repositórios e um banco para testar consultas. Slices deixam a suíte mais rápida e os testes mais focados.",
-          "code": "@WebMvcTest(PedidoController.class)\nclass PedidoControllerTest {\n    @Autowired MockMvc mvc;\n    @MockitoBean PedidoService service;\n\n    @Test\n    void deveRetornar404QuandoPedidoNaoExiste() throws Exception {\n        when(service.buscar(42L)).thenThrow(new PedidoNaoEncontradoException(42L));\n\n        mvc.perform(get(\"/pedidos/42\"))\n           .andExpect(status().isNotFound());\n    }\n}",
-          "interview_question": "Qual a diferença entre @SpringBootTest e @WebMvcTest?",
-          "references": [
-            "https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "Comparing `BigDecimal` with `equals` (or `assertEquals`). `equals` also compares the scale, so 10.0 and 10.00 are \"different\". Compare the value.",
+          "code": "// WRONG: fails — same value, different scale\nassertEquals(new BigDecimal(\"10.00\"), new BigDecimal(\"10.0\"));\n\n// RIGHT\nassertThat(new BigDecimal(\"10.0\")).isEqualByComparingTo(\"10.00\");"
         }
       ]
     }

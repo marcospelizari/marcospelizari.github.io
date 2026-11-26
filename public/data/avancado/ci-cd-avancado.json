@@ -1,141 +1,126 @@
 {
-  "title": "CI/CD — Avançado",
-  "description": "Estratégias de release, GitOps, segurança da cadeia de suprimentos e métricas DORA.",
-  "version": "GitHub Actions, Argo CD, Kubernetes 1.31",
+  "title": "CI/CD",
+  "description": "Delivering safely at speed: DORA metrics, progressive delivery, GitOps, supply chain and zero-downtime migrations.",
+  "version": "GitHub Actions, Argo",
   "resumo": [
-    "Com o pipeline básico funcionando, o foco passa a ser reduzir o risco e o tempo de cada entrega: releases progressivas, rollback automático e deploys desacoplados de lançamentos via feature flags.",
-    "GitOps transforma o Git na fonte da verdade da infraestrutura, e pipelines reutilizáveis evitam duplicação entre dezenas de repositórios.",
-    "A segurança da cadeia de suprimentos — scan de dependências e imagens, SBOM e assinatura de artefatos — garante que só código confiável chega a produção.",
-    "As métricas DORA medem o desempenho de entrega do time e mostram onde o processo precisa melhorar."
+    "DORA: deployment frequency, lead time, change failure rate, recovery time — team trends, never individual targets.",
+    "Progressive delivery: canary steps with automatic analysis — measured on the canary's own pods.",
+    "GitOps: CI updates a separate configuration repository; Argo CD syncs; rollback is `git revert`.",
+    "Supply chain: scan, SBOM, signatures, actions pinned by SHA; never run fork code with secrets (`pull_request_target`).",
+    "Migrations: expand/contract so old and new versions both work; non-blocking DDL (`CREATE INDEX CONCURRENTLY`)."
   ],
   "subsections": [
     {
-      "subtitle": "Métricas DORA",
-      "description": "Medindo a performance de entrega de software.",
+      "subtitle": "DORA Metrics",
+      "formerSubtitle": "Métricas DORA",
+      "description": "Measuring how well a team delivers software.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "As quatro métricas-chave do DORA: frequência de deploy, lead time para mudanças (do commit à produção), taxa de falha em mudanças e tempo de recuperação de um deploy com falha (antes chamado de tempo para restaurar o serviço). As duas primeiras medem velocidade; as duas últimas, estabilidade. Relatórios recentes acrescentam a taxa de retrabalho (rework rate). Times de alta performance melhoram velocidade e estabilidade ao mesmo tempo — entregas pequenas e frequentes são mais rápidas e mais seguras.",
-          "code": "Frequência de deploy:      4,8 deploys/dia\nLead time para mudanças:   28 min (commit -> produção)\nTaxa de falha em mudanças: 3% dos deploys exigem correção\nTempo de recuperação:      12 min (detecção -> serviço normalizado)",
-          "interview_question": "Quais são as métricas DORA e o que elas indicam?",
+          "title": "Explanation",
+          "explanation": "**Problem:** \"are we delivering better than last quarter?\" Without numbers, the answer is an opinion.\n\n**Concept:** the four key DORA metrics: deployment frequency, lead time for changes (commit to production), change failure rate, and failed deployment recovery time (previously \"time to restore service\"). The first two measure speed, the last two stability; recent reports add rework rate. High-performing teams improve speed and stability together — small, frequent releases are both faster and safer.\n\n**How it works:** measure them from your pipeline and incident data, and use them to find bottlenecks, not to rank people.",
+          "code": "Deployment frequency:            4.8 deploys/day\nLead time for changes:           28 min (commit -> production)\nChange failure rate:             3% of deploys need a fix\nFailed deployment recovery time: 12 min (detection -> service normal)",
+          "interview_question": "What are the DORA metrics, and what do they show?",
           "references": [
             "https://dora.dev/guides/dora-metrics-four-keys/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Pipelines Reutilizáveis",
-      "description": "Um padrão para muitos repositórios.",
-      "category": "pratica",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "No GitHub Actions, reusable workflows (workflow_call) permitem que um repositório central defina o pipeline padrão — build Maven, testes, imagem e scan — e que cada serviço apenas o chame com parâmetros. Composite actions encapsulam sequências de steps. Assim, uma melhoria de segurança é aplicada em todos os serviços de uma vez, com versão fixada por tag.",
-          "code": "# Repositório central: .github/workflows/java-service.yml\non:\n  workflow_call:\n    inputs:\n      java-version: { type: string, default: '21' }\n\n# Em cada serviço: .github/workflows/ci.yml\njobs:\n  pipeline:\n    uses: loja/pipelines/.github/workflows/java-service.yml@v3\n    with:\n      java-version: '21'\n    secrets: inherit",
-          "interview_question": "Como evitar duplicar o mesmo pipeline em dezenas de repositórios?",
-          "references": [
-            "https://docs.github.com/en/actions/sharing-automations/reusing-workflows"
-          ]
+          "title": "Common mistake",
+          "explanation": "Turning the metrics into targets for individuals. People optimize the number — splitting deploys, avoiding risky but needed work, reclassifying incidents — and the metrics stop meaning anything.",
+          "code": "WRONG: \"every developer must deploy at least 3 times a day\"\n       -> empty or trivial deploys, the number goes up, nothing improves\n\nRIGHT: team-level trends, discussed in retrospectives:\n       \"lead time went up — where does a change wait?\""
         }
       ]
     },
     {
-      "subtitle": "Matrix Builds e Paralelismo",
-      "description": "Testando várias combinações de uma vez.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "A matrix executa o mesmo job com combinações de parâmetros — versões de JDK, sistemas operacionais, bancos — em paralelo. É útil para bibliotecas que precisam suportar várias versões ou para dividir uma suíte grande em shards. fail-fast cancela as demais combinações quando uma falha.",
-          "code": "jobs:\n  test:\n    runs-on: ${{ matrix.os }}\n    strategy:\n      fail-fast: true\n      matrix:\n        os: [ubuntu-latest, windows-latest]\n        java: ['17', '21']\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-java@v4\n        with:\n          distribution: temurin\n          java-version: ${{ matrix.java }}\n          cache: maven\n      - run: ./mvnw -B verify",
-          "interview_question": "Para que serve uma matrix strategy?",
-          "references": [
-            "https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Feature Flags",
-      "description": "Separando deploy de lançamento.",
+      "subtitle": "Progressive Delivery and Automatic Rollback",
+      "formerSubtitle": "Deploys Progressivos e Rollback Automático",
+      "description": "A canary guided by metrics.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Uma feature flag decide em tempo de execução se uma funcionalidade está ativa. O código vai para produção desligado (deploy) e é ativado depois, para todos ou para uma porcentagem de usuários (lançamento). Isso viabiliza trunk-based development, testes A/B e \"kill switches\" para desligar uma funcionalidade com problema sem novo deploy. Remova flags antigas para não acumular dívida técnica.",
-          "code": "@Service\npublic class CheckoutService {\n    private final FeatureFlags flags;\n\n    public Resultado finalizar(Pedido pedido, Usuario usuario) {\n        if (flags.ativa(\"novo-calculo-frete\", usuario)) {\n            return novoFluxo(pedido);\n        }\n        return fluxoAtual(pedido);\n    }\n}",
-          "interview_question": "Como feature flags permitem fazer deploy de código incompleto com segurança?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a new version passes every test, goes to all users, and its error rate is three times higher — detected by customers.\n\n**Concept:** in a progressive canary, the new version gets a growing share of traffic (5%, 25%, 50%, 100%), and between steps an automatic analysis compares metrics — error rate, latency — with thresholds or with the stable version. If they get worse, the rollout is aborted and traffic goes back to the previous version with no human involved. Argo Rollouts and Flagger implement this on Kubernetes.\n\n**How it works:** the analysis query must be specific to the canary pods, or a healthy majority hides a broken canary.",
+          "code": "# Argo Rollouts: analysis with Prometheus between steps\nstrategy:\n  canary:\n    steps:\n      - setWeight: 10\n      - analysis:\n          templates: [{ templateName: success-rate }]\n      - setWeight: 50\n      - pause: { duration: 10m }\n---\nkind: AnalysisTemplate\nmetadata: { name: success-rate }\nspec:\n  metrics:\n    - name: success\n      successCondition: result[0] >= 0.99\n      provider:\n        prometheus:\n          query: |\n            sum(rate(http_server_requests_seconds_count{status!~\"5..\", rollouts_pod_template_hash=\"{{args.canary-hash}}\"}[5m]))\n            / sum(rate(http_server_requests_seconds_count{rollouts_pod_template_hash=\"{{args.canary-hash}}\"}[5m]))",
+          "interview_question": "How do you automate the decision to promote or roll back a canary?",
           "references": [
-            "https://martinfowler.com/articles/feature-toggles.html",
-            "https://openfeature.dev/"
+            "https://argoproj.github.io/argo-rollouts/features/canary/",
+            "https://argoproj.github.io/argo-rollouts/features/analysis/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Deploys Progressivos e Rollback Automático",
-      "description": "Canary guiado por métricas.",
-      "category": "conceitos",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Em um canary progressivo, a nova versão recebe uma fração crescente do tráfego (5%, 25%, 50%, 100%) e, entre os passos, uma análise automática compara métricas — taxa de erro e latência — com limites ou com a versão estável. Se degradar, o rollout é abortado e o tráfego volta para a versão anterior sem intervenção humana. Argo Rollouts e Flagger implementam isso no Kubernetes.",
-          "code": "# Argo Rollouts: análise com Prometheus entre os passos\nstrategy:\n  canary:\n    steps:\n      - setWeight: 10\n      - analysis:\n          templates: [{ templateName: taxa-de-sucesso }]\n      - setWeight: 50\n      - pause: { duration: 10m }\n---\nkind: AnalysisTemplate\nmetadata: { name: taxa-de-sucesso }\nspec:\n  metrics:\n    - name: sucesso\n      successCondition: result[0] >= 0.99\n      provider:\n        prometheus:\n          query: |\n            sum(rate(http_server_requests_seconds_count{status!~\"5..\"}[5m]))\n            / sum(rate(http_server_requests_seconds_count[5m]))",
-          "interview_question": "Como automatizar a decisão de promover ou reverter um canary?",
-          "references": [
-            "https://argoproj.github.io/argo-rollouts/features/canary/"
-          ]
+          "title": "Common mistake",
+          "explanation": "An analysis over the whole service instead of the canary. The stable pods still serve 90% of the traffic, so they dilute the canary's errors: a canary failing one request in five raises the global error rate by only 2%, which a loose threshold lets through. Filter the metric by the canary's pods.",
+          "code": "# WRONG: the stable 90% dilutes the canary's errors\nsum(rate(http_server_requests_seconds_count{status!~\"5..\"}[5m]))\n  / sum(rate(http_server_requests_seconds_count[5m]))\n\n# RIGHT: only the canary's pods (as in the AnalysisTemplate above)"
         }
       ]
     },
     {
-      "subtitle": "GitOps no Pipeline",
-      "description": "CI publica, o cluster sincroniza.",
+      "subtitle": "GitOps in the Pipeline",
+      "formerSubtitle": "GitOps no Pipeline",
+      "description": "CI publishes, the cluster syncs.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O CI termina publicando a imagem e atualizando a tag no repositório de configuração (via commit ou Pull Request); o Argo CD detecta a mudança e sincroniza o cluster. O CI nunca precisa de credenciais do cluster, cada deploy é um commit auditável e o rollback é um git revert. Promoções entre ambientes viram Pull Requests entre pastas ou branches de configuração.",
-          "code": "atualizar-config:\n  needs: docker\n  runs-on: ubuntu-latest\n  steps:\n    - uses: actions/checkout@v4\n      with:\n        repository: loja/infra-config\n        token: ${{ secrets.CONFIG_REPO_TOKEN }}\n    - run: |\n        cd apps/api-pedidos/overlays/staging\n        kustomize edit set image api=ghcr.io/loja/api:${{ github.sha }}\n        git config user.name \"github-actions[bot]\"\n        git config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\n        git commit -am \"deploy(api-pedidos): ${{ github.sha }}\"\n        git push",
-          "interview_question": "Como o CI se integra a um fluxo GitOps?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the pipeline holds cluster credentials to deploy, and a compromised CI job could change anything in production.\n\n**Concept:** with GitOps, CI ends by publishing the image and updating the tag in the configuration repository (by commit or pull request); Argo CD detects the change and syncs the cluster. CI never needs cluster credentials, every deploy is an auditable commit, and rollback is a `git revert`. Promotion between environments becomes a pull request between folders or branches of the configuration repository.\n\n**How it works:** the commit needs a Git identity on the runner, and a token with write access only to the configuration repository.",
+          "code": "update-config:\n  needs: docker\n  runs-on: ubuntu-latest\n  steps:\n    - uses: actions/checkout@v4\n      with:\n        repository: shop/infra-config\n        token: ${{ secrets.CONFIG_REPO_TOKEN }}\n    - run: |\n        cd apps/api-orders/overlays/staging\n        kustomize edit set image api=ghcr.io/shop/api:${{ github.sha }}\n        git config user.name \"github-actions[bot]\"\n        git config user.email \"41898282+github-actions[bot]@users.noreply.github.com\"\n        git commit -am \"deploy(api-orders): ${{ github.sha }}\"\n        git push",
+          "interview_question": "How does CI integrate with a GitOps flow?",
           "references": [
-            "https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/"
+            "https://argo-cd.readthedocs.io/en/stable/user-guide/best_practices/",
+            "https://opengitops.dev/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Keeping application code and cluster configuration in the same repository. Every config commit from CI triggers CI again — an endless loop, or noise to filter — and anyone who can merge code can change production. Use a separate configuration repository.",
+          "code": "# WRONG: CI pushes the new tag to the app repository\n#        -> that push triggers CI again -> new image -> new tag -> ...\n\n# RIGHT\nshop/api           -> code; CI builds and publishes the image\nshop/infra-config  -> manifests; CI only updates the tag; Argo CD syncs"
         }
       ]
     },
     {
-      "subtitle": "Segurança da Cadeia de Suprimentos",
-      "description": "Dependências, SBOM e artefatos assinados.",
+      "subtitle": "Software Supply Chain Security",
+      "formerSubtitle": "Segurança da Cadeia de Suprimentos",
+      "description": "Dependencies, SBOMs and signed artifacts.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Ataques à cadeia de suprimentos comprometem dependências, actions ou o próprio pipeline. Defesas: escanear dependências (Dependabot, OWASP Dependency-Check) e imagens (Trivy); gerar um SBOM (Software Bill of Materials), inventário de todos os componentes, para responder rápido a uma nova CVE; assinar artefatos e gerar atestados de proveniência; e fixar actions de terceiros pelo SHA do commit.",
-          "code": "- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 fixada por SHA\n\n# trivy e syft instalados no runner\n- name: Scan de vulnerabilidades\n  run: trivy image --severity CRITICAL,HIGH --exit-code 1 ghcr.io/loja/api:${{ github.sha }}\n\n- name: Gerar SBOM\n  run: syft ghcr.io/loja/api:${{ github.sha }} -o spdx-json > sbom.json",
-          "interview_question": "O que é SBOM e por que ele importa no pipeline?",
+          "title": "Explanation",
+          "explanation": "**Problem:** attackers no longer only target your code: a compromised dependency, a hijacked GitHub Action or a tampered pipeline ships their code with your name on it.\n\n**Concept:** the defenses: scan dependencies (Dependabot, OWASP Dependency-Check) and images (Trivy); generate an SBOM (Software Bill of Materials), the inventory of every component, so you can answer quickly when a new CVE appears; sign artifacts and produce provenance attestations; and pin third-party actions to a commit SHA, because a tag can be moved.\n\n**How it works:** SLSA describes levels of supply-chain maturity, from a scripted build to fully verified provenance.",
+          "code": "- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2 pinned by SHA\n\n# trivy and syft installed on the runner\n- name: Vulnerability scan\n  run: trivy image --severity CRITICAL,HIGH --exit-code 1 ghcr.io/shop/api:${{ github.sha }}\n\n- name: Generate SBOM\n  run: syft ghcr.io/shop/api:${{ github.sha }} -o spdx-json > sbom.json",
+          "interview_question": "What is an SBOM, and why does it matter in the pipeline?",
           "references": [
             "https://slsa.dev/",
             "https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Running untrusted pull-request code with secrets. A workflow triggered by `pull_request_target` that checks out the PR's code runs a stranger's code with your repository's secrets and write token.",
+          "code": "# WRONG: a fork's code runs with your secrets\non: pull_request_target\njobs:\n  test:\n    steps:\n      - uses: actions/checkout@v4\n        with: { ref: \"${{ github.event.pull_request.head.sha }}\" }\n      - run: ./mvnw verify              # attacker-controlled build, secrets available\n\n# RIGHT: test PR code with `on: pull_request` (no secrets for forks)"
         }
       ]
     },
     {
-      "subtitle": "Migrations de Banco em Deploy Contínuo",
-      "description": "Mudanças de schema sem downtime.",
+      "subtitle": "Database Migrations in Continuous Deployment",
+      "formerSubtitle": "Migrations de Banco em Deploy Contínuo",
+      "description": "Schema changes without downtime.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Durante um rolling update, versões antiga e nova rodam juntas contra o mesmo banco, então cada migration precisa ser compatível com ambas. Use o padrão expand/contract: adicione a coluna nova (expand), faça a aplicação escrever nas duas e migre os dados, passe a ler da nova e, em um deploy posterior, remova a antiga (contract). Nunca remova ou renomeie algo que a versão em produção ainda usa.",
-          "code": "-- Deploy 1 (expand): V10__adiciona_email_contato.sql\nALTER TABLE clientes ADD COLUMN email_contato VARCHAR(255);\nUPDATE clientes SET email_contato = email;\n-- aplicação v1.5 escreve em email e email_contato, lê de email_contato\n\n-- Deploy 2 (contract), após nenhuma versão usar a coluna antiga:\n-- V11__remove_email.sql\nALTER TABLE clientes DROP COLUMN email;",
-          "interview_question": "Como renomear uma coluna sem derrubar a aplicação durante um deploy contínuo?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a deploy renames a column, and for a few minutes the old pods, still running, fail on every request.\n\n**Concept:** during a rolling update, the old and new versions run together against the same database, so every migration must work with both. Use expand/contract: add the new column (expand), make the application write to both and migrate the data, switch reads to the new one, and remove the old one in a later deploy (contract). Never remove or rename something the version in production still uses.\n\n**How it works:** each step is a separate deploy, so you can stop or roll back at any point.",
+          "code": "-- Deploy 1 (expand): V10__add_contact_email.sql\nALTER TABLE customers ADD COLUMN contact_email VARCHAR(255);\nUPDATE customers SET contact_email = email;\n-- app v1.5 writes to email and contact_email, reads from contact_email\n\n-- Deploy 2 (contract), once no running version uses the old column:\n-- V11__drop_email.sql\nALTER TABLE customers DROP COLUMN email;",
+          "interview_question": "How do you rename a column without breaking the application during continuous deployment?",
           "references": [
-            "https://martinfowler.com/bliki/ParallelChange.html"
+            "https://martinfowler.com/bliki/ParallelChange.html",
+            "https://documentation.red-gate.com/fd"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A migration that locks a big table during the deploy. Adding a `NOT NULL` column with a volatile default, or creating an index without `CONCURRENTLY`, can block writes for minutes on millions of rows. Use the non-blocking forms.",
+          "code": "-- WRONG on a 50-million-row table: blocks writes while it builds\nCREATE INDEX idx_orders_status ON orders (status);\n\n-- RIGHT (PostgreSQL): no long write lock\n-- (Flyway: run it outside a transaction for this migration)\nCREATE INDEX CONCURRENTLY idx_orders_status ON orders (status);"
         }
       ]
     }

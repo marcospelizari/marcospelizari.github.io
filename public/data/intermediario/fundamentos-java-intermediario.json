@@ -1,0 +1,145 @@
+{
+  "title": "Java Fundamentals",
+  "description": "The next step after the basics: generics, streams and concurrency.",
+  "version": "Java 21",
+  "resumo": [
+    "Generics make code type-safe: `List<String>`, no casts, never raw types. PECS: `? extends` to read, `? super` to write.",
+    "Streams: source → lazy intermediate operations → a terminal operation; sequential by default, single-use.",
+    "Shared mutable state needs atomicity and visibility: prefer immutability, then atomic classes and concurrent collections.",
+    "Use the atomic methods of concurrent maps (`computeIfAbsent`, `merge`), never check-then-act.",
+    "Run independent calls in parallel with `CompletableFuture` — always with your own executor for blocking work, and a timeout.",
+    "Parallel streams only for large CPU-bound work with no shared state; never for I/O."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Generics",
+      "formerLevel": "essencial",
+      "description": "Type-safe, reusable classes and methods.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a list of `Object` accepts anything; reading from it needs a cast that can fail at runtime with `ClassCastException`.\n\n**Concept:** generics add a type parameter: `List<String>` accepts only Strings, the compiler checks it, and no cast is needed. Classes and methods can declare their own (`<T>`), with bounds such as `<T extends Comparable<T>>`. Wildcards control what a method accepts: `? extends T` to read (producer), `? super T` to write (consumer) — \"PECS\".\n\n**How it works:** the types exist only at compile time (type erasure), so `new T()` and `instanceof List<String>` are not possible.",
+          "code": "public static <T extends Comparable<T>> T max(List<T> items) {\n    T max = items.get(0);\n    for (T item : items) {\n        if (item.compareTo(max) > 0) max = item;\n    }\n    return max;\n}\n\n// Producer extends: only reads numbers\ndouble sum(List<? extends Number> numbers) {\n    return numbers.stream().mapToDouble(Number::doubleValue).sum();\n}\n\n// Consumer super: only writes integers\nvoid fill(List<? super Integer> target) {\n    target.add(1);\n    target.add(2);\n}",
+          "interview_question": "What are generics for, and what does \"? extends T\" mean?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/java/generics/index.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Raw types — `List` without a type parameter. There is no checking, and the error appears far away, at runtime. With the type parameter, the compiler rejects it right away.",
+          "code": "// WRONG: raw type\nList names = new ArrayList();\nnames.add(42);\nString first = (String) names.get(0);   // ClassCastException at runtime\n\n// RIGHT: the compiler rejects the wrong type\nList<String> typed = new ArrayList<>();\ntyped.add(42);                          // compile error"
+        }
+      ]
+    },
+    {
+      "subtitle": "Lambdas and the Stream API",
+      "formerSubtitle": "Lambda e Stream API",
+      "formerLevel": "essencial",
+      "description": "Processing collections as a pipeline.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** \"names of active customers, sorted\" written with loops needs a new list, an `if`, a sort call and a lot of noise around the actual idea.\n\n**Concept:** a lambda is a short function such as `x -> x * 2` that implements a functional interface (an interface with one abstract method: `Predicate`, `Function`, `Consumer`...). A method reference like `User::getName` is a shorthand for a lambda. A stream processes a collection as a pipeline: a source, then intermediate operations (`filter`, `map`, `sorted`) and a terminal operation (`toList`, `count`, `collect`).\n\n**How it works:** intermediate operations are lazy: nothing runs until the terminal operation. Streams are sequential by default; `parallelStream()` only pays off with lots of CPU-bound data.",
+          "code": "List<String> names = customers.stream()\n    .filter(Customer::isActive)     // keep active customers\n    .map(Customer::getName)         // Customer -> String\n    .sorted()\n    .toList();                      // terminal: runs the pipeline (Java 16+)\n\nlong vip = customers.stream().filter(c -> c.total() > 1000).count();\n\nMap<String, List<Customer>> byCity = customers.stream()\n    .collect(Collectors.groupingBy(Customer::getCity));",
+          "interview_question": "What is the difference between intermediate and terminal stream operations?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Stream.html",
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/lambdaexpressions.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Changing outside state from inside a stream, such as adding to an external list. Let the stream build the result. A stream can also be consumed only once.",
+          "code": "// WRONG: changing an outside list from inside the stream\nList<String> result = new ArrayList<>();\ncustomers.stream().map(Customer::getName).forEach(result::add);\n\n// RIGHT: the stream builds the result\nList<String> result = customers.stream().map(Customer::getName).toList();\n\n// WRONG: reusing a stream\nStream<Customer> s = customers.stream();\ns.count();\ns.count();   // IllegalStateException: stream has already been operated upon or closed"
+        }
+      ]
+    },
+    {
+      "subtitle": "Concurrency and Immutability",
+      "formerSubtitle": "Concorrência e Imutabilidade",
+      "formerLevel": "avancado",
+      "description": "Race conditions, visibility and thread-safe structures.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a visit counter shows fewer visits than really happened under load, and a shared `HashMap` cache gets corrupted by concurrent requests.\n\n**Concept:** threads share the heap. A race condition happens when an operation like `count++` (read, add, write — three steps) is interleaved between threads. Visibility is the other half: without synchronization, one thread may not see another's write. The tools: immutable objects (shareable with no synchronization — the default choice), atomic classes, `synchronized` or locks, and concurrent collections. `volatile` gives visibility, not atomicity.\n\n**How it works:** prefer immutability; when state must be shared, use an atomic class or a concurrent collection and its atomic methods.",
+          "code": "// Race condition\nclass Counter {\n    private int value;\n    void increment() { value++; }        // read, add, write: 3 steps\n}\n\n// Correct, without locks\nclass SafeCounter {\n    private final AtomicInteger value = new AtomicInteger();\n    void increment() { value.incrementAndGet(); }\n}\n\n// A ready-made concurrent structure\nMap<String, Integer> visits = new ConcurrentHashMap<>();\nvisits.merge(\"/home\", 1, Integer::sum);",
+          "interview_question": "When would you choose immutability over explicit synchronization?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/essential/concurrency/index.html",
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ConcurrentHashMap.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Check-then-act on a concurrent map. Each call is thread-safe, but the pair is not: two threads both see \"absent\" and both put. Use the map's atomic methods.",
+          "code": "// WRONG: two threads can both pass the check\nif (!cache.containsKey(id)) {\n    cache.put(id, load(id));\n}\n\n// RIGHT: atomic\ncache.computeIfAbsent(id, this::load);"
+        }
+      ]
+    },
+    {
+      "subtitle": "Executors and CompletableFuture",
+      "formerSubtitle": "Executors e CompletableFuture",
+      "formerLevel": "avancado",
+      "description": "Running independent work in parallel and combining the results.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a dashboard calls three services one after the other: 300 + 400 + 200 ms. They do not depend on each other, so the page could take 400 ms.\n\n**Concept:** instead of creating threads by hand, use an `ExecutorService`, which reuses threads and limits concurrency. `CompletableFuture` composes asynchronous tasks: `supplyAsync` starts one, `thenCombine` joins two results, `exceptionally` handles failures and `orTimeout` stops endless waits.\n\n**How it works:** always pass your own executor for blocking work. Without it, tasks run on the common ForkJoinPool, which is shared by the whole application and sized to the number of CPUs.",
+          "code": "ExecutorService pool = Executors.newFixedThreadPool(10);\n\nCompletableFuture<Customer> customer = CompletableFuture.supplyAsync(() -> customers.find(id), pool);\nCompletableFuture<List<Order>> orders = CompletableFuture.supplyAsync(() -> ordersApi.list(id), pool);\n\nDashboard dashboard = customer\n    .thenCombine(orders, Dashboard::new)\n    .orTimeout(2, TimeUnit.SECONDS)\n    .exceptionally(ex -> Dashboard.empty())\n    .join();",
+          "interview_question": "How do you run independent calls in parallel and combine the results?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/CompletableFuture.html",
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/ExecutorService.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Blocking HTTP calls with `supplyAsync` and no executor. They occupy the common pool, and under load every request — and every parallel stream in the application — waits for a free thread.",
+          "code": "// WRONG: blocking I/O on the common ForkJoinPool\nCompletableFuture.supplyAsync(() -> httpClient.get(url));\n\n// RIGHT: a dedicated executor for blocking work\nCompletableFuture.supplyAsync(() -> httpClient.get(url), ioExecutor);"
+        }
+      ]
+    },
+    {
+      "subtitle": "Streams: Performance and Pitfalls",
+      "formerSubtitle": "Streams: Performance e Armadilhas",
+      "formerLevel": "avancado",
+      "description": "When streams help, and when they get in the way.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a stream is used everywhere \"because it is modern\" — including hot loops, parallel I/O and code that changes shared lists.\n\n**Concept:** streams make code declarative, but they create intermediate objects; in hot loops over small collections a plain `for` can be faster. `parallelStream` uses the common ForkJoinPool: it only pays off with lots of data, CPU-bound work and no shared state. Collectors (`groupingBy`, `counting`, `toMap`) express aggregations clearly.\n\n**How it works:** measure before choosing parallel; for most backend code, sequential streams are the right default.",
+          "code": "// Collect the result instead of changing outside state\nList<Integer> doubled = numbers.stream().map(n -> n * 2).toList();\n\n// Expressive grouping\nMap<OrderStatus, Long> byStatus = orders.stream()\n    .collect(Collectors.groupingBy(Order::status, Collectors.counting()));\n\n// Side effects + parallel = unpredictable result\nList<Integer> result = new ArrayList<>();\nnumbers.parallelStream().map(n -> n * 2).forEach(result::add);   // lost or duplicated items",
+          "interview_question": "When should you avoid parallel streams?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/package-summary.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "I/O inside a parallel stream. Each blocking call holds a common-pool thread, so the whole application's parallel work slows down. Keep it sequential, or use `CompletableFuture` with an I/O executor.",
+          "code": "// WRONG\norders.parallelStream().map(o -> paymentClient.status(o.id())).toList();\n\n// RIGHT\norders.stream().map(o -> CompletableFuture.supplyAsync(() -> paymentClient.status(o.id()), ioExecutor))\n      .toList();"
+        }
+      ]
+    },
+    {
+      "subtitle": "Records, Sealed Types and Pattern Matching",
+      "formerSubtitle": "Records, Sealed e Pattern Matching",
+      "formerLevel": "avancado",
+      "description": "Covered in Object-Oriented Programming.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "These three features work together for data modeling and are taught in **Object-Oriented Programming**: Immutability and Records (Essentials), Sealed Classes and Pattern Matching (Intermediate) — with one payment example that combines all three."
+        }
+      ]
+    }
+  ]
+}

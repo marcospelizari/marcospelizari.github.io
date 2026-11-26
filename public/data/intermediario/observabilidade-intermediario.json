@@ -1,0 +1,84 @@
+{
+  "title": "Observability",
+  "description": "The everyday signals: structured logs, correlation and metrics.",
+  "version": "Micrometer, Prometheus",
+  "resumo": [
+    "Structured logs: JSON with consistent fields; ids as their own fields, not inside the message.",
+    "MDC adds context (traceId, orderId) to every line — always remove it (`putCloseable`).",
+    "Golden signals: latency (p95/p99), traffic, errors, saturation — plus business metrics.",
+    "Publish histograms and compute percentiles in Prometheus; per-instance percentiles cannot be combined.",
+    "Metric tags must be bounded: never `userId` or `orderId`."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Structured Logs",
+      "formerSubtitle": "Logs Estruturados",
+      "formerLevel": "avancado",
+      "description": "JSON logs you can search and correlate.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** finding \"every error for order 123 across all services\" means grepping text logs with fragile regular expressions.\n\n**Concept:** structured logs are JSON with consistent fields — timestamp, level, service, traceId, orderId — that tools such as Elasticsearch, Loki or CloudWatch index and filter. Spring Boot 3.4+ supports structured logging natively, in formats such as ECS or Logstash.\n\n**How it works:** one line per event, the same field names in every service, and the identifiers you search by as their own fields. Watch the volume: logs cost storage.",
+          "code": "# application.yml (Spring Boot 3.4+)\nlogging:\n  structured:\n    format:\n      console: ecs\n\n// Output (one line per event)\n{\"@timestamp\":\"2024-05-10T14:32:01.120Z\",\"log.level\":\"INFO\",\"service.name\":\"api-orders\",\n \"trace.id\":\"4bf92f3577b34da6a3ce929d0e0e4736\",\"message\":\"Order created\",\"orderId\":123}",
+          "interview_question": "Why prefer structured logs to free text?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/features/logging.html#features.logging.structured"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Putting the data only inside the message text. `\"Order 123 created\"` cannot be filtered by order id, and every service writes it differently. Put identifiers in their own fields.",
+          "code": "// WRONG: the id is only inside the text\nlog.info(\"Order \" + order.id() + \" created for customer \" + customer.id());\n\n// RIGHT: SLF4J key-value pairs become fields in structured output\nlog.atInfo().addKeyValue(\"orderId\", order.id())\n           .addKeyValue(\"customerId\", customer.id())\n           .log(\"Order created\");"
+        }
+      ]
+    },
+    {
+      "subtitle": "Context and Correlation with MDC",
+      "formerSubtitle": "Contexto e Correlação com MDC",
+      "formerLevel": "avancado",
+      "description": "Linking every log line of one request.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a request goes through ten methods and logs twenty lines; to tie them together you would have to pass the order id to every method just for logging.\n\n**Concept:** SLF4J's MDC (Mapped Diagnostic Context) holds key-value pairs per thread, and the log pattern includes them in every line. With Micrometer Tracing, `traceId` and `spanId` go into the MDC automatically. For business data, add it at the start of the work and remove it at the end.\n\n**How it works:** `MDC.putCloseable` with try-with-resources removes the key even when an exception is thrown.",
+          "code": "public void process(Order order) {\n    try (var ignored = MDC.putCloseable(\"orderId\", order.id().toString())) {\n        log.info(\"Processing started\");\n        payment.charge(order);\n        log.info(\"Payment completed\");\n    } // orderId removed from the MDC automatically\n}\n\n# application.yml\nlogging.pattern.level: \"%5p [%X{traceId:-},%X{spanId:-}] order=%X{orderId:-}\"",
+          "interview_question": "How do you include the request id in every log line without passing it as a parameter?",
+          "references": [
+            "https://www.slf4j.org/manual.html#mdc"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Putting a value in the MDC and never removing it. Threads are reused by the pool, so the next request on that thread logs the previous request's order id — and someone investigates the wrong order. Always clean up, and remember the MDC does not follow work handed to another thread.",
+          "code": "// WRONG: leaks into the next request served by this thread\nMDC.put(\"orderId\", order.id().toString());\nprocess(order);\n\n// RIGHT\ntry (var ignored = MDC.putCloseable(\"orderId\", order.id().toString())) {\n    process(order);\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Metrics with Micrometer and Prometheus",
+      "formerSubtitle": "Métricas com Micrometer e Prometheus",
+      "formerLevel": "avancado",
+      "description": "Measuring technical and business behavior.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the API \"feels slow\", but nobody can say since when, for which endpoint, or for how many users.\n\n**Concept:** the golden signals: latency (p95/p99, not the average), traffic (requests per second), errors (rate of 5xx) and saturation (CPU, connection pool, queues). Add business metrics such as orders created and payments declined. Micrometer exposes everything at `/actuator/prometheus`; Prometheus collects it and Grafana shows it. For latency, publish histograms and compute p95/p99 in Prometheus with `histogram_quantile`: percentiles calculated in each instance cannot be combined across replicas.\n\n**How it works:** Spring Boot already records HTTP, JVM and connection-pool metrics; add your own with `Counter` and `Timer`.",
+          "code": "@Service\npublic class OrderService {\n    private final Counter ordersCreated;\n    private final Timer checkoutTime;\n\n    public OrderService(MeterRegistry registry) {\n        this.ordersCreated = Counter.builder(\"orders.created\")\n            .tag(\"channel\", \"web\").register(registry);\n        this.checkoutTime = Timer.builder(\"checkout.duration\")\n            .publishPercentileHistogram()     // can be aggregated across replicas\n            .register(registry);\n    }\n\n    public void complete(Order o) {\n        checkoutTime.record(() -> process(o));\n        ordersCreated.increment();\n    }\n}",
+          "interview_question": "Which metrics would you define for a critical API?",
+          "references": [
+            "https://docs.micrometer.io/micrometer/reference/",
+            "https://sre.google/sre-book/monitoring-distributed-systems/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "High-cardinality tags such as `userId` or `orderId`. Every value creates a new time series; with a million users, Prometheus runs out of memory. Tags are for small, bounded sets (status, channel, endpoint); ids belong in logs and traces.",
+          "code": "// WRONG: one time series per user\nCounter.builder(\"orders.created\").tag(\"userId\", user.id().toString()).register(registry);\n\n// RIGHT: bounded tags only\nCounter.builder(\"orders.created\").tag(\"channel\", \"web\").register(registry);"
+        }
+      ]
+    }
+  ]
+}

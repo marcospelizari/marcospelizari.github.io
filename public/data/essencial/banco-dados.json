@@ -1,219 +1,237 @@
 {
-  "title": "Banco de Dados",
-  "description": "Conceitos essenciais para trabalhar com bancos relacionais e NoSQL, atualizados para práticas modernas.",
-  "version": "SQL ANSI, MongoDB 7.0",
+  "title": "Databases",
+  "description": "Essential concepts for working with relational and NoSQL databases.",
+  "version": "PostgreSQL 16, MongoDB 7.0",
   "resumo": [
-    "Modelo relacional: tabelas ligadas por chave primária (identifica a linha) e chave estrangeira (garante a referência).",
-    "Normalização (1NF, 2NF, 3NF) elimina redundância; na 3NF nenhuma coluna depende de outra que não seja a chave.",
-    "Transação é tudo ou nada: débito e crédito juntos, COMMIT ou ROLLBACK (ACID).",
-    "INNER JOIN traz só as correspondências; LEFT JOIN traz tudo da esquerda, com null à direita.",
-    "WHERE filtra linhas; HAVING filtra grupos depois do GROUP BY.",
-    "Índice acelera a leitura e deixa INSERT, UPDATE e DELETE mais lentos.",
-    "SQL Injection: nunca concatene entrada do usuário; use parâmetros (`?` ou `:nome`).",
-    "NoSQL: documento (MongoDB), chave-valor (Redis), colunar (Cassandra), grafo (Neo4j) — escolha pelo padrão de acesso.",
-    "Pool de conexões (HikariCP) reaproveita conexões; mantenha pequeno e meça."
+    "Relational model: tables linked by a primary key (identifies the row) and a foreign key (guarantees the reference).",
+    "Normalization (1NF, 2NF, 3NF) removes redundancy; in 3NF no column depends on anything but the key.",
+    "A transaction is all or nothing: debit and credit together, `COMMIT` or `ROLLBACK` (ACID).",
+    "`INNER JOIN` returns only matches; `LEFT JOIN` returns every left row, with `NULL` on the right. Right-table filters go in `ON`.",
+    "`WHERE` filters rows; `HAVING` filters groups after `GROUP BY`.",
+    "An index speeds up reads and slows down `INSERT`, `UPDATE` and `DELETE`. A function on the column skips it.",
+    "SQL injection: never concatenate user input; use parameters (`?` or `:name`).",
+    "ORM: watch for N+1 — load relationships with `join fetch`."
   ],
   "subsections": [
     {
-      "subtitle": "Modelo Relacional e SQL",
-      "description": "Organização dos dados em tabelas e uso de SQL.",
+      "subtitle": "The Relational Model and SQL",
+      "formerSubtitle": "Modelo Relacional e SQL",
+      "description": "Tables, rows, columns and the language to query them.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O modelo relacional organiza dados em tabelas com linhas e colunas, conectadas por chaves, enquanto SQL manipula esses dados com comandos como SELECT para consultas e INSERT para inserções, sendo a base de sistemas relacionais.",
-          "code": "SELECT nome, idade FROM usuarios WHERE idade > 18;\n-- Filtra usuários maiores de 18 anos",
-          "interview_question": "Como o modelo relacional organiza dados e qual o papel do SQL?",
+          "title": "Explanation",
+          "explanation": "**Problem:** keeping customers and orders in spreadsheets leads to duplicated data, no rules, and slow, awkward queries once the volume grows.\n\n**Concept:** the relational model stores data in tables. Each row is a record and each column is an attribute with a defined type (text, number, date). SQL is the language to define the structure (DDL: `CREATE`, `ALTER`) and to work with the data (DML: `SELECT`, `INSERT`, `UPDATE`, `DELETE`). You describe what you want, and the database decides how to fetch it.\n\n**How it works:** first you define the table with its types and constraints (`NOT NULL`); then data goes in and out through SQL statements. `WHERE` filters rows and `ORDER BY` sorts the result.",
+          "code": "CREATE TABLE users (\n  id   SERIAL PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  age  INT\n);\n\nINSERT INTO users (name, age) VALUES ('Ana', 30), ('Bruno', 17);\n\nSELECT name, age FROM users WHERE age >= 18 ORDER BY name;  -- Ana | 30\n\nUPDATE users SET age = 18 WHERE id = 2;\nDELETE FROM users WHERE id = 2;",
+          "interview_question": "How does the relational model organize data, and what is the role of SQL?",
           "references": [
-            "https://www.postgresql.org/docs/current/sql.html"
+            "https://www.postgresql.org/docs/current/tutorial-concepts.html",
+            "https://www.postgresql.org/docs/current/tutorial-sql.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`UPDATE` or `DELETE` without `WHERE` changes the whole table. Before running it, run a `SELECT` with the same `WHERE` to see exactly which rows will be affected.",
+          "code": "-- WRONG: deletes every user\nDELETE FROM users;\n\n-- RIGHT: check the rows with the same WHERE, then delete\nSELECT * FROM users WHERE id = 2;\nDELETE FROM users WHERE id = 2;"
         }
       ]
     },
     {
-      "subtitle": "Chaves Primária e Estrangeira",
-      "description": "Garantia de integridade em relacionamentos.",
+      "subtitle": "Primary and Foreign Keys",
+      "formerSubtitle": "Chaves Primária e Estrangeira",
+      "description": "Identify each row and make sure references exist.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Chaves estrangeiras garantem integridade ao vincular registros entre tabelas, como um pedido a um usuário, prevenindo inconsistências com restrições referenciais em sistemas como e-commerce.",
-          "code": "CREATE TABLE Pedido (\n  id SERIAL PRIMARY KEY,\n  usuario_id INT REFERENCES Usuario(id)\n  -- FK referencia tabela Usuario\n);",
-          "interview_question": "Por que chaves estrangeiras são importantes para integridade?"
+          "title": "Explanation",
+          "explanation": "**Problem:** two customers can have the same name — how do you know which one placed the order? And if a customer with orders is deleted, the orders point to someone who no longer exists.\n\n**Concept:** the primary key (PK) identifies each row uniquely and is never null. A foreign key (FK) is a column that points to the PK of another table; the database rejects values that do not exist there. This is called referential integrity.\n\n**How it works:** the order stores `user_id`. Inserting an order for a user that does not exist fails, and deleting a user who has orders also fails (the default behavior). With `ON DELETE CASCADE` the orders would be deleted too — use it only when the child makes no sense without its parent. In PostgreSQL the FK column does not get an index automatically: create one, because it is used in joins.",
+          "code": "CREATE TABLE users (\n  id   SERIAL PRIMARY KEY,\n  name VARCHAR(100) NOT NULL\n);\n\nCREATE TABLE orders (\n  id      SERIAL PRIMARY KEY,\n  user_id INT NOT NULL REFERENCES users(id),  -- FK\n  total   NUMERIC(10,2) NOT NULL\n);\nCREATE INDEX idx_orders_user ON orders (user_id);\n\nINSERT INTO orders (user_id, total) VALUES (999, 50.00);\n-- ERROR: insert or update on table \"orders\" violates foreign key constraint\n\nDELETE FROM users WHERE id = 1;\n-- ERROR if user 1 has orders",
+          "interview_question": "What is the difference between a primary key and a foreign key, and what happens when you delete a referenced row?",
+          "references": [
+            "https://www.postgresql.org/docs/current/ddl-constraints.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using business data as the primary key (email, tax ID). It changes, can be typed wrong, and spreads into every FK that references it. Use an id generated by the database and protect the business value with `UNIQUE`.",
+          "code": "-- WRONG: email as primary key (users change their email)\nCREATE TABLE users (\n  email VARCHAR(255) PRIMARY KEY,\n  name  VARCHAR(100)\n);\n\n-- RIGHT: generated id + unique constraint\nCREATE TABLE users (\n  id    BIGSERIAL PRIMARY KEY,\n  email VARCHAR(255) NOT NULL UNIQUE,\n  name  VARCHAR(100) NOT NULL\n);"
         }
       ]
     },
     {
-      "subtitle": "Normalização",
-      "description": "Organização para evitar redundância.",
+      "subtitle": "Normalization",
+      "formerSubtitle": "Normalização",
+      "description": "Each fact stored in one place only.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "1NF: cada coluna guarda um valor atômico (nada de lista em uma coluna). 2NF: com chave composta, cada coluna depende da chave inteira. 3NF: nenhuma coluna depende de outra coluna que não seja a chave (dependência transitiva) — por exemplo, a cidade depende do CEP, não do usuário. Normalizar reduz redundância e inconsistências, ao custo de mais joins.",
-          "code": "-- Antes: cidade depende do cep, não do id (viola a 3NF)\n-- usuario(id, nome, cep, cidade)\n\n-- Depois (3NF)\nCREATE TABLE cep (\n  cep    CHAR(8) PRIMARY KEY,\n  cidade VARCHAR(100) NOT NULL\n);\nCREATE TABLE usuario (\n  id   SERIAL PRIMARY KEY,\n  nome VARCHAR(100) NOT NULL,\n  cep  CHAR(8) REFERENCES cep(cep)\n);",
-          "interview_question": "O que é a terceira forma normal (3NF) e por que aplicá-la?"
-        }
-      ]
-    },
-    {
-      "subtitle": "Transações",
-      "description": "Operações atômicas para consistência.",
-      "category": "conceitos",
-      "examples": [
+          "title": "Explanation",
+          "explanation": "**Problem:** if the city is repeated on every user, fixing the city name means updating thousands of rows — and missing one leaves contradictory data (an update anomaly).\n\n**Concept:** normalizing means splitting data so each fact lives in one place. 1NF: each column holds an atomic value — no \"phone1, phone2\" in one column. 2NF: in tables with a composite key, every column depends on the whole key, not part of it. 3NF: no column depends on another column that is not the key (a transitive dependency).\n\n**How it works:** the city depends on the ZIP code, not on the user; in 3NF the ZIP code becomes its own table and the user stores only the ZIP code. Multiple phone numbers go to a table linked to the user (1NF). Rule to remember: every column depends on the key, the whole key, and nothing but the key. The cost is more joins in your queries.",
+          "code": "-- Before: users(id, name, phones, zip, city)\n--   phones = \"555-1111, 555-2222\"  -> breaks 1NF\n--   city depends on zip, not on id  -> breaks 3NF\n\nCREATE TABLE zip_codes (\n  zip  CHAR(8) PRIMARY KEY,\n  city VARCHAR(100) NOT NULL\n);\n\nCREATE TABLE users (\n  id   SERIAL PRIMARY KEY,\n  name VARCHAR(100) NOT NULL,\n  zip  CHAR(8) REFERENCES zip_codes(zip)\n);\n\nCREATE TABLE phones (\n  user_id INT NOT NULL REFERENCES users(id),\n  number  VARCHAR(20) NOT NULL\n);",
+          "interview_question": "What are 1NF, 2NF and 3NF, and why normalize?",
+          "references": [
+            "https://en.wikipedia.org/wiki/Database_normalization"
+          ]
+        },
         {
-          "title": "Explicação",
-          "explanation": "Transações evitam inconsistências em transferências bancárias garantindo que todas as operações (ex.: debitar e creditar) sejam concluídas ou revertidas com COMMIT/ROLLBACK, seguindo ACID.",
-          "code": "BEGIN;\nUPDATE conta SET saldo = saldo - 50 WHERE id = 1; -- débito\nUPDATE conta SET saldo = saldo + 50 WHERE id = 2; -- crédito\nCOMMIT;\n-- Se algo falhar antes do COMMIT, ROLLBACK desfaz as duas operações",
-          "interview_question": "Como transações evitam inconsistências em transferências bancárias?"
+          "title": "Common mistake",
+          "explanation": "Mistaking history for redundancy. The price paid in an order is a fact about the order, not a copy of the product price. If the order item only points to the product, old orders change value whenever the price changes.",
+          "code": "-- WRONG: total computed with the product's CURRENT price\nSELECT SUM(p.price * i.quantity)\nFROM order_items i\nJOIN products p ON p.id = i.product_id\nWHERE i.order_id = 42;            -- changes every time the price changes\n\n-- RIGHT: the item stores the price at the time of purchase\nCREATE TABLE order_items (\n  order_id   INT NOT NULL REFERENCES orders(id),\n  product_id INT NOT NULL REFERENCES products(id),\n  quantity   INT NOT NULL,\n  unit_price NUMERIC(10,2) NOT NULL  -- a fact about the order\n);"
         }
       ]
     },
     {
       "subtitle": "Joins",
-      "description": "Combinando dados de múltiplas tabelas.",
+      "description": "Combining data from several tables.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "INNER JOIN retorna apenas registros com matches, enquanto LEFT JOIN inclui todos da tabela à esquerda, com nulls na direita, sendo útil para relatórios que precisam de dados opcionais.",
-          "code": "SELECT u.nome, p.produto\nFROM usuarios u\nINNER JOIN pedidos p ON u.id = p.usuario_id;\n-- Retorna usuários com pedidos",
-          "interview_question": "Qual a diferença entre INNER JOIN e LEFT JOIN?"
-        }
-      ]
-    },
-    {
-      "subtitle": "Índices",
-      "description": "Otimização de desempenho em consultas.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Índices aceleram SELECTs em colunas indexadas, mas deixam INSERT, UPDATE e DELETE mais lentos, porque cada índice também precisa ser atualizado. Crie índices para filtros e joins frequentes, não para todas as colunas.",
-          "code": "CREATE INDEX idx_nome ON usuarios(nome);\n-- Acelera busca por nome",
-          "interview_question": "Qual o impacto de índices no desempenho das escritas?"
-        }
-      ]
-    },
-    {
-      "subtitle": "ACID e BASE",
-      "description": "Propriedades de transações em bancos relacionais e NoSQL.",
-      "category": "conceitos",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "ACID (Atomicidade, Consistência, Isolamento, Durabilidade) é o padrão dos bancos relacionais. BASE (Basically Available, Soft state, Eventual consistency) descreve sistemas distribuídos que priorizam disponibilidade e aceitam que réplicas fiquem desatualizadas por um tempo. Não é regra de todo NoSQL: o MongoDB, por exemplo, tem transações ACID multi-documento desde a versão 4.0.",
-          "code": "-- ACID: tudo ou nada, visível para os outros só após o COMMIT\nBEGIN;\nUPDATE conta SET saldo = saldo - 50 WHERE id = 1;\nUPDATE conta SET saldo = saldo + 50 WHERE id = 2;\nCOMMIT;\n\n-- BASE (consistência eventual): a escrita vai para o nó A;\n-- uma leitura logo depois no nó B pode ainda ver o valor antigo\n-- até a replicação terminar.",
-          "interview_question": "Qual a diferença entre ACID e BASE?"
-        }
-      ]
-    },
-    {
-      "subtitle": "Bancos NoSQL",
-      "description": "Alternativas flexíveis a bancos relacionais.",
-      "category": "conceitos",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Tipos de NoSQL incluem documentos (MongoDB), key-value (Redis), colunas (Cassandra) e grafos (Neo4j), cada um otimizado para dados variados, como perfis em redes sociais ou relações complexas.",
-          "code": "db.usuarios.insertOne({ \"nome\": \"João\", \"pedidos\": [\"p1\", \"p2\"] });\n-- Inserção em MongoDB",
-          "interview_question": "Quais são os principais tipos de bancos NoSQL?",
+          "title": "Explanation",
+          "explanation": "**Problem:** after normalizing, data lives in several tables. To show \"customer name and their orders\" you have to put them back together.\n\n**Concept:** a JOIN combines rows from two tables by a condition, usually FK = PK. `INNER JOIN` returns only rows that have a match on both sides. `LEFT JOIN` returns every row from the left table; when there is no match, the right-side columns are `NULL`.\n\n**How it works:** Ana has two orders and Bruno has none. `INNER JOIN` returns only Ana's two rows; `LEFT JOIN` also returns Bruno, with `NULL` for the order. Adding `WHERE o.id IS NULL` to the `LEFT JOIN` finds users who never bought anything.",
+          "code": "-- users: (1, Ana), (2, Bruno)      orders: (10, user 1), (11, user 1)\n\nSELECT u.name, o.id AS order_id\nFROM users u\nINNER JOIN orders o ON o.user_id = u.id;\n-- Ana | 10\n-- Ana | 11\n\nSELECT u.name, o.id AS order_id\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id;\n-- Ana   | 10\n-- Ana   | 11\n-- Bruno | NULL\n\n-- Users who never placed an order\nSELECT u.name\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id\nWHERE o.id IS NULL;               -- Bruno",
+          "interview_question": "What is the difference between INNER JOIN and LEFT JOIN?",
           "references": [
-            "https://www.mongodb.com/docs/manual/"
+            "https://www.postgresql.org/docs/current/tutorial-join.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Filtering the right-side table in `WHERE` turns the `LEFT JOIN` into an `INNER JOIN`: unmatched rows have `NULL` in that column and get discarded. Conditions on the right-side table belong in `ON`.",
+          "code": "-- WRONG: Bruno disappears (o.status is NULL for him)\nSELECT u.name, o.id\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id\nWHERE o.status = 'PAID';\n\n-- RIGHT: every user, with paid orders when there are any\nSELECT u.name, o.id\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id AND o.status = 'PAID';"
+        }
+      ]
+    },
+    {
+      "subtitle": "Aggregation: GROUP BY and HAVING",
+      "formerSubtitle": "Agregações: GROUP BY e HAVING",
+      "description": "Summarizing many rows into a few.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** \"how many paid orders did each customer place, and how much did they spend?\" means turning thousands of order rows into one row per customer.\n\n**Concept:** aggregate functions (`COUNT`, `SUM`, `AVG`, `MIN`, `MAX`) summarize many rows into one value. `GROUP BY` defines the groups. `WHERE` filters rows before grouping; `HAVING` filters groups afterwards, and can use aggregates.\n\n**How it works:** the logical order of execution is FROM/JOIN, WHERE, GROUP BY, HAVING, SELECT, ORDER BY. That is why `WHERE` cannot see `COUNT(...)`, and why every column in `SELECT` that is not inside an aggregate must be in `GROUP BY`. `COUNT(*)` counts rows; `COUNT(column)` skips `NULL` — with a `LEFT JOIN`, `COUNT(o.id)` gives 0 for users without orders.",
+          "code": "SELECT c.name,\n       COUNT(o.id)    AS total_orders,\n       SUM(o.amount)  AS revenue\nFROM customers c\nJOIN orders o ON o.customer_id = c.id\nWHERE o.status = 'PAID'          -- 1. filters rows\nGROUP BY c.id, c.name            -- 2. groups by customer\nHAVING COUNT(o.id) > 5           -- 3. filters groups\nORDER BY revenue DESC;",
+          "interview_question": "What is the difference between WHERE and HAVING?",
+          "references": [
+            "https://www.postgresql.org/docs/current/tutorial-agg.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using an aggregate in `WHERE`. The database rejects it, because `WHERE` runs before any group exists.",
+          "code": "-- WRONG\nSELECT customer_id, COUNT(*) FROM orders\nWHERE COUNT(*) > 5\nGROUP BY customer_id;\n-- ERROR: aggregate functions are not allowed in WHERE\n\n-- RIGHT\nSELECT customer_id, COUNT(*) FROM orders\nGROUP BY customer_id\nHAVING COUNT(*) > 5;"
+        }
+      ]
+    },
+    {
+      "subtitle": "Subqueries and CTEs",
+      "formerSubtitle": "Subqueries e CTEs",
+      "description": "Queries in steps, readable with WITH.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** \"customers who spent more than the average this month\" needs an intermediate result — the total per customer — before the final query.\n\n**Concept:** a subquery is a `SELECT` inside another one (in `WHERE`, `FROM` or `SELECT`). A CTE (Common Table Expression, the `WITH` clause) gives that step a name, so the query reads top to bottom, like a list of steps.\n\n**How it works:** the `monthly_orders` CTE computes the total per customer; the final query uses that result twice — for the join and for the average — without repeating the calculation. Prefer a CTE when the query has steps or uses the same result more than once. `WITH RECURSIVE` walks hierarchies, such as categories and subcategories.",
+          "code": "WITH monthly_orders AS (\n  SELECT customer_id, SUM(amount) AS total\n  FROM orders\n  WHERE created_at >= date_trunc('month', now())\n  GROUP BY customer_id\n)\nSELECT c.name, mo.total\nFROM monthly_orders mo\nJOIN customers c ON c.id = mo.customer_id\nWHERE mo.total > (SELECT AVG(total) FROM monthly_orders);",
+          "interview_question": "When should you use a CTE (WITH) instead of a subquery?",
+          "references": [
+            "https://www.postgresql.org/docs/current/queries-with.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`NOT IN` with a subquery that returns any `NULL` returns no rows at all, because a comparison with `NULL` is never true. Use `NOT EXISTS`.",
+          "code": "-- WRONG: if any order has customer_id NULL, this returns zero rows\nSELECT name FROM customers\nWHERE id NOT IN (SELECT customer_id FROM orders);\n\n-- RIGHT: NOT EXISTS is not affected by NULL\nSELECT c.name FROM customers c\nWHERE NOT EXISTS (\n  SELECT 1 FROM orders o WHERE o.customer_id = c.id\n);"
+        }
+      ]
+    },
+    {
+      "subtitle": "Indexes",
+      "formerSubtitle": "Índices",
+      "description": "Fast reads, slightly slower writes.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** without an index, finding one email among 10 million users forces the database to read the whole table (a Seq Scan).\n\n**Concept:** an index is a separate sorted structure — a B-tree by default — that points to the rows, like the index at the back of a book. Lookups by equality, ranges and `ORDER BY` on the indexed column become much faster.\n\n**How it works:** create indexes on columns used in frequent `WHERE` and `JOIN` clauses, and confirm the gain with `EXPLAIN`. The cost: every `INSERT`, `UPDATE` and `DELETE` also updates all of the table's indexes, and they take disk space. `PRIMARY KEY` and `UNIQUE` already create an index; a FK does not, in PostgreSQL.",
+          "code": "CREATE INDEX idx_users_email ON users (email);\n\nEXPLAIN SELECT * FROM users WHERE email = 'ana@example.com';\n-- Before the index: Seq Scan on users\n-- After:            Index Scan using idx_users_email on users",
+          "interview_question": "How do indexes affect read and write performance?",
+          "references": [
+            "https://www.postgresql.org/docs/current/indexes.html",
+            "https://www.postgresql.org/docs/current/using-explain.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Applying a function to the column in `WHERE`: the column's index is not used. The same goes for `LIKE` with a leading `%`. Index the expression itself, or rewrite the filter.",
+          "code": "-- WRONG: lower(email) does not use idx_users_email\nSELECT * FROM users WHERE lower(email) = 'ana@example.com';\n\n-- RIGHT: index the same expression the filter uses\nCREATE INDEX idx_users_email_lower ON users (lower(email));\n\n-- LIKE '%smith' (leading wildcard) also skips the B-tree index"
+        }
+      ]
+    },
+    {
+      "subtitle": "Transactions",
+      "formerSubtitle": "Transações",
+      "description": "All or nothing.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a transfer does two things: debit account A and credit account B. If the server crashes between the two, the money disappears.\n\n**Concept:** a transaction groups operations into one all-or-nothing unit: either all of them are saved (`COMMIT`) or none are (`ROLLBACK`). Until the `COMMIT`, no other connection sees the half-done change.\n\n**How it works:** without `BEGIN`, each statement runs in its own transaction (autocommit). In Spring, `@Transactional` on a service method opens the transaction at the start and commits at the end; a `RuntimeException` triggers a `ROLLBACK`.",
+          "code": "BEGIN;\nUPDATE accounts SET balance = balance - 50 WHERE id = 1;  -- debit\nUPDATE accounts SET balance = balance + 50 WHERE id = 2;  -- credit\nCOMMIT;   -- both changes take effect together\n\nBEGIN;\nUPDATE accounts SET balance = balance - 50 WHERE id = 1;\n-- an error happens here\nROLLBACK; -- the debit is undone",
+          "interview_question": "How do transactions prevent inconsistencies in a bank transfer?",
+          "references": [
+            "https://www.postgresql.org/docs/current/tutorial-transactions.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Doing the debit and the credit in separate transactions — for example, two `save()` calls without `@Transactional`. It is the same as having no transaction: if the second one fails, the first is already saved.",
+          "code": "// WRONG: without @Transactional, each save() is its own transaction\npublic void transfer(Long from, Long to, BigDecimal amount) {\n    accounts.save(debit(from, amount));   // already saved\n    accounts.save(credit(to, amount));    // if this fails, the debit stays\n}\n\n// RIGHT: both operations in one transaction\n@Transactional\npublic void transfer(Long from, Long to, BigDecimal amount) {\n    accounts.save(debit(from, amount));\n    accounts.save(credit(to, amount));    // fails: both are rolled back\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "SQL Injection",
+      "formerSubtitle": "SQL Injection e Segurança",
+      "description": "Never build SQL from user input.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the name search builds the SQL by concatenating what the user typed. If they type `' OR '1'='1`, the query returns every customer — or worse, deletes data.\n\n**Concept:** SQL injection happens when user input becomes part of the SQL statement. The defense is a parameterized query: the statement is sent to the database separately from the values, and a value is never interpreted as SQL.\n\n**How it works:** use `?` in JDBC (`PreparedStatement`), `:name` in JPA, or Spring Data derived methods — all of them are parameterized. Column and table names cannot be parameters: for a dynamic `ORDER BY`, check the value against a list of allowed columns. As an extra layer, the database user the application connects with should have only the permissions it needs.",
+          "code": "// JDBC: the value travels separately from the statement\nPreparedStatement ps = conn.prepareStatement(\"SELECT * FROM customers WHERE name = ?\");\nps.setString(1, name);\n\n// Spring Data JPA: named parameter\n@Query(\"SELECT c FROM Customer c WHERE c.name = :name\")\nList<Customer> findByName(@Param(\"name\") String name);\n\n// Dynamic ORDER BY: allowed columns only\nprivate static final Set<String> SORTABLE = Set.of(\"name\", \"createdAt\");\nif (!SORTABLE.contains(field)) throw new IllegalArgumentException(\"Invalid sort field\");",
+          "interview_question": "How do you prevent SQL injection in a Java application?",
+          "references": [
+            "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+            "https://owasp.org/www-community/attacks/SQL_Injection"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Assuming JPA protects you on its own. JPQL or native SQL built by concatenation is just as injectable; the protection comes from the parameter, not from the tool.",
+          "code": "// WRONG: concatenated JPQL is injectable too\nem.createQuery(\"SELECT u FROM User u WHERE u.name = '\" + name + \"'\");\n\n// RIGHT: named parameter\nem.createQuery(\"SELECT u FROM User u WHERE u.name = :name\", User.class)\n  .setParameter(\"name\", name)\n  .getResultList();"
         }
       ]
     },
     {
       "subtitle": "ORM (Object-Relational Mapping)",
-      "description": "Integração de bancos relacionais com Java.",
+      "description": "Java objects mapped to tables.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "ORM como JPA mapeia objetos Java para tabelas, permitindo operações como persist() sem SQL manual, reduzindo boilerplate e facilitando integração com Spring Data em projetos Java.",
-          "code": "import jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class Usuario {\n  @Id\n  private Long id;\n  private String nome;\n\n  protected Usuario() {} // JPA exige construtor sem argumentos\n  public Usuario(Long id, String nome) { this.id = id; this.nome = nome; }\n\n  public Long getId() { return id; }\n  public String getNome() { return nome; }\n}\n// Exemplo de uso\nEntityManager em = ...;\nem.persist(new Usuario(1L, \"João\"));",
-          "interview_question": "Como um ORM como JPA simplifica o acesso a bancos?",
+          "title": "Explanation",
+          "explanation": "**Problem:** with plain JDBC, every query means writing the SQL, reading the `ResultSet` column by column and building the object — and the reverse to save. That is a lot of repeated code.\n\n**Concept:** an ORM maps classes to tables and objects to rows. JPA is the specification (`jakarta.persistence`), Hibernate is the most used implementation, and Spring Data JPA generates repositories on top of it.\n\n**How it works:** `@Entity` marks the class, `@Id` the key and `@ManyToOne` the relationship (the FK). Inside a transaction a loaded entity is \"managed\": changing a field is enough for Hibernate to save it at `COMMIT` (dirty checking). JPA requires a no-argument constructor.",
+          "code": "@Entity\n@Table(name = \"orders\")\npublic class Order {\n    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE)\n    private Long id;\n\n    @ManyToOne(fetch = FetchType.LAZY)   // FK user_id\n    private User user;\n\n    private BigDecimal total;\n\n    protected Order() {}                 // required by JPA\n}\n\npublic interface OrderRepository extends JpaRepository<Order, Long> {\n    List<Order> findByUserId(Long userId);  // SQL generated from the name\n}",
+          "interview_question": "How does an ORM like JPA simplify database access, and what is its main performance risk?",
           "references": [
-            "https://hibernate.org/orm/documentation/"
+            "https://hibernate.org/orm/documentation/",
+            "https://docs.spring.io/spring-data/jpa/reference/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Views e Stored Procedures",
-      "description": "Abstrações para consultas e lógica no banco.",
-      "category": "pratica",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Views simplificam consultas complexas como tabelas virtuais, melhorando legibilidade e segurança, enquanto stored procedures centralizam lógica no banco, reduzindo tráfego de rede.",
-          "code": "CREATE VIEW usuarios_ativos AS\nSELECT * FROM usuarios WHERE ativo = true;\n-- View para usuários ativos",
-          "interview_question": "Quando usar uma view em vez de uma consulta direta?"
-        }
-      ]
-    },
-    {
-      "subtitle": "SQL Injection e Segurança",
-      "description": "Boas práticas para proteger consultas.",
-      "category": "boas-praticas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Previna SQL Injection com prepared statements, que separam SQL de parâmetros, evitando que entradas maliciosas alterem consultas e protegendo sistemas como e-commerce.",
-          "code": "String sql = \"SELECT * FROM usuarios WHERE nome = ?\";\nPreparedStatement stmt = conn.prepareStatement(sql);\nstmt.setString(1, nome);\n// Evita SQL Injection",
-          "interview_question": "Como prevenir SQL Injection em aplicações Java?",
-          "references": [
-            "https://owasp.org/www-community/attacks/SQL_Injection"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Agregações: GROUP BY e HAVING",
-      "description": "Resumindo dados com funções de agregação.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "WHERE filtra linhas antes do agrupamento; HAVING filtra grupos depois da agregação. Funções como COUNT, SUM, AVG, MIN e MAX resumem cada grupo, e toda coluna no SELECT que não está em uma agregação precisa aparecer no GROUP BY. Exemplo típico de entrevista: \"clientes com mais de 5 pedidos pagos\".",
-          "code": "SELECT c.nome, COUNT(p.id) AS total_pedidos, SUM(p.valor) AS faturamento\nFROM clientes c\nJOIN pedidos p ON p.cliente_id = c.id\nWHERE p.status = 'PAGO'          -- filtra linhas\nGROUP BY c.nome\nHAVING COUNT(p.id) > 5           -- filtra grupos\nORDER BY faturamento DESC;",
-          "interview_question": "Qual a diferença entre WHERE e HAVING?",
-          "references": [
-            "https://www.postgresql.org/docs/current/tutorial-agg.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Subqueries e CTEs",
-      "description": "Consultas legíveis com WITH.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Subqueries aninham uma consulta dentro de outra (no WHERE, FROM ou SELECT). CTEs (Common Table Expressions, cláusula WITH) nomeiam etapas intermediárias, deixando consultas complexas legíveis como um passo a passo e permitindo reutilizar o mesmo resultado várias vezes. CTEs recursivas também resolvem hierarquias, como categorias e subcategorias.",
-          "code": "WITH pedidos_mes AS (\n  SELECT cliente_id, SUM(valor) AS total\n  FROM pedidos\n  WHERE criado_em >= date_trunc('month', now())\n  GROUP BY cliente_id\n)\nSELECT c.nome, pm.total\nFROM pedidos_mes pm\nJOIN clientes c ON c.id = pm.cliente_id\nWHERE pm.total > (SELECT AVG(total) FROM pedidos_mes);",
-          "interview_question": "Quando usar uma CTE (WITH) em vez de uma subquery?",
-          "references": [
-            "https://www.postgresql.org/docs/current/queries-with.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Pool de Conexões",
-      "description": "Reutilizando conexões com HikariCP.",
-      "category": "ferramentas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Abrir uma conexão é caro (handshake de rede, autenticação). Um pool, como o HikariCP — padrão no Spring Boot —, mantém conexões abertas e as empresta a cada requisição. O tamanho do pool deve ser pequeno e calibrado: muitas conexões sobrecarregam o banco. Sintoma clássico de pool esgotado: requisições aguardando até o connectionTimeout, geralmente causado por transações longas ou conexões não devolvidas.",
-          "code": "# application.yml\nspring:\n  datasource:\n    url: jdbc:postgresql://localhost:5432/loja\n    hikari:\n      maximum-pool-size: 10\n      minimum-idle: 2\n      connection-timeout: 3000   # ms aguardando uma conexão livre",
-          "interview_question": "Por que aplicações usam um pool de conexões com o banco?",
-          "references": [
-            "https://github.com/brettwooldridge/HikariCP"
-          ]
+          "title": "Common mistake",
+          "explanation": "The N+1 problem: listing orders and reading each order's user inside a loop fires one extra query per order — 100 orders, 101 queries. Turn on SQL logging in development to see it, and load the relationship together with `join fetch`.",
+          "code": "// WRONG: 1 query for the orders + 1 per order for its user\nfor (Order o : orderRepository.findAll()) {\n    System.out.println(o.getUser().getName());\n}\n\n// RIGHT: orders and users in a single query\n@Query(\"select o from Order o join fetch o.user\")\nList<Order> findAllWithUser();"
         }
       ]
     }

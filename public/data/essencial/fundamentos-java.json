@@ -1,304 +1,379 @@
 {
-  "title": "Fundamentos de Java",
-  "description": "Conceitos principais da linguagem e pontos comuns em entrevistas, atualizados para Java 21 (LTS).",
+  "title": "Java Fundamentals",
+  "description": "The core of the language and the points interviews ask about most, updated for Java 21 (LTS).",
   "version": "Java 21",
   "resumo": [
-    "A JVM executa o bytecode gerado pelo `javac`: o mesmo `.class` roda em qualquer sistema. O JDK traz compilador e ferramentas; desde o Java 11 não existe JRE separado.",
-    "Primitivos (`int`, `double`) guardam valores; wrappers (`Integer`) são objetos e podem ser null. Compare objetos com `equals`, não com `==`.",
-    "`String` é imutável: concatenar em loop cria objetos novos — use `StringBuilder`.",
-    "Visibilidade: `private` (classe), sem modificador (pacote), `protected` (pacote + subclasses), `public` (todos).",
-    "Checked exceptions exigem `try/catch` ou `throws`; unchecked (`RuntimeException`) indicam erro de programação ou regra violada. `try-with-resources` fecha arquivos e conexões.",
-    "Sobrescreveu `equals`, sobrescreva `hashCode` — senão `HashMap` e `HashSet` falham.",
-    "`List` é a coleção padrão (`List.of()` é imutável); streams são declarativos e sequenciais, e `parallelStream()` raramente compensa em apps web.",
-    "Datas com `java.time` (`LocalDate`, `Instant`), nunca `Date` ou `Calendar`.",
-    "Java moderno: `var` (10), switch expression (14), text blocks (15), records (16), sealed classes (17)."
+    "The JVM runs bytecode produced by `javac`, so the same `.class` runs on any system. The JDK brings the compiler and tools; since Java 11 there is no separate JRE.",
+    "Primitives (`int`, `double`) hold values; wrappers (`Integer`) are objects and can be null. Compare objects with `equals`, never `==`.",
+    "`String` is immutable: building text in a loop creates new objects — use `StringBuilder`.",
+    "Visibility: `private` (class), no modifier (package), `protected` (package + subclasses), `public` (everyone).",
+    "Checked exceptions require `try/catch` or `throws`; unchecked (`RuntimeException`) signal bugs or broken rules. try-with-resources closes files and connections.",
+    "Override `equals`, override `hashCode` — otherwise `HashMap` and `HashSet` break.",
+    "Java is always pass-by-value: a method gets a copy of the value or of the reference.",
+    "`List` is the default collection; `List.of()` creates an immutable one.",
+    "Dates with `java.time` (`LocalDate`, `Instant`), never `Date` or `Calendar`.",
+    "Modern Java: `var` (10), switch expression (14), text blocks (15), records (16), sealed classes (17)."
   ],
   "subsections": [
     {
-      "subtitle": "JVM, JRE e JDK",
-      "description": "Componentes centrais da plataforma Java.",
+      "subtitle": "JVM, JRE and JDK",
+      "formerSubtitle": "JVM, JRE e JDK",
+      "description": "How Java code goes from source file to running program.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A JVM executa o bytecode, garantindo portabilidade entre sistemas, o JRE fornece o ambiente para rodar apps com bibliotecas, e o JDK adiciona ferramentas como `javac` para desenvolvimento, sendo essencial para criar e depurar código, como uma API de usuários.",
-          "code": "javac Main.java  // compila para bytecode\njava Main       // executa na JVM",
-          "interview_question": "Qual a diferença entre JVM, JRE e JDK, e por que o JDK é essencial para desenvolvedores?",
+          "title": "Explanation",
+          "explanation": "**Problem:** you write code on Windows and the server runs Linux. A program compiled to native machine code would have to be rebuilt for each operating system.\n\n**Concept:** `javac` compiles `.java` files into bytecode (`.class`), which does not depend on the operating system. The JVM runs that bytecode: it loads classes, interprets them, compiles hot code to native code at runtime (the JIT) and manages memory with the garbage collector. JRE = JVM + standard library, enough to run programs. JDK = JRE + development tools (`javac`, `jar`, `jshell`, `jcmd`, debugger).\n\n**How it works:** compile once, run on any JVM. Since Java 11 there is no separate JRE download: you install a JDK, or build a small custom runtime with `jlink`. For a quick test, `java Hello.java` compiles and runs a single file in one step.",
+          "code": "// Hello.java\npublic class Hello {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, \" + args[0]);\n    }\n}\n\n$ javac Hello.java        # creates Hello.class (bytecode)\n$ java Hello Ana          # the JVM loads and runs it: Hello, Ana\n$ java Hello.java Ana     # Java 11+: compile and run one file in one step\n$ javap -c Hello          # shows the bytecode",
+          "interview_question": "What is the difference between the JVM, the JRE and the JDK?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/"
+            "https://dev.java/learn/getting-started/",
+            "https://docs.oracle.com/en/java/javase/21/docs/specs/man/javac.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Compiling with a newer JDK than the JVM that will run the code. The class file records its version, and an older JVM refuses it. Compile with `--release` set to the oldest Java version you need to support.",
+          "code": "$ javac Hello.java              # JDK 21\n$ /opt/jdk17/bin/java Hello     # older JVM\nUnsupportedClassVersionError: Hello has been compiled by a more recent version\nof the Java Runtime (class file version 65.0), this version of the Java Runtime\nonly recognizes class file versions up to 61.0\n\n# RIGHT: target the oldest JVM that will run the code\n$ javac --release 17 Hello.java"
         }
       ]
     },
     {
-      "subtitle": "Estruturas de Controle",
-      "description": "Controle de fluxo em Java, incluindo switch expressions modernas.",
+      "subtitle": "Control Flow",
+      "formerSubtitle": "Estruturas de Controle",
+      "description": "Deciding and repeating: if, switch and loops.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O `switch expression` (padrão desde o Java 14) melhora o código ao retornar valores diretamente, eliminando `break` e reduzindo repetição, como em `switch (dia) { case 1 -> \"Segunda\" }`, sendo mais conciso e seguro para decisões complexas.",
-          "code": "var numero = 2;\nString resultado = switch (numero) {\n    case 1 -> \"Um\";\n    case 2 -> \"Dois\";\n    default -> \"Outro\";\n};",
-          "interview_question": "Como o switch expression melhora o código em relação ao switch tradicional?",
+          "title": "Explanation",
+          "explanation": "**Problem:** programs constantly decide and repeat: apply a discount only for VIP customers, process every item in a cart.\n\n**Concept:** `if`/`else` decides; `switch` chooses among values; `for`, enhanced `for`, `while` and `do-while` repeat. `break` leaves a loop and `continue` jumps to the next iteration. The switch expression (standard since Java 14) returns a value with `->`, never falls through, and must cover every case.\n\n**How it works:** use the classic `for` when you need the index, the enhanced `for` to walk a collection, and `while` when you do not know in advance how many iterations there will be. Prefer the switch expression for choosing a value: the compiler complains if a case is missing.",
+          "code": "int total = 0;\nfor (int i = 1; i <= 3; i++) {      // classic for: 1, 2, 3\n    total += i;\n}\n\nfor (String item : List.of(\"book\", \"\", \"pen\")) {   // enhanced for\n    if (item.isBlank()) continue;                 // skip to the next item\n    System.out.println(item);\n}\n\nString size = switch (quantity) {   // switch expression returns a value\n    case 0 -> \"empty\";\n    case 1, 2, 3 -> \"small\";\n    default -> \"large\";\n};",
+          "interview_question": "How does the switch expression improve on the classic switch?",
           "references": [
-            "https://openjdk.java.net/jeps/361"
+            "https://openjdk.org/jeps/361",
+            "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/flow.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "The classic `switch` with `:` falls through to the next case when you forget `break`, so the code of other cases runs too. The arrow form `->` never falls through.",
+          "code": "// WRONG: no break, PAID also runs the SHIPPED code\nswitch (status) {\n    case \"PAID\":\n        sendInvoice();\n    case \"SHIPPED\":\n        notifyCustomer();\n}\n\n// RIGHT: the arrow form never falls through\nswitch (status) {\n    case \"PAID\" -> sendInvoice();\n    case \"SHIPPED\" -> notifyCustomer();\n    default -> { }\n}"
         }
       ]
     },
     {
-      "subtitle": "Tipos Primitivos e Wrapper",
-      "description": "Diferença entre tipos primitivos e classes wrapper, com uso de var.",
+      "subtitle": "Primitive Types and Wrappers",
+      "formerSubtitle": "Tipos Primitivos e Wrapper",
+      "description": "int vs Integer, autoboxing and var.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O `var` torna o código conciso ao inferir tipos como `int` ou `Integer`, mas exige clareza em tipos complexos para evitar ambiguidades, sendo útil em inicializações simples como `var x = 5`, mas menos em objetos aninhados.",
-          "code": "var x = 5; // int inferido\nInteger y = null;\nSystem.out.println(Integer.parseInt(\"10\"));",
-          "interview_question": "Qual a vantagem de usar var com tipos primitivos e wrappers?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the number 10 can be a raw value or an object. Collections only hold objects, and a database column may be null — a raw `int` cannot be.\n\n**Concept:** Java has 8 primitive types: `byte`, `short`, `int`, `long`, `float`, `double`, `char`, `boolean`. They hold the value directly, are fast and are never null. Each has a wrapper class (`Integer`, `Long`, `Double`, `Boolean`...): an object that can be null and can be used in collections and generics. Autoboxing converts between them automatically.\n\n**How it works:** use primitives for calculations and local values, and wrappers when null is meaningful or a collection requires an object. `var` (Java 10) lets the compiler infer the type of a local variable from its initial value.",
+          "code": "int count = 10;                     // primitive: the value itself\nInteger boxed = count;              // autoboxing: int -> Integer\nint back = boxed;                   // unboxing: Integer -> int\nList<Integer> ids = List.of(1, 2);  // collections need wrappers\n\nint parsed = Integer.parseInt(\"42\");\nlong big = 3_000_000_000L;          // too big for int: long with the L suffix\nvar name = \"Ana\";                   // var: inferred as String",
+          "interview_question": "What is the difference between int and Integer, and why can == fail between two Integer values?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Integer.html"
+            "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/datatypes.html",
+            "https://docs.oracle.com/javase/tutorial/java/data/autoboxing.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Comparing wrappers with `==` compares objects, not values. It seems to work for small numbers, because -128 to 127 are cached, and fails above that. Unboxing a null wrapper throws `NullPointerException`.",
+          "code": "Integer a = 127, b = 127;\nSystem.out.println(a == b);        // true  (cached values -128..127)\nInteger c = 1000, d = 1000;\nSystem.out.println(c == d);        // false (different objects)\nSystem.out.println(c.equals(d));   // true  — compare wrappers with equals\n\nInteger stock = null;              // e.g. a nullable database column\nint units = stock;                 // NullPointerException on unboxing"
         }
       ]
     },
     {
-      "subtitle": "Modificadores de Acesso",
-      "description": "Controle de visibilidade de classes e membros.",
+      "subtitle": "Access Modifiers",
+      "formerSubtitle": "Modificadores de Acesso",
+      "description": "Controlling who can see and change what.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "`public` abre acesso global, `protected` permite acesso a pacote e subclasses, `default` restringe ao pacote, e `private` confina à classe, ajudando no encapsulamento ao proteger atributos como `private String nome` em uma classe `Usuario`.",
-          "code": "public class Exemplo {\n  public int a;\n  protected int b;\n  int c;\n  private int d;\n}",
-          "interview_question": "Como os modificadores de acesso ajudam no encapsulamento?",
+          "title": "Explanation",
+          "explanation": "**Problem:** if any class can set an account balance directly, nothing guarantees it never goes negative.\n\n**Concept:** Java has four access levels: `private` (only the class itself), no modifier or package-private (classes in the same package), `protected` (same package plus subclasses) and `public` (everyone). Hiding fields and exposing methods that check the rules is encapsulation.\n\n**How it works:** start everything as `private` and open only what other classes really need. Fields stay private; the public methods are the class's contract.",
+          "code": "package com.shop.billing;\n\npublic class Account {\n    private BigDecimal balance = BigDecimal.ZERO;   // only Account touches it\n    String branch;                                  // package-private\n    protected void audit() { }                      // package + subclasses\n\n    public void deposit(BigDecimal amount) {        // the public API\n        if (amount.signum() <= 0) throw new IllegalArgumentException(\"Amount must be positive\");\n        balance = balance.add(amount);\n    }\n\n    public BigDecimal getBalance() { return balance; }\n}",
+          "interview_question": "What are Java's access modifiers and how do they support encapsulation?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/class.html"
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Public fields. Any class can bypass the rules, and the class can no longer change how it stores its data without breaking callers.",
+          "code": "// WRONG: any class can set a negative balance\npublic class Account {\n    public BigDecimal balance;\n}\naccount.balance = new BigDecimal(\"-1000\");\n\n// RIGHT: a private field, changed only by methods that check the rules\naccount.deposit(new BigDecimal(\"100\"));"
         }
       ]
     },
     {
-      "subtitle": "Palavra-chave static",
-      "description": "Uso de variáveis e métodos estáticos.",
+      "subtitle": "The static Keyword",
+      "formerSubtitle": "Palavra-chave static",
+      "description": "Members that belong to the class, not to each object.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "`static` associa membros à classe, como `Math.PI`, sendo útil para constantes, mas seu uso excessivo dificulta testes ao criar dependência de estado global, como em métodos que alteram variáveis estáticas sem controle.",
-          "code": "class Util {\n  public static final double PI = 3.14;\n  public static int soma(int a, int b) { return a + b; }\n}",
-          "interview_question": "Por que o uso excessivo de static pode ser problemático em testes unitários?",
+          "title": "Explanation",
+          "explanation": "**Problem:** some things belong to the class, not to each object: a constant such as the tax rate, or a helper method that needs no state.\n\n**Concept:** a `static` member belongs to the class: there is one copy shared by every instance, and it is used without creating an object (`Math.max(3, 7)`). `static final` declares a constant. A static method cannot use `this` or instance fields.\n\n**How it works:** use `static` for constants and for stateless helper methods. Everything that varies per object stays as an instance field.",
+          "code": "public class Order {\n    public static final BigDecimal TAX_RATE = new BigDecimal(\"0.10\");  // one constant for all orders\n    private static int created = 0;   // shared by every Order\n    private final BigDecimal amount;  // one per object\n\n    public Order(BigDecimal amount) {\n        this.amount = amount;\n        created++;\n    }\n\n    public static int created() { return created; }   // Order.created()\n}\n\nint biggest = Math.max(3, 7);   // static method: no Math object needed",
+          "interview_question": "When is static appropriate, and why can mutable static state cause problems?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Math.html"
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/classvars.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Mutable static state. It is shared by every request, every thread and every test, so one user's data leaks into another's and tests affect each other. Pass the state as a parameter instead.",
+          "code": "// WRONG: one \"current user\" shared by every request (and every test)\n@Service\npublic class CartService {\n    private static User currentUser;\n}\n\n// RIGHT: state travels as a parameter; static only for constants and helpers\npublic Cart addItem(User user, Item item) { ... }"
         }
       ]
     },
     {
-      "subtitle": "Strings e Imutabilidade",
-      "description": "Comportamento de Strings, incluindo Text Blocks.",
+      "subtitle": "Strings and Immutability",
+      "formerSubtitle": "Strings e Imutabilidade",
+      "description": "Why String never changes, and how to build text.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Strings são imutáveis: cada concatenação cria um objeto novo, então em loops use `StringBuilder`. Text Blocks (Java 15) facilitam strings multilinha, como JSON, SQL ou HTML, sem \\n nem aspas escapadas; as aspas triplas de abertura precisam ser seguidas de uma quebra de linha.",
-          "code": "String s = \"Oi\";\nString multi = \"\"\"\n    Olá,\n    Mundo!\n    \"\"\";\nStringBuilder sb = new StringBuilder().append(\"teste\");",
-          "interview_question": "Qual a vantagem de usar Text Blocks para strings multilinhas?",
+          "title": "Explanation",
+          "explanation": "**Problem:** text is everywhere — names, messages, JSON — and building it the wrong way creates many throwaway objects.\n\n**Concept:** `String` is immutable: methods such as `toUpperCase()` or `replace()` return a new String and the original never changes. That makes strings safe to share between threads and to use as `HashMap` keys. `StringBuilder` is the mutable version, for building text step by step. Text blocks (Java 15) write multi-line text without escapes.\n\n**How it works:** always use the value a String method returns. In loops, append to a `StringBuilder`; for a single line, `+` is fine — the compiler optimizes it.",
+          "code": "String name = \"ana\";\nname.toUpperCase();                 // result discarded: name is still \"ana\"\nString upper = name.toUpperCase();  // \"ANA\"\n\nStringBuilder sb = new StringBuilder();\nfor (String item : items) {\n    sb.append(item).append(\", \");   // one buffer, no new String per step\n}\n\nString json = \"\"\"\n    {\"name\": \"%s\"}\n    \"\"\".formatted(upper);           // text block + formatted()",
+          "interview_question": "Why are Strings immutable in Java, and when should you use StringBuilder?",
           "references": [
-            "https://openjdk.java.net/jeps/378"
+            "https://openjdk.org/jeps/378",
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/String.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Comparing strings with `==`. It compares references, so text that came from a request, a file or the database is never \"the same object\". Use `equals`, with the literal on the left to be safe with null.",
+          "code": "String a = \"ana\";\nString b = new String(\"ana\");\nSystem.out.println(a == b);        // false: different objects\nSystem.out.println(a.equals(b));   // true: same content\n\nif (status.equals(\"PAID\")) { ... }   // NullPointerException if status is null\nif (\"PAID\".equals(status)) { ... }   // safe with null"
         }
       ]
     },
     {
-      "subtitle": "Tratamento de Exceções",
-      "description": "Mecanismo de erro controlado.",
+      "subtitle": "Exception Handling",
+      "formerSubtitle": "Tratamento de Exceções",
+      "description": "try, catch, finally and try-with-resources.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "`try-with-resources` gerencia recursos como arquivos ou conexões, fechando-os automaticamente, como em `try (BufferedReader br = new BufferedReader(...))`, sendo crucial para evitar vazamento de recursos (arquivos e conexões que ficam abertos) em sistemas que lidam com I/O intensivo.",
-          "code": "try (var reader = new BufferedReader(new FileReader(\"file.txt\"))) {\n  String line = reader.readLine();\n} catch (IOException e) {\n  System.out.println(\"Erro: \" + e.getMessage());\n}",
-          "interview_question": "O que é try-with-resources e quando usá-lo?",
+          "title": "Explanation",
+          "explanation": "**Problem:** files go missing, networks fail, input is invalid. Without handling, one error ends the request with a stack trace.\n\n**Concept:** `throw` signals an error; `try` runs code that may fail; `catch` handles one exception type; `finally` always runs, for cleanup. try-with-resources closes anything `AutoCloseable` — files, connections, streams — automatically, even when an error happens.\n\n**How it works:** catch the most specific type first, and only where you can do something useful; otherwise let the exception propagate. When you wrap an exception in another, pass the original as the cause so the stack trace is kept.",
+          "code": "public String firstLine(Path path) {\n    try (BufferedReader reader = Files.newBufferedReader(path)) {   // closed automatically\n        return reader.readLine();\n    } catch (NoSuchFileException e) {        // specific first\n        return \"\";                           // a missing file is acceptable here\n    } catch (IOException e) {                // then the general case\n        throw new UncheckedIOException(\"Could not read \" + path, e);   // keep the cause\n    }\n}",
+          "interview_question": "What is try-with-resources and when should you use it?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/AutoCloseable.html"
+            "https://docs.oracle.com/javase/tutorial/essential/exceptions/tryResourceClose.html",
+            "https://docs.oracle.com/javase/tutorial/essential/exceptions/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Swallowing exceptions with an empty `catch`, or throwing a new exception without the cause. The error disappears, and the bug shows up later, far from where it happened.",
+          "code": "// WRONG: the error disappears\ntry {\n    payment.charge(order);\n} catch (Exception e) {\n}\n\n// WRONG: the original cause (and its stack trace) is lost\ncatch (IOException e) { throw new RuntimeException(\"Failed\"); }\n\n// RIGHT: rethrow (or log) keeping the cause\ncatch (IOException e) { throw new UncheckedIOException(\"Could not read file\", e); }"
         }
       ]
     },
     {
-      "subtitle": "Coleções Básicas",
-      "description": "Estruturas de dados mais usadas, com métodos modernos.",
+      "subtitle": "Basic Collections",
+      "formerSubtitle": "Coleções Básicas",
+      "description": "List, Set and Map.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Coleções imutáveis como `List.of()` (Java 9) previnem alterações acidentais, como em `var lista = List.of(\"a\", \"b\")`, sendo úteis para dados constantes, como uma lista de países, e aumentando a segurança em código compartilhado.",
-          "code": "var lista = List.of(\"a\", \"b\", \"c\");\nvar mapa = Map.of(1, \"um\", 2, \"dois\");",
-          "interview_question": "Qual a vantagem de usar coleções imutáveis como List.of()?",
+          "title": "Explanation",
+          "explanation": "**Problem:** arrays have a fixed size, but real data grows: cart items, users by id, unique tags.\n\n**Concept:** `List` is ordered, allows duplicates and is accessed by index (`ArrayList`). `Set` has no duplicates (`HashSet`; `LinkedHashSet` keeps insertion order). `Map` associates keys to values (`HashMap`). `List.of`, `Set.of` and `Map.of` create immutable collections.\n\n**How it works:** declare the variable with the interface (`List<String>`) and choose the implementation on the right side. That keeps your code independent of the implementation, which can be changed in one place.",
+          "code": "List<String> items = new ArrayList<>();\nitems.add(\"book\");\nitems.add(\"book\");                   // duplicates allowed\nitems.get(0);                        // \"book\"\n\nSet<String> tags = new HashSet<>(List.of(\"java\", \"java\", \"sql\"));   // [java, sql]\n\nMap<Long, String> users = new HashMap<>();\nusers.put(1L, \"Ana\");\nusers.get(1L);                       // \"Ana\"\nusers.getOrDefault(2L, \"unknown\");   // \"unknown\"\n\nList<String> fixed = List.of(\"a\", \"b\");   // immutable\nfixed.add(\"c\");                           // UnsupportedOperationException",
+          "interview_question": "What is the difference between List, Set and Map, and when do you use each?",
           "references": [
+            "https://docs.oracle.com/javase/tutorial/collections/index.html",
             "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Removing elements from a list while iterating it with a for-each loop throws `ConcurrentModificationException`. Use `removeIf`, or an explicit `Iterator` and its `remove()`.",
+          "code": "// WRONG: ConcurrentModificationException\nfor (String item : items) {\n    if (item.isBlank()) items.remove(item);\n}\n\n// RIGHT\nitems.removeIf(String::isBlank);"
         }
       ]
     },
     {
-      "subtitle": "Arrays e Estruturas Básicas",
-      "description": "Uso de arrays para armazenamento fixo.",
+      "subtitle": "Arrays",
+      "formerSubtitle": "Arrays e Estruturas Básicas",
+      "description": "Fixed-size sequences and the Arrays helper class.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Arrays têm tamanho fixo e acesso por índice. No código de negócio, `List` é o padrão, porque cresce e tem uma API rica. `int[]` só tem vantagem real em grandes volumes de números: `ArrayList<Integer>` guarda objetos (boxing), não primitivos.",
-          "code": "int[] nums = {1, 2, 3};\nfor(var n : nums) {\n  System.out.println(n);\n}",
-          "interview_question": "Quando um array é melhor que um ArrayList?",
+          "title": "Explanation",
+          "explanation": "**Problem:** sometimes the number of values is fixed — the 12 months, a grid of pixels — or an API hands you an array, like `main(String[] args)`.\n\n**Concept:** an array has a fixed size set at creation, indexes from 0 to `length - 1`, and elements that start as 0, false or null. Index access is fast, but it cannot grow. The `Arrays` class helps with `sort`, `toString`, `equals` and `asList`.\n\n**How it works:** in business code prefer `List`, which grows and has a richer API. `int[]` is worth it for large amounts of numbers, because `ArrayList<Integer>` stores objects (boxing), not primitives.",
+          "code": "int[] scores = {90, 75, 82};\nint[] empty = new int[3];          // {0, 0, 0}\nscores[1] = 80;\nSystem.out.println(scores.length); // 3 (a field, not a method)\n\nArrays.sort(scores);                          // {80, 82, 90}\nSystem.out.println(Arrays.toString(scores));  // [80, 82, 90]\n\nint[][] grid = new int[3][4];      // 3 rows, 4 columns\ngrid[0][1] = 5;",
+          "interview_question": "When is an array better than an ArrayList?",
           "references": [
+            "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/arrays.html",
             "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Arrays.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Printing an array or comparing two arrays with `==` or `equals` works on the reference, not the content. Use `Arrays.toString` and `Arrays.equals`. Indexes go up to `length - 1`.",
+          "code": "int[] a = {1, 2};\nint[] b = {1, 2};\nSystem.out.println(a);                    // [I@1b6d3586 — not the content\nSystem.out.println(a.equals(b));          // false: compares references\nSystem.out.println(Arrays.equals(a, b));  // true: compares content\nSystem.out.println(Arrays.toString(a));   // [1, 2]\n\na[2] = 3;   // ArrayIndexOutOfBoundsException: the last index is 1"
         }
       ]
     },
     {
-      "subtitle": "Métodos e Parâmetros",
-      "description": "Definição de métodos e sobrecarga.",
+      "subtitle": "Methods and Parameters",
+      "formerSubtitle": "Métodos e Parâmetros",
+      "description": "Overloading, varargs and pass-by-value.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Varargs (`int... nums`) permite métodos com número variável de argumentos, como `soma(int... nums)`, simplificando chamadas como `soma(1, 2, 3)`, enquanto sobrecarga cria versões distintas, como `soma(int a)` e `soma(int a, int b)`.",
-          "code": "public static int soma(int... nums) {\n  int total = 0;\n  for(var n : nums) total += n;\n  return total;\n}",
-          "interview_question": "O que são varargs e como usá-los em métodos?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the same logic copied into several places means every fix has to be made several times.\n\n**Concept:** a method is a named block with parameters and a return type. Overloading is several methods with the same name and different parameter lists. Varargs (`int... values`) accept any number of arguments. Java is always pass-by-value: a primitive argument is a copy of the value; for an object, the reference is copied — the method can change the object, but cannot make the caller's variable point to another object.\n\n**How it works:** keep methods small, with a name that says what they do. To give a new value back to the caller, return it.",
+          "code": "static int sum(int... values) {          // sum(), sum(1), sum(1, 2, 3)\n    int total = 0;\n    for (int v : values) total += v;\n    return total;\n}\n\nstatic double area(double side) { return side * side; }       // overloading:\nstatic double area(double w, double h) { return w * h; }      // same name, other parameters\n\nstatic void rename(User user) { user.setName(\"Bia\"); }        // changes the object: the caller sees it\nstatic void replace(User user) { user = new User(\"Caio\"); }   // changes only the local copy",
+          "interview_question": "Is Java pass-by-value or pass-by-reference?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/reflect/Method.html"
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/methods.html",
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/arguments.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Expecting a method to change the caller's variable. The method receives a copy, so reassigning the parameter has no effect outside. Return the new value instead.",
+          "code": "static void increment(int n) { n++; }\n\nint count = 1;\nincrement(count);\nSystem.out.println(count);   // 1: the method changed only its copy\n\n// RIGHT: return the new value\nstatic int next(int n) { return n + 1; }\ncount = next(count);         // 2"
         }
       ]
     },
     {
-      "subtitle": "Operadores e Expressões",
-      "description": "Operações básicas e precedência.",
+      "subtitle": "Operators and Expressions",
+      "formerSubtitle": "Operadores e Expressões",
+      "description": "Arithmetic, logic, precedence and short-circuit.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Parênteses em expressões, como `(a + b) * c`, forçam a ordem de avaliação, evitando erros devido à precedência (multiplicação antes da soma), sendo essencial em cálculos financeiros ou lógicos complexos.",
-          "code": "var a = 5 + 3 * 2; // 11\nboolean cond = (a > 0) && (a < 10); // true",
-          "interview_question": "Como evitar erros comuns em expressões com precedência de operadores?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a price that is off by a cent, or a condition that crashes on null — often the cause is the operator, not the logic.\n\n**Concept:** Java has arithmetic (`+ - * / %`), comparison (`== != < >`), logical (`&& || !`), assignment (`+=`), increment (`++`) and ternary (`cond ? a : b`) operators. `* / %` run before `+ -`, and `&&` before `||`. `&&` and `||` short-circuit: the right side runs only if it can change the result.\n\n**How it works:** use parentheses whenever the order is not obvious. Put the null check on the left of `&&`, so the right side never runs on null.",
+          "code": "int a = 5 + 3 * 2;         // 11: multiplication first\nint b = (5 + 3) * 2;       // 16\nint rest = 7 % 3;          // 1 (remainder)\n\nint i = 5;\nint x = i++;               // x = 5, i = 6 (use, then increment)\nint y = ++i;               // y = 7, i = 7 (increment, then use)\n\nString label = stock > 0 ? \"available\" : \"sold out\";\n\n// Short-circuit: isEmpty() runs only when name is not null\nif (name != null && !name.isEmpty()) { ... }",
+          "interview_question": "What are short-circuit operators, and what goes wrong with 1 / 3 in Java?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Operator.html"
+            "https://docs.oracle.com/javase/tutorial/java/nutsandbolts/operators.html",
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/math/BigDecimal.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Integer division and `double` for money. `int / int` throws the decimals away, and `double` cannot represent values such as 0.1 exactly. Cast before dividing, and use `BigDecimal` for money.",
+          "code": "int done = 1, total = 3;\ndouble ratio = done / total;          // 0.0: int / int discards the decimals\ndouble ok = (double) done / total;    // 0.333...\n\nSystem.out.println(0.1 + 0.2);        // 0.30000000000000004\nBigDecimal sum = new BigDecimal(\"0.1\").add(new BigDecimal(\"0.2\"));   // 0.3"
         }
       ]
     },
     {
-      "subtitle": "Herança Básica",
-      "description": "Introdução à herança para reutilização de código.",
+      "subtitle": "Inheritance Basics",
+      "formerSubtitle": "Herança Básica",
+      "description": "extends, @Override and super.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Classes sealed limitam herança com `permits`, como `sealed class Animal permits Cachorro`, controlando hierarquias e evitando extensões indesejadas, sendo útil em sistemas como um catálogo de produtos com tipos definidos.",
-          "code": "sealed class Animal permits Cachorro {\n  void som() { System.out.println(\"Som genérico\"); }\n}\nfinal class Cachorro extends Animal {\n  @Override void som() { System.out.println(\"Au au\"); }\n}",
-          "interview_question": "O que são classes sealed e como elas limitam herança?",
+          "title": "Explanation",
+          "explanation": "**Problem:** `Car` and `Motorcycle` share a brand, a year and `describe()`. Copying them into each class duplicates the code and every fix.\n\n**Concept:** `extends` makes a class inherit the fields and methods of another (a class has only one parent). The subclass can add members and override methods (`@Override`). `super` calls the parent's constructor or method. A `final` class cannot be extended; a `sealed` class (Java 17) lists exactly which classes may extend it.\n\n**How it works:** the subclass constructor calls `super(...)` first. When a method is called, the object's real type decides which version runs — that is polymorphism.",
+          "code": "public class Vehicle {\n    protected final String brand;\n    public Vehicle(String brand) { this.brand = brand; }\n    public String describe() { return \"Vehicle \" + brand; }\n}\n\npublic class Car extends Vehicle {\n    private final int doors;\n    public Car(String brand, int doors) {\n        super(brand);                    // parent constructor first\n        this.doors = doors;\n    }\n    @Override\n    public String describe() {           // replaces the parent version\n        return super.describe() + \" with \" + doors + \" doors\";\n    }\n}\n\nVehicle v = new Car(\"Fiat\", 4);\nv.describe();   // \"Vehicle Fiat with 4 doors\": the real type decides",
+          "interview_question": "How does inheritance work in Java, and what does super do?",
           "references": [
-            "https://openjdk.java.net/jeps/409"
+            "https://docs.oracle.com/javase/tutorial/java/IandI/subclasses.html",
+            "https://openjdk.org/jeps/409"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Inheriting only to reuse code when the subclass is not really a kind of the parent. A stack that extends `ArrayList` also inherits `add(index, item)`, and callers can break the stack rule. Use a field instead (composition).",
+          "code": "// WRONG: a stack is not a list — callers can insert in the middle\npublic class Stack<T> extends ArrayList<T> {\n    public void push(T item) { add(item); }\n}\nstack.add(0, item);   // breaks the stack rule, and the compiler allows it\n\n// RIGHT: a deque inside, exposing only stack operations\npublic class Stack<T> {\n    private final Deque<T> items = new ArrayDeque<>();\n    public void push(T item) { items.push(item); }\n    public T pop() { return items.pop(); }\n}"
         }
       ]
     },
     {
       "subtitle": "Optional",
-      "description": "Uso de Optional para lidar com valores nulos.",
+      "description": "Saying in the return type that a value may be missing.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "`Optional` melhora segurança ao envolver valores nulos, usando `orElse()` para substituir por padrão (ex.: `Optional.ofNullable(null).orElse(\"Desconhecido\")`), reduzindo riscos em manipulações como busca de clientes.",
-          "code": "Optional<String> nome = Optional.ofNullable(null);\nString resultado = nome.orElse(\"Desconhecido\");\nSystem.out.println(resultado); // Desconhecido",
-          "interview_question": "Como Optional melhora a segurança de código em relação a null?",
+          "title": "Explanation",
+          "explanation": "**Problem:** `findByEmail` may find nothing. Returning `null` relies on every caller remembering a null check — one forgets, and there is a `NullPointerException`.\n\n**Concept:** `Optional<T>` is a box that is either empty or holds one value, and the return type tells the caller \"this may be missing\". Its methods handle both cases: `map`, `filter`, `orElse`, `orElseGet`, `orElseThrow`, `ifPresent`.\n\n**How it works:** use it as the return type of methods that may not find something. Do not use it for fields, parameters or collections — for collections, return an empty list.",
+          "code": "public Optional<User> findByEmail(String email) {\n    return Optional.ofNullable(users.get(email));\n}\n\nString name = findByEmail(\"ana@example.com\")\n    .map(User::getName)       // runs only if a user was found\n    .orElse(\"Guest\");         // default when empty\n\nUser user = findByEmail(email)\n    .orElseThrow(() -> new UserNotFoundException(email));",
+          "interview_question": "How does Optional improve on returning null, and where should you not use it?",
           "references": [
             "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Optional.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Lambda e Stream API",
-      "description": "Programação funcional com lambdas e streams.",
-      "category": "pratica",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "A Stream API melhora a legibilidade com operações declarativas como `filter()`, `map()` e `collect()`. Por padrão o stream é sequencial. `parallelStream()` só compensa com muitos dados, trabalho CPU-bound e sem estado compartilhado — em APIs web, quase nunca.",
-          "code": "var lista = List.of(1, 2, 3, 4);\nlista.stream()\n     .filter(n -> n % 2 == 0)\n     .forEach(System.out::println); // 2, 4",
-          "interview_question": "Como a Stream API melhora a legibilidade do código, e quando usar parallelStream?",
-          "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Stream.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "Calling `get()` without checking, which throws on an empty Optional — the same problem as null. Also, `orElse(...)` always evaluates its argument, even when a value is present; for an expensive fallback use `orElseGet`.",
+          "code": "// WRONG: NoSuchElementException when empty\nUser user = findByEmail(email).get();\n\n// WRONG: createGuest() runs (and writes to the database) even when the user exists\nUser u = findByEmail(email).orElse(createGuest());\n\n// RIGHT: the fallback runs only when empty\nUser u = findByEmail(email).orElseGet(() -> createGuest());"
         }
       ]
     },
     {
-      "subtitle": "Exceções Checked vs Unchecked",
-      "description": "Quando o compilador obriga a tratar erros.",
+      "subtitle": "Checked vs Unchecked Exceptions",
+      "formerSubtitle": "Exceções Checked vs Unchecked",
+      "description": "When the compiler forces you to handle an error.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Checked exceptions (subclasses de Exception, exceto RuntimeException) precisam ser tratadas ou declaradas com throws; representam falhas externas recuperáveis, como IOException. Unchecked (RuntimeException e filhas) indicam erros de programação ou violações de regra de negócio, como IllegalArgumentException. Em APIs Spring modernas, o padrão é usar exceções unchecked de domínio (ex.: PedidoNaoEncontradoException) e tratá-las de forma centralizada, evitando throws espalhados pelas camadas.",
-          "code": "// Checked: o compilador exige try/catch ou throws\npublic String lerArquivo(Path path) throws IOException {\n    return Files.readString(path);\n}\n\n// Unchecked: exceção de domínio, tratada de forma centralizada\npublic class PedidoNaoEncontradoException extends RuntimeException {\n    public PedidoNaoEncontradoException(Long id) {\n        super(\"Pedido \" + id + \" não encontrado\");\n    }\n}",
-          "interview_question": "Qual a diferença entre exceções checked e unchecked, e quando criar cada uma?",
+          "title": "Explanation",
+          "explanation": "**Problem:** some failures are expected and recoverable, like a missing file; others are bugs, like dereferencing null. Java separates them so the compiler can make you deal with the first kind.\n\n**Concept:** checked exceptions are subclasses of `Exception` other than `RuntimeException` (`IOException`, `SQLException`): the compiler requires `try`/`catch` or `throws`. Unchecked exceptions are `RuntimeException` and its subclasses (`NullPointerException`, `IllegalArgumentException`), with no such requirement. `Error` (`OutOfMemoryError`) means a JVM problem and should not be caught.\n\n**How it works:** modern Spring code uses unchecked domain exceptions, such as `OrderNotFoundException`, handled in one central place (`@RestControllerAdvice`) instead of `throws` in every layer. When you cannot recover from a checked exception, wrap it in an unchecked one, keeping the cause.",
+          "code": "// Throwable\n//  ├─ Error                 (OutOfMemoryError: do not catch)\n//  └─ Exception             (checked)\n//      └─ RuntimeException  (unchecked)\n\n// Checked: the compiler requires try/catch or throws\npublic String readFile(Path path) throws IOException {\n    return Files.readString(path);\n}\n\n// Unchecked: a domain exception, handled centrally\npublic class OrderNotFoundException extends RuntimeException {\n    public OrderNotFoundException(Long id) {\n        super(\"Order \" + id + \" not found\");\n    }\n}",
+          "interview_question": "What is the difference between checked and unchecked exceptions, and when do you create each?",
           "references": [
             "https://docs.oracle.com/javase/tutorial/essential/exceptions/runtime.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`catch (Exception e)` everywhere. It also catches bugs such as `NullPointerException`, which then fail silently. Catch only the exceptions you expect and can handle.",
+          "code": "// WRONG: also hides bugs (NullPointerException, IllegalStateException...)\nString read(Path path) {\n    try { return Files.readString(path); }\n    catch (Exception e) { return \"\"; }\n}\n\n// RIGHT: handle the expected case; other IOExceptions propagate\nString readOrEmpty(Path path) throws IOException {\n    try { return Files.readString(path); }\n    catch (NoSuchFileException e) { return \"\"; }\n}"
         }
       ]
     },
     {
-      "subtitle": "equals() e hashCode()",
-      "description": "O contrato que faz HashMap e HashSet funcionarem.",
+      "subtitle": "equals() and hashCode()",
+      "formerSubtitle": "equals() e hashCode()",
+      "description": "The contract that makes HashMap and HashSet work.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O contrato diz: objetos iguais por equals() devem ter o mesmo hashCode(). Se só equals() for sobrescrito, dois objetos \"iguais\" podem cair em buckets diferentes de um HashMap/HashSet, gerando duplicatas no Set e buscas que retornam null. Use Objects.equals/Objects.hash ou, para objetos de valor, prefira records, que geram ambos automaticamente com base em todos os componentes.",
-          "code": "public final class Cpf {\n    private final String numero;\n\n    public Cpf(String numero) { this.numero = numero; }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof Cpf outro)) return false;\n        return numero.equals(outro.numero);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(numero);\n    }\n}\n\n// Alternativa moderna: record gera equals/hashCode/toString\npublic record CpfRecord(String numero) {}",
-          "interview_question": "O que acontece se você sobrescrever equals() sem sobrescrever hashCode()?",
+          "title": "Explanation",
+          "explanation": "**Problem:** two `Email` objects hold the same address, yet a `Set` treats them as different and stores both.\n\n**Concept:** `==` compares references; `equals` compares content — but the default `equals` in `Object` is just `==`, so value classes must override it. The contract: equal objects must have the same `hashCode`. `HashMap` and `HashSet` first use `hashCode` to pick a bucket, then `equals` inside that bucket.\n\n**How it works:** override both, using the same fields, with `Objects.equals` and `Objects.hash`. For value objects, prefer records, which generate both from all their components.",
+          "code": "public final class Email {\n    private final String value;\n    public Email(String value) { this.value = value; }\n\n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (!(o instanceof Email other)) return false;\n        return value.equals(other.value);\n    }\n\n    @Override\n    public int hashCode() {\n        return Objects.hash(value);\n    }\n}\n\n// Modern alternative: a record generates equals, hashCode and toString\npublic record EmailRecord(String value) {}",
+          "interview_question": "What happens if you override equals() but not hashCode()?",
           "references": [
             "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Object.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Generics",
-      "description": "Tipagem segura e reutilizável em coleções e métodos.",
-      "category": "conceitos",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Generics permitem que classes e métodos trabalhem com tipos parametrizados, detectando erros em tempo de compilação e eliminando casts. Wildcards controlam a variância: \"? extends T\" aceita T ou subtipos (bom para leitura — producer extends), \"? super T\" aceita T ou supertipos (bom para escrita — consumer super). Em tempo de execução os tipos são apagados (type erasure), por isso não é possível fazer new T() ou instanceof List<String>.",
-          "code": "public static <T extends Comparable<T>> T maior(List<T> itens) {\n    T maior = itens.get(0);\n    for (T item : itens) {\n        if (item.compareTo(maior) > 0) maior = item;\n    }\n    return maior;\n}\n\n// Producer extends: só lê números\ndouble soma(List<? extends Number> numeros) {\n    return numeros.stream().mapToDouble(Number::doubleValue).sum();\n}\n\n// Consumer super: só escreve inteiros\nvoid preencher(List<? super Integer> destino) {\n    destino.add(1);\n    destino.add(2);\n}",
-          "interview_question": "Para que servem os generics e o que significa \"? extends T\"?",
-          "references": [
-            "https://docs.oracle.com/javase/tutorial/java/generics/index.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "Overriding only `equals`. Two equal objects get different hash codes, land in different buckets, and the `Set` or `Map` cannot find them. Changing a field used by `hashCode` after the object is in a `HashSet` causes the same problem.",
+          "code": "// equals overridden, hashCode NOT\nSet<Email> set = new HashSet<>();\nset.add(new Email(\"ana@example.com\"));\nset.contains(new Email(\"ana@example.com\"));   // false: other hashCode, other bucket"
         }
       ]
     },
     {
-      "subtitle": "Datas com java.time",
-      "description": "API moderna e imutável de datas e horas.",
+      "subtitle": "Dates with java.time",
+      "formerSubtitle": "Datas com java.time",
+      "description": "The modern, immutable date and time API.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A API java.time (Java 8+) é imutável e thread-safe, separa conceitos claramente — LocalDate (data sem fuso), LocalDateTime (data e hora sem fuso), ZonedDateTime/OffsetDateTime (com fuso) e Instant (ponto na linha do tempo UTC) — e oferece operações legíveis como plusDays. Date e Calendar são mutáveis, confusos (meses começando em 0) e não thread-safe. Em APIs, persista Instant/OffsetDateTime e converta para o fuso do usuário apenas na apresentação.",
-          "code": "LocalDate hoje = LocalDate.now();\nLocalDate vencimento = hoje.plusDays(30);\nlong dias = ChronoUnit.DAYS.between(hoje, vencimento); // 30\n\nInstant agora = Instant.now(); // ideal para persistir eventos\nZonedDateTime emSaoPaulo = agora.atZone(ZoneId.of(\"America/Sao_Paulo\"));\n\nDateTimeFormatter fmt = DateTimeFormatter.ofPattern(\"dd/MM/yyyy\");\nString texto = vencimento.format(fmt);",
-          "interview_question": "Por que usar java.time em vez de Date e Calendar?",
+          "title": "Explanation",
+          "explanation": "**Problem:** due dates, delivery deadlines, users in different time zones. The old `Date` and `Calendar` are mutable, start months at 0, and mix up \"a date\" with \"a moment\".\n\n**Concept:** `java.time` (Java 8+) is immutable and thread-safe, with one class per idea: `LocalDate` (a date, no time zone), `LocalDateTime` (date and time, no zone), `ZonedDateTime` and `OffsetDateTime` (with a zone or offset), `Instant` (a moment on the UTC timeline), `Duration` and `Period` (amounts of time).\n\n**How it works:** store moments as `Instant` (or `OffsetDateTime`) and convert to the user's time zone only to display them. Use `LocalDate` for things that really have no time, like a birthday.",
+          "code": "LocalDate today = LocalDate.now();\nLocalDate dueDate = today.plusDays(30);\nlong days = ChronoUnit.DAYS.between(today, dueDate);   // 30\n\nInstant now = Instant.now();                            // ideal for storing events\nZonedDateTime inSaoPaulo = now.atZone(ZoneId.of(\"America/Sao_Paulo\"));\n\nDateTimeFormatter fmt = DateTimeFormatter.ofPattern(\"dd/MM/yyyy\");\nString text = dueDate.format(fmt);",
+          "interview_question": "Why use java.time instead of Date and Calendar?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/package-summary.html"
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/package-summary.html",
+            "https://docs.oracle.com/javase/tutorial/datetime/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `LocalDateTime` for events. It has no zone, so \"10:00\" could be any city, and servers in another zone shift it. Store the moment, and convert it only for display.",
+          "code": "// WRONG: no zone — 10:00 where?\nLocalDateTime createdAt = LocalDateTime.now();\n\n// RIGHT: store the moment, convert only to display\nInstant created = Instant.now();\nZonedDateTime forUser = created.atZone(ZoneId.of(\"America/Sao_Paulo\"));"
         }
       ]
     }

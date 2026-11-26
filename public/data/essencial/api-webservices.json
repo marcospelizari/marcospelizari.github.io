@@ -1,210 +1,218 @@
 {
-  "title": "APIs e Web Services",
-  "description": "Conceitos básicos e avançados de comunicação entre sistemas, com foco em REST e práticas modernas.",
+  "title": "APIs & Web Services",
+  "description": "How systems talk over HTTP: REST, status codes, authentication, documentation and real-time options.",
   "version": "HTTP/1.1, OpenAPI 3.1",
   "resumo": [
-    "REST: recursos em URLs, verbos HTTP e nenhum estado de sessão no servidor.",
-    "GET, PUT e DELETE são idempotentes; POST não — pagamentos usam Idempotency-Key.",
-    "Status: 200, 201, 204 | 400, 401 (não autenticado), 403 (sem permissão), 404, 409 | 500, 503.",
-    "Erros em formato padrão: Problem Details (RFC 9457).",
-    "Listas sempre paginadas (page, size, sort); paginação por cursor para listas enormes.",
-    "JWT é o formato do token; OAuth 2.0 é o fluxo para obtê-lo; OIDC adiciona o login (quem é o usuário).",
-    "CORS é regra do navegador — o Postman não aplica. Libere só as origens conhecidas.",
-    "GraphQL: o cliente escolhe os campos. SOAP: XML com contrato formal. WebSocket: conexão bidirecional em tempo real.",
-    "Documente com OpenAPI; o springdoc gera a especificação a partir dos controllers."
+    "REST: resources in URLs, HTTP verbs, no session state on the server.",
+    "GET, PUT and DELETE are idempotent; POST is not — payments use an Idempotency-Key. GET never changes data.",
+    "Status: 200, 201, 204 | 400, 401 (not authenticated), 403 (not allowed), 404, 409 | 500, 503. Never 200 with an error inside.",
+    "Errors in one standard format: Problem Details (RFC 9457).",
+    "Lists are always paginated (page, size, sort), with a cap on the size; cursor pagination for huge lists.",
+    "JWT is the token format; OAuth 2.0 is how you get it; OIDC adds login. The JWT payload is readable by anyone.",
+    "CORS is a browser rule — Postman ignores it. Allow only known origins.",
+    "Document with OpenAPI; springdoc generates the spec from your controllers."
   ],
   "subsections": [
     {
-      "subtitle": "O que é uma API?",
-      "description": "Definição geral de APIs.",
+      "subtitle": "What Is an API?",
+      "formerSubtitle": "O que é uma API?",
+      "description": "A contract between systems, usually spoken over HTTP.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Uma API facilita a integração entre frontend e backend ao definir uma interface padronizada com HTTP, permitindo que o frontend solicite dados ou ações, como listar usuários, enquanto o backend processa e responde, simplificando o desenvolvimento de aplicações web.",
-          "code": "curl -X GET https://api.exemplo.com/usuarios/1\n// Exemplo de chamada HTTP para uma API",
-          "interview_question": "Como uma API facilita a integração entre um frontend e um backend?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the web frontend, the mobile app and a partner system all need the same data. Giving each of them direct access to the database exposes everything and ties them all to its tables.\n\n**Concept:** an API (Application Programming Interface) is a contract: the operations a system offers, with their inputs and outputs, hiding how they are implemented. Web APIs use HTTP: the client sends a request (method, URL, headers, optional body) and the server returns a response (status code, headers, body), usually JSON.\n\n**How it works:** the API can change its internals — database, language, servers — as long as the contract stays the same. Clients only depend on the contract.",
+          "code": "$ curl -i https://api.example.com/users/1\nHTTP/1.1 200 OK\nContent-Type: application/json\n\n{\"id\":1,\"name\":\"Ana\"}\n\n$ curl -X POST https://api.example.com/users \\\n    -H \"Content-Type: application/json\" \\\n    -d '{\"name\":\"Bruno\"}'\nHTTP/1.1 201 Created\nLocation: /users/2",
+          "interview_question": "What is an API, and what does an HTTP request and response contain?",
           "references": [
-            "https://developer.mozilla.org/en-US/docs/Glossary/API"
+            "https://developer.mozilla.org/en-US/docs/Glossary/API",
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Sending JSON without the `Content-Type` header. `curl -d` sends the body as a form by default, and Spring answers 415 Unsupported Media Type, because it does not know the body is JSON.",
+          "code": "# WRONG: no Content-Type -> 415 Unsupported Media Type\ncurl -X POST localhost:8080/users -d '{\"name\":\"Bruno\"}'\n\n# RIGHT\ncurl -X POST localhost:8080/users -H \"Content-Type: application/json\" -d '{\"name\":\"Bruno\"}'"
         }
       ]
     },
     {
       "subtitle": "REST",
-      "description": "Estilo arquitetural para APIs stateless.",
+      "description": "Resources in URLs, actions in HTTP methods.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Os princípios REST, como statelessness e uso de recursos via URLs, promovem escalabilidade ao evitar estado no servidor, permitindo que múltiplos clientes acessem a mesma API, como um serviço de produtos, sem sobrecarga de sessão.",
-          "code": "GET /usuarios/1\nPOST /usuarios\n{ \"nome\": \"João\", \"email\": \"joao@email.com\" }\n// Payload JSON para criação",
-          "interview_question": "Explique os princípios REST e como eles promovem escalabilidade.",
+          "title": "Explanation",
+          "explanation": "**Problem:** without conventions, every API invents its own style — `/getUser`, `/doCreateUser`, `/deleteUserNow` — and every client has to learn each one.\n\n**Concept:** REST is an architectural style. Resources are identified by URLs, written as nouns (`/orders/42`); the HTTP method says what to do (GET read, POST create, PUT replace, PATCH change some fields, DELETE remove); and data travels as representations, usually JSON. REST is stateless: each request carries everything needed, such as the token, so any server instance can answer it.\n\n**How it works:** statelessness is what lets you add more instances behind a load balancer. Related resources nest in the URL (`/customers/7/orders`). Hypermedia links in responses (HATEOAS) are the most complete level of REST, but rarely used in practice.",
+          "code": "GET    /orders                list orders\nGET    /orders/42             one order\nPOST   /orders                create one       -> 201 Created + Location: /orders/43\nPUT    /orders/42             replace order 42\nPATCH  /orders/42             change some fields\nDELETE /orders/42             remove it        -> 204 No Content\nGET    /customers/7/orders    the orders of customer 7",
+          "interview_question": "What are the principles of REST, and how does statelessness help scalability?",
           "references": [
-            "https://restfulapi.net/"
+            "https://restfulapi.net/",
+            "https://ics.uci.edu/~fielding/pubs/dissertation/rest_arch_style.htm"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Verbs in the URL and POST for everything. The method no longer says what happens, so caches, retries and tools cannot rely on it. For an action that is not plain CRUD, a sub-resource such as `POST /orders/42/cancellation` is fine.",
+          "code": "# WRONG: actions in the URL, everything is POST\nPOST /getOrder?id=42\nPOST /deleteOrder?id=42\n\n# RIGHT: the resource in the URL, the action in the method\nGET    /orders/42\nDELETE /orders/42"
         }
       ]
     },
     {
-      "subtitle": "SOAP",
-      "description": "Protocolo baseado em XML para serviços web.",
-      "category": "conceitos",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Use SOAP em vez de REST quando o projeto exige segurança avançada (ex.: WS-Security) ou contratos formais, como em sistemas bancários legados, onde a rigidez e a estrutura XML são mais adequadas que a flexibilidade de REST.",
-          "code": "<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Body>\n    <getUser>\n      <id>1</id>\n    </getUser>\n  </soap:Body>\n</soap:Envelope>\n// Exemplo de envelope SOAP",
-          "interview_question": "Quando usar SOAP em vez de REST em um projeto?",
-          "references": [
-            "https://www.w3.org/TR/soap/"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Status Codes",
-      "description": "Códigos de resposta HTTP para comunicação clara.",
+      "subtitle": "HTTP Status Codes",
+      "formerSubtitle": "Status Codes",
+      "description": "Telling the client what happened, in three digits.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "2xx sucesso: 200 OK, 201 Created (com Location), 204 No Content. 4xx erro do cliente: 400 Bad Request (entrada inválida), 401 Unauthorized (não autenticado), 403 Forbidden (autenticado, mas sem permissão), 404 Not Found, 409 Conflict (conflito de estado, como e-mail duplicado), 422 Unprocessable Content (formato válido, regra violada). 5xx erro do servidor: 500 Internal Server Error, 503 Service Unavailable.",
-          "code": "HTTP/1.1 201 Created\nLocation: /usuarios/1\n// Resposta para criação de recurso",
-          "interview_question": "Qual a diferença entre 401 e 403? Cite outros códigos 2xx, 4xx e 5xx e quando usá-los.",
+          "title": "Explanation",
+          "explanation": "**Problem:** if every response is 200 with `{\"error\": ...}` in the body, clients, monitoring and caches cannot tell success from failure.\n\n**Concept:** the first digit gives the class: 2xx success, 3xx redirection, 4xx client error (the request must change), 5xx server error (the server failed; retrying later may work). The most used: 200 OK, 201 Created, 204 No Content; 400 Bad Request, 401 Unauthorized (not authenticated), 403 Forbidden (authenticated but not allowed), 404 Not Found, 409 Conflict, 422 Unprocessable Content; 500 Internal Server Error, 503 Service Unavailable.\n\n**How it works:** pick the most specific code. 401 means \"who are you?\" and 403 \"I know who you are, and the answer is no\". 409 fits a conflict with the current state, such as a duplicate email. A 500 should never be returned on purpose.",
+          "code": "HTTP/1.1 201 Created\nLocation: /users/43\n\n// Spring\nreturn ResponseEntity.created(URI.create(\"/users/\" + id)).body(user);    // 201\nreturn ResponseEntity.noContent().build();                              // 204\nthrow new ResponseStatusException(HttpStatus.CONFLICT, \"Email already registered\");   // 409",
+          "interview_question": "What is the difference between 401 and 403? Name other 2xx, 4xx and 5xx codes and when to use them.",
           "references": [
             "https://developer.mozilla.org/en-US/docs/Web/HTTP/Status"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Returning 200 with an error in the body. HTTP says it worked, so monitoring counts it as success and clients must parse the body to find out.",
+          "code": "# WRONG\nHTTP/1.1 200 OK\n{\"success\": false, \"error\": \"User not found\"}\n\n# RIGHT\nHTTP/1.1 404 Not Found\n{\"title\": \"Not Found\", \"status\": 404, \"detail\": \"User 42 not found\"}"
         }
       ]
     },
     {
-      "subtitle": "GraphQL",
-      "description": "Alternativa flexível ao REST para consultas.",
+      "subtitle": "Authentication and Authorization",
+      "formerSubtitle": "Autenticação e Autorização",
+      "description": "Who is calling, and what they are allowed to do.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "GraphQL resolve problemas do REST ao permitir consultas específicas, evitando over-fetching (dados extras) e under-fetching (dados insuficientes), sendo ideal para apps móveis onde a eficiência de dados, como em um feed de notícias, é crítica.",
-          "code": "query {\n  user(id: 1) {\n    nome\n    email\n    posts {\n      title\n    }\n  }\n}\n// Consulta GraphQL para usuário e posts",
-          "interview_question": "Como GraphQL resolve problemas comuns do REST?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the API has to know who is calling, to show \"my orders\", and whether that caller may do what they ask — only admins delete products.\n\n**Concept:** authentication answers \"who are you?\" (login, token). Authorization answers \"what may you do?\" (roles, scopes, ownership). APIs usually receive a bearer token in the `Authorization` header. JWT is a token format: header.payload.signature, Base64url-encoded — readable, not encrypted — and signed, so the API can check it without a database lookup. OAuth 2.0 is the framework that defines how a client obtains an access token (often a JWT). OpenID Connect (OIDC) adds identity on top of OAuth 2.0 — \"log in with Google\".\n\n**How it works:** a missing or invalid token gets 401; a valid token without permission gets 403. Tokens always travel over HTTPS.",
+          "code": "GET /orders HTTP/1.1\nAuthorization: Bearer eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiI0MiIs...<signature>\n\n// The payload, Base64url-decoded — anyone holding the token can read it:\n{\"sub\": \"42\", \"scope\": \"orders:read\", \"exp\": 1764160000}",
+          "interview_question": "What is the difference between authentication and authorization, and how do JWT, OAuth 2.0 and OIDC fit together?",
           "references": [
-            "https://graphql.org/learn/"
+            "https://jwt.io/introduction",
+            "https://oauth.net/2/",
+            "https://openid.net/developers/how-connect-works/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Autenticação e Autorização",
-      "description": "Segurança em APIs.",
-      "category": "conceitos",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "JWT é um formato de token assinado (cabeçalho.payload.assinatura) que a API valida sem consultar sessão. OAuth 2.0 é um framework de autorização que define como um cliente obtém um access token — e esse token muitas vezes é um JWT. Login com Google usa OpenID Connect (OIDC), a camada de identidade sobre o OAuth 2.0. Não se escolhe um ou outro: o OAuth 2.0 define o fluxo, o JWT define o formato.",
-          "code": "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\n// Header com JWT token em requisição HTTP",
-          "interview_question": "Qual a relação entre JWT, OAuth 2.0 e OIDC?",
-          "references": [
-            "https://jwt.io/introduction/",
-            "https://oauth.net/2/"
-          ]
+          "title": "Common mistake",
+          "explanation": "Putting sensitive data in the JWT payload, assuming it is encrypted. It is only encoded: anyone with the token can decode it. Keep identifiers and permissions in the token, and look up the rest on the server.",
+          "code": "// WRONG: readable by anyone with the token\n{\"sub\": \"42\", \"email\": \"ana@example.com\", \"taxId\": \"123.456.789-00\", \"creditLimit\": 5000}\n\n// RIGHT\n{\"sub\": \"42\", \"scope\": \"orders:read\", \"exp\": 1764160000}"
         }
       ]
     },
     {
-      "subtitle": "Documentação de APIs",
-      "description": "Geração automática de documentação.",
+      "subtitle": "API Documentation",
+      "formerSubtitle": "Documentação de APIs",
+      "description": "OpenAPI and Swagger UI, generated from the code.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Documentar APIs facilita uso e manutenção por outras equipes. O springdoc-openapi gera a especificação OpenAPI e a Swagger UI a partir dos próprios controllers; anotações como @Operation só enriquecem descrições e exemplos.",
-          "code": "import io.swagger.v3.oas.annotations.Operation;\n\n@GetMapping(\"/users\")\n@Operation(summary = \"Lista usuários\")\npublic List<User> getUsers() {\n  return userService.findAll();\n}\n// Anotação OpenAPI no Spring",
-          "interview_question": "Por que documentar APIs é importante e como o Swagger ajuda?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the frontend team asks every week which fields an endpoint returns, and an outdated wiki page sends them the wrong ones.\n\n**Concept:** OpenAPI (formerly the Swagger specification) describes an HTTP API in YAML or JSON: paths, parameters, request and response bodies, authentication. Swagger UI renders it as an interactive page where you can try the calls. The spec can be generated from the code (code-first) or written first and used to generate code (contract-first).\n\n**How it works:** with the springdoc dependency, Spring Boot generates the spec from your controllers and DTOs — validation annotations included. `@Operation` and `@ApiResponse` add descriptions where the code alone is not enough.",
+          "code": "<dependency>\n  <groupId>org.springdoc</groupId>\n  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>\n  <version>2.6.0</version>   <!-- springdoc 2.x for Spring Boot 3 -->\n</dependency>\n\n@Operation(summary = \"Find a user by id\")\n@ApiResponse(responseCode = \"404\", description = \"User not found\")\n@GetMapping(\"/users/{id}\")\npublic UserResponse get(@PathVariable Long id) { ... }\n\n// Swagger UI: http://localhost:8080/swagger-ui.html    Spec: /v3/api-docs",
+          "interview_question": "Why document APIs, and how does OpenAPI/Swagger help?",
           "references": [
-            "https://swagger.io/specification/"
+            "https://spec.openapis.org/oas/latest.html",
+            "https://springdoc.org/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Leaving Swagger UI open in production for an internal API. It hands anyone a complete map of the endpoints, ready to try. Disable or protect it there, and keep it in development and test.",
+          "code": "# application-prod.yml\nspringdoc:\n  api-docs:\n    enabled: false\n  swagger-ui:\n    enabled: false"
         }
       ]
     },
     {
-      "subtitle": "WebSockets",
-      "description": "Comunicação em tempo real.",
+      "subtitle": "HTTP Methods and Idempotency",
+      "formerSubtitle": "Métodos HTTP e Idempotência",
+      "description": "Which requests are safe to repeat.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use WebSockets em vez de polling HTTP quando atualizações em tempo real são necessárias, como chats ou notificações, pois evitam requisições constantes, reduzindo carga no servidor e melhorando a experiência do usuário.",
-          "code": "ws://exemplo.com/chat\n// URI WebSocket para conexão em tempo real",
-          "interview_question": "Quando usar WebSockets em vez de polling HTTP?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a payment request times out. Did it go through? The client retries — and the customer may be charged twice.\n\n**Concept:** a safe method does not change state (GET, HEAD). An idempotent method has the same effect whether it runs once or many times: GET, PUT and DELETE are idempotent; POST is not, because each call can create something new; PATCH depends on how it is implemented.\n\n**How it works:** clients and proxies can retry idempotent requests safely. For a POST that must never run twice, such as a payment, the client sends an `Idempotency-Key` header; the server stores the key with the first result and returns that result again for a repeated key.",
+          "code": "GET    /orders/42        -> reads (safe and idempotent)\nPUT    /orders/42        -> replaces the whole resource (idempotent)\nPATCH  /orders/42        -> changes some fields\nDELETE /orders/42        -> removes (idempotent: the 2nd call returns 404 or 204)\nPOST   /orders           -> creates (NOT idempotent)\n\nPOST /payments\nIdempotency-Key: 7f3c2a10-9b1e-4c55-a2d1-55e0c1f9a001",
+          "interview_question": "Which HTTP methods are idempotent, and why does it matter?",
           "references": [
-            "https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API"
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods",
+            "https://www.rfc-editor.org/rfc/rfc9110#name-idempotent-methods"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Métodos HTTP e Idempotência",
-      "description": "GET, POST, PUT, PATCH e DELETE na prática.",
-      "category": "conceitos",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Idempotente é a operação que, repetida, produz o mesmo efeito que uma única execução. GET, PUT e DELETE são idempotentes; POST não é (cada chamada pode criar um novo recurso) e PATCH depende da implementação. Isso importa em retries automáticos: um cliente pode reenviar um PUT com segurança após um timeout, mas reenviar um POST de pagamento pode cobrar duas vezes — por isso APIs de pagamento usam um cabeçalho Idempotency-Key.",
-          "code": "GET    /pedidos/42        -> lê (seguro e idempotente)\nPUT    /pedidos/42        -> substitui o recurso inteiro (idempotente)\nPATCH  /pedidos/42        -> altera campos específicos\nDELETE /pedidos/42        -> remove (idempotente: 2ª chamada retorna 404 ou 204)\nPOST   /pedidos           -> cria (NÃO idempotente)\n\nPOST /pagamentos\nIdempotency-Key: 7f3c2a10-9b1e-4c55-a2d1-55e0c1f9a001",
-          "interview_question": "Quais métodos HTTP são idempotentes e por que isso importa?",
-          "references": [
-            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods"
-          ]
+          "title": "Common mistake",
+          "explanation": "A GET that changes data. Browsers prefetch links, crawlers follow them and proxies retry GETs, so the action runs without anyone asking for it.",
+          "code": "# WRONG: a GET that cancels\nGET /orders/42/cancel\n\n# RIGHT\nPOST /orders/42/cancellation"
         }
       ]
     },
     {
-      "subtitle": "Paginação, Filtros e Ordenação",
-      "description": "Retornando grandes coleções de forma eficiente.",
+      "subtitle": "Pagination, Filtering and Sorting",
+      "formerSubtitle": "Paginação, Filtros e Ordenação",
+      "description": "Returning large collections efficiently.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Nunca retorne coleções ilimitadas: além de lento, um GET /pedidos pode derrubar a aplicação com OutOfMemoryError. Use parâmetros page, size e sort; o Spring Data converte isso em Pageable automaticamente. Para listas muito grandes ou que mudam com frequência, paginação por cursor (keyset — \"itens após o id X\") é mais eficiente que OFFSET, que degrada em páginas altas. Filtro opcional nulo não pode ir direto para findByCategoria: o Spring Data gera \"categoria IS NULL\" e a lista volta quase vazia.",
-          "code": "// GET /produtos?page=0&size=20&sort=preco,desc&categoria=livros\n@GetMapping(\"/produtos\")\npublic Page<ProdutoResponse> listar(@RequestParam(required = false) String categoria,\n                                    @PageableDefault(size = 20) Pageable pageable) {\n    Page<Produto> pagina = (categoria == null)\n        ? repository.findAll(pageable)                    // sem filtro: todos\n        : repository.findByCategoria(categoria, pageable);\n    return pagina.map(ProdutoResponse::from);\n}",
-          "interview_question": "Como implementar paginação em uma API REST com Spring?",
+          "title": "Explanation",
+          "explanation": "**Problem:** an unbounded `GET /orders` is slow, and as the table grows it can take the application down with an `OutOfMemoryError`.\n\n**Concept:** return collections in pages, with `page`, `size` and `sort` parameters; Spring Data turns them into a `Pageable` automatically. Offset pagination (`OFFSET 10000`) gets slower on high pages; for very large or fast-changing lists, cursor (keyset) pagination — \"items after id X\" — stays fast.\n\n**How it works:** an optional filter that is null cannot go straight into `findByCategory`: Spring Data would generate `category IS NULL` and return almost nothing. Branch on the filter, or use a Specification.",
+          "code": "// GET /products?page=0&size=20&sort=price,desc&category=books\n@GetMapping(\"/products\")\npublic Page<ProductResponse> list(@RequestParam(required = false) String category,\n                                  @PageableDefault(size = 20) Pageable pageable) {\n    Page<Product> page = (category == null)\n        ? repository.findAll(pageable)                     // no filter: everything\n        : repository.findByCategory(category, pageable);\n    return page.map(ProductResponse::from);\n}",
+          "interview_question": "How do you implement pagination in a REST API with Spring?",
           "references": [
             "https://docs.spring.io/spring-data/commons/reference/repositories/core-extensions.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Letting the client choose any page size. `size=1000000` turns pagination off. Cap it.",
+          "code": "# WRONG: the client controls the size without limit\nGET /products?size=1000000\n\n# RIGHT: cap the page size (Spring Data's default cap is 2000)\nspring:\n  data:\n    web:\n      pageable:\n        max-page-size: 100"
         }
       ]
     },
     {
-      "subtitle": "Erros Padronizados (Problem Details)",
-      "description": "Respostas de erro consistentes com a RFC 9457.",
+      "subtitle": "Standard Errors (Problem Details)",
+      "formerSubtitle": "Erros Padronizados (Problem Details)",
+      "description": "One error format for the whole API, RFC 9457.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A RFC 9457 (Problem Details, sucessora da RFC 7807) define um formato JSON padrão para erros com os campos type, title, status, detail e instance, além de campos extras. O Spring Boot 3 suporta nativamente via ProblemDetail e spring.mvc.problemdetails.enabled. Clientes passam a tratar erros de forma uniforme e você evita vazar stack traces.",
-          "code": "@RestControllerAdvice\npublic class ApiExceptionHandler {\n    @ExceptionHandler(PedidoNaoEncontradoException.class)\n    ProblemDetail naoEncontrado(PedidoNaoEncontradoException ex) {\n        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());\n        pd.setTitle(\"Pedido não encontrado\");\n        return pd;\n    }\n}\n\n// Resposta (application/problem+json):\n// { \"type\": \"about:blank\", \"title\": \"Pedido não encontrado\",\n//   \"status\": 404, \"detail\": \"Pedido 42 não encontrado\", \"instance\": \"/pedidos/42\" }",
-          "interview_question": "Como padronizar o corpo das respostas de erro de uma API?",
+          "title": "Explanation",
+          "explanation": "**Problem:** each endpoint returns errors in its own shape — `{\"msg\"}`, `{\"error\"}`, plain text — so clients need special code for each one.\n\n**Concept:** RFC 9457 (Problem Details, the successor of RFC 7807) defines a standard JSON error body with `type`, `title`, `status`, `detail` and `instance`, plus extra fields of your own, served as `application/problem+json`. Spring supports it natively with `ProblemDetail`, and `spring.mvc.problemdetails.enabled=true` applies it to Spring's own errors too.\n\n**How it works:** return a `ProblemDetail` from your `@RestControllerAdvice` handlers. Clients handle every error the same way.",
+          "code": "@RestControllerAdvice\npublic class ApiExceptionHandler {\n    @ExceptionHandler(OrderNotFoundException.class)\n    ProblemDetail notFound(OrderNotFoundException ex) {\n        ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());\n        pd.setTitle(\"Order not found\");\n        return pd;\n    }\n}\n\n// Response (application/problem+json):\n// {\"type\": \"about:blank\", \"title\": \"Order not found\",\n//  \"status\": 404, \"detail\": \"Order 42 not found\", \"instance\": \"/orders/42\"}",
+          "interview_question": "How do you standardize the body of an API's error responses?",
           "references": [
             "https://www.rfc-editor.org/rfc/rfc9457",
             "https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Putting the raw message of an unexpected exception in `detail`. It can contain SQL, table names or internal paths — useful to an attacker. For unexpected errors, return a generic message with an id, and keep the details in the log.",
+          "code": "// WRONG\nreturn ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage());\n// -> \"detail\": \"ERROR: relation \\\"orders\\\" does not exist ... SQL [select ...]\"\n\n// RIGHT\nString errorId = UUID.randomUUID().toString();\nlog.error(\"Unexpected error id={}\", errorId, e);\nreturn ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, \"Internal error. Code: \" + errorId);"
         }
       ]
     },
     {
       "subtitle": "CORS",
-      "description": "Por que o navegador bloqueia chamadas entre origens.",
+      "description": "Why the browser blocks calls between origins.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "CORS (Cross-Origin Resource Sharing) é uma política do navegador: um front em https://app.com só pode ler respostas de https://api.com se a API responder com Access-Control-Allow-Origin permitindo essa origem. Para métodos ou cabeçalhos não simples, o navegador envia antes uma requisição OPTIONS (preflight). Postman e chamadas entre servidores não aplicam CORS, por isso o erro aparece só no navegador. Libere apenas as origens conhecidas, nunca \"*\" com credenciais.",
-          "code": "@Configuration\npublic class CorsConfig implements WebMvcConfigurer {\n    @Override\n    public void addCorsMappings(CorsRegistry registry) {\n        registry.addMapping(\"/api/**\")\n                .allowedOrigins(\"https://app.exemplo.com\")\n                .allowedMethods(\"GET\", \"POST\", \"PUT\", \"DELETE\");\n    }\n}",
-          "interview_question": "O que é CORS e por que uma chamada funciona no Postman mas falha no navegador?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the frontend at `https://app.example.com` calls the API at `https://api.example.com`. It works in Postman, but the browser blocks it.\n\n**Concept:** CORS (Cross-Origin Resource Sharing) is a browser rule: a page may only read responses from another origin if that server allows it with `Access-Control-Allow-Origin`. For methods or headers that are not \"simple\", the browser first sends an `OPTIONS` preflight request. Postman, curl and server-to-server calls do not apply CORS — which also means CORS is not protection for your API; authentication is.\n\n**How it works:** configure the allowed origins, methods and headers on the API. Allow only the origins you know.",
+          "code": "@Configuration\npublic class CorsConfig implements WebMvcConfigurer {\n    @Override\n    public void addCorsMappings(CorsRegistry registry) {\n        registry.addMapping(\"/api/**\")\n                .allowedOrigins(\"https://app.example.com\")\n                .allowedMethods(\"GET\", \"POST\", \"PUT\", \"DELETE\");\n    }\n}",
+          "interview_question": "What is CORS, and why does a call work in Postman but fail in the browser?",
           "references": [
             "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Allowing every origin (`*`) together with credentials. Spring rejects this combination, and it would let any website make authenticated calls with your users' cookies. List the known origins.",
+          "code": "// WRONG\nregistry.addMapping(\"/api/**\").allowedOrigins(\"*\").allowCredentials(true);\n// IllegalArgumentException: When allowCredentials is true, allowedOrigins cannot contain the special value \"*\"\n\n// RIGHT\nregistry.addMapping(\"/api/**\").allowedOrigins(\"https://app.example.com\").allowCredentials(true);"
         }
       ]
     }

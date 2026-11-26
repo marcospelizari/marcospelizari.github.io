@@ -1,0 +1,160 @@
+{
+  "title": "Databases",
+  "description": "Guarantees, database objects, connection pools, NoSQL, execution plans and locking.",
+  "version": "PostgreSQL 16, MongoDB 7.0",
+  "resumo": [
+    "ACID: atomicity, consistency, isolation, durability. BASE: available, eventually consistent replicas.",
+    "Reads right after a write go to the primary — a replica may lag.",
+    "A view is a saved query, not a cache; a materialized view stores the result and needs `REFRESH`.",
+    "Connection pool (HikariCP): keep it small; long transactions, not a small pool, are the usual bottleneck.",
+    "NoSQL: document, key-value, wide-column, graph — model by how the data is read.",
+    "`EXPLAIN ANALYZE` before and after an index; it really runs UPDATE/DELETE — wrap it in BEGIN/ROLLBACK.",
+    "Optimistic locking (`@Version`) for rare conflicts — send the version to the client; pessimistic (`FOR UPDATE`) for contested rows."
+  ],
+  "subsections": [
+    {
+      "subtitle": "ACID and BASE",
+      "formerSubtitle": "ACID e BASE",
+      "formerLevel": "essencial",
+      "description": "What a database guarantees, and when those guarantees are relaxed.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** two people buy the last ticket at the same moment, and the server crashes right after confirming. What does the database guarantee?\n\n**Concept:** ACID are the guarantees of a transaction: Atomicity (all or nothing), Consistency (rules such as FKs and `CHECK` always hold), Isolation (concurrent transactions do not see each other's half-done work) and Durability (after `COMMIT`, the data survives a crash). BASE (Basically Available, Soft state, Eventual consistency) describes distributed systems that prefer to keep answering and accept that replicas are out of date for a while.\n\n**How it works:** relational databases give you ACID by default. In distributed systems, replicas converge \"eventually\": a read right after a write may still see the old value. This is not a rule for every NoSQL database — MongoDB has supported multi-document ACID transactions since version 4.0.",
+          "code": "-- ACID: all or nothing, visible to others only after COMMIT\nBEGIN;\nUPDATE tickets SET sold = true\nWHERE id = 7 AND sold = false;   -- only one of the concurrent buyers succeeds\nINSERT INTO sales (ticket_id, customer_id) VALUES (7, 42);\nCOMMIT;\n\n-- BASE: the write goes to node A; a read right after on node B\n-- may still see the old value until replication catches up.",
+          "interview_question": "What is the difference between ACID and BASE?",
+          "references": [
+            "https://www.postgresql.org/docs/current/mvcc.html",
+            "https://www.mongodb.com/docs/manual/core/transactions/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Writing to the primary and immediately reading from a read replica, expecting the new data. With asynchronous replication the replica can lag a few milliseconds behind, and the query does not find what was just saved. Reads right after a write go to the primary.",
+          "code": "-- On the primary:\nINSERT INTO orders (id, user_id, total) VALUES (42, 1, 99.90);\n\n-- Right after, on the replica (asynchronous replication):\nSELECT * FROM orders WHERE id = 42;   -- may return 0 rows\n\n-- RIGHT: the confirmation page reads from the primary;\n-- reports and listings can read from the replica."
+        }
+      ]
+    },
+    {
+      "subtitle": "Views and Stored Procedures",
+      "formerSubtitle": "Views e Stored Procedures",
+      "formerLevel": "essencial",
+      "description": "Saved queries and code inside the database.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the same complex query — active users with their total spent — is copied into several reports, and a partner system may only see some of the columns.\n\n**Concept:** a view is a saved, named query that you use like a table; it stores no data. A materialized view stores the result and must be refreshed with `REFRESH`. Stored procedures and functions are code that runs inside the database.\n\n**How it works:** the view keeps the query in one place and lets you grant access to it alone (`GRANT`), not to the whole table. Procedures save network round trips, but business rules in the database are hard to version, test and debug; in Java applications the rules usually live in the service layer, and procedures are kept for bulk processing close to the data.",
+          "code": "CREATE VIEW active_users AS\nSELECT id, name, email          -- no sensitive columns\nFROM users\nWHERE active = true;\n\nSELECT name FROM active_users WHERE email LIKE '%@company.com';\n\nGRANT SELECT ON active_users TO reporting;  -- access to the view only",
+          "interview_question": "When would you use a view instead of querying the tables directly?",
+          "references": [
+            "https://www.postgresql.org/docs/current/sql-createview.html",
+            "https://www.postgresql.org/docs/current/rules-materializedviews.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Thinking a view makes the query faster. A regular view runs its underlying `SELECT` every time it is used; it organizes, but it does not store a result. To keep the result of an expensive query, use a materialized view and refresh it when needed.",
+          "code": "-- Regular view: runs the GROUP BY on every query (not a cache)\nCREATE VIEW sales_summary AS\nSELECT product_id, SUM(quantity) AS sold\nFROM order_items GROUP BY product_id;\n\n-- Materialized view: stores the result; must be refreshed\nCREATE MATERIALIZED VIEW sales_summary_mv AS\nSELECT product_id, SUM(quantity) AS sold\nFROM order_items GROUP BY product_id;\n\nREFRESH MATERIALIZED VIEW sales_summary_mv;"
+        }
+      ]
+    },
+    {
+      "subtitle": "Connection Pooling",
+      "formerSubtitle": "Pool de Conexões",
+      "formerLevel": "essencial",
+      "description": "Reusing connections with HikariCP.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** opening a database connection costs tens of milliseconds (network, TLS, authentication). Opening one per request makes everything slow, and the database only accepts a limited number of connections.\n\n**Concept:** a pool keeps a few connections open and lends them out for each operation; when the work is done, the connection goes back to the pool instead of being closed. HikariCP is Spring Boot's default pool.\n\n**How it works:** keep the pool small and measured: the database has a limit (`max_connections` in PostgreSQL) shared by every instance — 10 pods with 50 connections each is 500 connections. Start around 10 and watch the connection wait metric. If waiting exceeds `connection-timeout`, the request fails.",
+          "code": "# application.yml\nspring:\n  datasource:\n    url: jdbc:postgresql://localhost:5432/shop\n    hikari:\n      maximum-pool-size: 10\n      minimum-idle: 2\n      connection-timeout: 3000   # ms to wait for a free connection",
+          "interview_question": "Why do applications use a connection pool, and why does a bigger pool not always help?",
+          "references": [
+            "https://github.com/brettwooldridge/HikariCP",
+            "https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Growing the pool when requests start waiting for a connection. The usual cause is a long transaction holding the connection — for example, an external HTTP call inside `@Transactional`. Move the slow call out of the transaction.",
+          "code": "// WRONG: holds a connection while waiting for the external API (seconds)\n@Transactional\npublic void checkout(Order order) {\n    orderRepository.save(order);\n    paymentGateway.charge(order);        // slow HTTP call inside the transaction\n}\n\n// RIGHT: external call outside; the transaction only saves, and is short\npublic void checkout(Order order) {\n    Charge charge = paymentGateway.charge(order);\n    orderService.recordPayment(order, charge);  // @Transactional, in another bean\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "NoSQL Databases",
+      "formerSubtitle": "Bancos NoSQL",
+      "formerLevel": "essencial",
+      "description": "Other data models, chosen by how the data is read.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** some data does not fit tables well: attributes that vary per product, a cache with millions of reads per second, the deep relationships of a social network.\n\n**Concept:** NoSQL covers databases with other data models. Document (MongoDB): JSON-like records with a flexible structure. Key-value (Redis): in-memory lookup by key, for caches and sessions. Wide-column (Cassandra): massive distributed writes. Graph (Neo4j): relationships such as \"friends of friends\".\n\n**How it works:** model by how the data is read: what is read together is stored together. An order with its items becomes a single document, fetched in one query. If the data is highly related and needs transactions across many entities, a relational database is still the simpler choice.",
+          "code": "// MongoDB: the whole order in one document\ndb.orders.insertOne({\n  _id: 123,\n  customer: { id: 7, name: \"Ana\" },\n  items: [\n    { sku: \"BOOK-01\", qty: 2, price: NumberDecimal(\"49.90\") },\n    { sku: \"PEN-02\", qty: 1, price: NumberDecimal(\"5.00\") }\n  ],\n  status: \"PAID\"\n})\n\ndb.orders.find({ \"customer.id\": 7, status: \"PAID\" })",
+          "interview_question": "What are the main types of NoSQL databases, and when would you use each?",
+          "references": [
+            "https://www.mongodb.com/docs/manual/",
+            "https://redis.io/docs/latest/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Modeling MongoDB as if it were relational: one collection per \"table\" and references by id. Every read of an order becomes several queries, with no FK to guarantee integrity — you lose the benefit of the document model.",
+          "code": "// WRONG: a \"relational\" model in MongoDB\ndb.orders.insertOne({ _id: 123, customerId: 7 })\ndb.items.insertOne({ orderId: 123, sku: \"BOOK-01\", qty: 2 })\n// reading one order = querying orders + items + customers\n\n// RIGHT: what is read together is stored together\ndb.orders.insertOne({\n  _id: 123,\n  customer: { id: 7, name: \"Ana\" },\n  items: [ { sku: \"BOOK-01\", qty: 2 } ]\n})"
+        }
+      ]
+    },
+    {
+      "subtitle": "Indexes and Execution Plans",
+      "formerSubtitle": "Índices e Planos de Execução",
+      "formerLevel": "avancado",
+      "description": "Measuring before optimizing.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the endpoint is instant in development, with 100 rows, and takes 8 seconds in production, with 5 million.\n\n**Concept:** `EXPLAIN` shows the plan the database chose; `EXPLAIN ANALYZE` runs the query and shows real times and row counts. A Seq Scan on a big table usually means a missing index; an Index Scan means one is used. In a composite index, the equality column goes first and the range column after it. Indexes cost space and slow down writes, so drop the unused ones (`pg_stat_user_indexes`).\n\n**How it works:** create the index, run `EXPLAIN ANALYZE` again, and compare. Functions on the column (`lower(email)`) and `LIKE '%text'` prevent a plain index from being used — index the expression instead.",
+          "code": "EXPLAIN ANALYZE\nSELECT * FROM orders o\nJOIN users u ON u.id = o.user_id\nWHERE o.status = 'PAID' AND o.created_at > now() - interval '7 days';\n\n-- Composite index: equality column first, then the range column\nCREATE INDEX idx_orders_status_date ON orders (status, created_at);\n\n-- Expression index for case-insensitive search\nCREATE INDEX idx_users_email_lower ON users (lower(email));",
+          "interview_question": "How do you decide when to create or drop an index?",
+          "references": [
+            "https://www.postgresql.org/docs/current/using-explain.html",
+            "https://www.postgresql.org/docs/current/indexes-multicolumn.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`EXPLAIN ANALYZE` on an `UPDATE` or `DELETE` in production. It really executes the statement — the rows are gone. Wrap it in a transaction and roll back.",
+          "code": "-- WRONG: the rows are actually deleted\nEXPLAIN ANALYZE DELETE FROM orders WHERE created_at < '2020-01-01';\n\n-- RIGHT\nBEGIN;\nEXPLAIN ANALYZE DELETE FROM orders WHERE created_at < '2020-01-01';\nROLLBACK;"
+        }
+      ]
+    },
+    {
+      "subtitle": "Optimistic and Pessimistic Locking",
+      "formerSubtitle": "Locking Otimista e Pessimista",
+      "formerLevel": "avancado",
+      "description": "Preventing lost updates.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** two admins edit the same product; the last save wins and the first edit disappears without a trace (a lost update). Two buyers take the last item at the same time, and stock goes negative.\n\n**Concept:** optimistic locking does not block: a version column is checked in the `UPDATE`, and if someone changed the row first the update fails (`OptimisticLockException`) — the application retries or tells the user. It fits when conflicts are rare, like editing a profile. Pessimistic locking (`SELECT ... FOR UPDATE`) locks the row until the transaction ends; use it when conflicts are frequent and costly, like contested stock — always with short transactions.\n\n**How it works:** for a simple counter, an atomic `UPDATE ... SET stock = stock - 1 WHERE id = ? AND stock > 0` avoids both locks: zero rows updated means out of stock.",
+          "code": "// Optimistic with JPA\n@Entity\npublic class Product {\n    @Id Long id;\n    int stock;\n    @Version Long version;   // UPDATE ... WHERE id = ? AND version = ?\n}\n\n// Pessimistic with Spring Data\npublic interface ProductRepository extends JpaRepository<Product, Long> {\n    @Lock(LockModeType.PESSIMISTIC_WRITE)\n    @Query(\"select p from Product p where p.id = :id\")\n    Optional<Product> findForUpdate(@Param(\"id\") Long id);\n}",
+          "interview_question": "When should you prefer optimistic locking to pessimistic locking?",
+          "references": [
+            "https://www.postgresql.org/docs/current/explicit-locking.html",
+            "https://docs.spring.io/spring-data/jpa/reference/jpa/locking.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `@Version` but never sending the version to the client. The service loads the current entity, copies the form fields onto it and saves — the version check compares the entity with itself and always passes, so the lost update is back. Send the version with the form, and compare it.",
+          "code": "// WRONG: the check never sees the stale screen\nProduct p = repository.findById(id).orElseThrow();   // version 7 now\np.setPrice(request.price());                         // the user edited version 5\nrepository.save(p);                                  // passes: the other admin's edit is lost\n\n// RIGHT\nif (!p.getVersion().equals(request.version())) {\n    throw new ConflictException(\"The product changed — reload and try again\");   // 409\n}"
+        }
+      ]
+    }
+  ]
+}

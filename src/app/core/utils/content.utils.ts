@@ -40,3 +40,25 @@ export function detectLanguage(code: string): string {
 export function sectionKey(slug: string, level: string, subtitle: string): string {
   return `${slug}/${level}#${subtitle}`;
 }
+
+export type Segment = { kind: 'text' | 'code' | 'bold'; value: string };
+
+/** Splits prose into paragraphs (blank lines) of text, `code` and **bold** segments. */
+export function parseRichText(text: string): Segment[][] {
+  return text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) =>
+      p
+        .split(/(`[^`\n]+`|\*\*[^*\n]+\*\*)/)
+        .filter(Boolean)
+        .map((part): Segment =>
+          part.startsWith('`') && part.endsWith('`') && part.length > 2
+            ? { kind: 'code', value: part.slice(1, -1) }
+            : part.startsWith('**') && part.endsWith('**') && part.length > 4
+              ? { kind: 'bold', value: part.slice(2, -2) }
+              : { kind: 'text', value: part },
+        ),
+    );
+}

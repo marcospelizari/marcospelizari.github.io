@@ -1,162 +1,152 @@
 {
-  "title": "Testes — Avançado",
-  "description": "Integração realista, contratos, mutação, carga e confiabilidade da suíte.",
+  "title": "Automated Testing",
+  "description": "Making a suite you can trust: advanced Karate, mutation, architecture, load and property-based tests.",
   "resumo": [
-    "No nível avançado, a pergunta é se a suíte dá confiança real para fazer deploy. Testes que passam com mocks mas falham em produção, ou que quebram aleatoriamente, minam essa confiança.",
-    "Testcontainers trazem dependências reais (PostgreSQL, Kafka) para os testes de integração; testes de contrato garantem que serviços continuem compatíveis entre times.",
-    "Testes de mutação medem se os testes detectam bugs de verdade, algo que a cobertura de linhas não mostra; testes de carga validam capacidade e SLOs antes dos usuários.",
-    "Uma suíte saudável é rápida, determinística e organizada pela pirâmide — e testes instáveis são tratados como bugs."
+    "Karate at scale: `karate-config.js` per environment, `callonce` for login, Scenario Outline, parallel runs.",
+    "Mutation testing (PIT) measures whether tests catch bugs; target the domain, incremental in CI.",
+    "ArchUnit turns architecture rules into tests; freeze legacy violations, fail on new ones.",
+    "Load tests with thresholds (p95, error rate) in a production-like environment — and watch the generator.",
+    "Property-based tests check invariants over generated inputs — never a copy of the implementation.",
+    "Pipeline: unit on push, integration (Failsafe `*IT`) and contracts on PR, E2E and load in staging."
   ],
   "subsections": [
     {
-      "subtitle": "Testcontainers e Integração Real",
-      "description": "Bancos e brokers reais em containers descartáveis.",
-      "category": "ferramentas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "H2 não é PostgreSQL: tipos, funções, JSONB e locks se comportam diferente, e um teste verde com H2 pode falhar em produção. Testcontainers sobe a mesma versão do banco ou broker em Docker durante o teste e o descarta ao final. No Spring Boot 3.1+, @ServiceConnection configura a conexão automaticamente. Mocks continuam ideais para testes unitários de regras de negócio.",
-          "code": "@SpringBootTest\n@Testcontainers\nclass PedidoRepositoryIT {\n\n    @Container\n    @ServiceConnection\n    // Testcontainers 2.x: org.testcontainers.postgresql.PostgreSQLContainer (na 1.x: PostgreSQLContainer<?>)\n    static PostgreSQLContainer postgres = new PostgreSQLContainer(\"postgres:16-alpine\");\n\n    @Autowired PedidoRepository repository;\n\n    @Test\n    void deveBuscarPedidosPagos() {\n        repository.save(new Pedido(StatusPedido.PAGO));\n        assertThat(repository.findByStatus(StatusPedido.PAGO)).hasSize(1);\n    }\n}",
-          "interview_question": "Quando preferir Testcontainers a mocks ou banco em memória?",
-          "references": [
-            "https://java.testcontainers.org/",
-            "https://docs.spring.io/spring-boot/reference/testing/testcontainers.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Testes de Contrato",
-      "description": "Evitando quebras entre produtor e consumidor.",
-      "category": "conceitos",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Em testes de contrato orientados ao consumidor (Pact), o consumidor descreve as requisições que faz e as respostas que espera; esse contrato é publicado e o produtor o verifica no seu próprio CI. Se o produtor remover um campo que o consumidor usa, o build do produtor falha antes do deploy. É mais rápido e estável que testes end-to-end com todos os serviços no ar. Spring Cloud Contract segue a mesma ideia, com o contrato definido pelo produtor.",
-          "code": "// Consumidor (Pact JVM + JUnit 5)\n@Pact(consumer = \"checkout\", provider = \"estoque\")\nV4Pact estoqueDisponivel(PactDslWithProvider builder) {\n    return builder\n        .given(\"produto LIV-01 com estoque\")\n        .uponReceiving(\"consulta de estoque\")\n            .path(\"/estoque/LIV-01\").method(\"GET\")\n        .willRespondWith()\n            .status(200)\n            .body(new PactDslJsonBody().stringType(\"sku\", \"LIV-01\").integerType(\"quantidade\", 10))\n        .toPact(V4Pact.class);\n}",
-          "interview_question": "Como contratos evitam deploys quebrados entre times?",
-          "references": [
-            "https://docs.pact.io/",
-            "https://spring.io/projects/spring-cloud-contract"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Karate Avançado: Configuração, Reuso e Dados",
-      "description": "Ambientes, cenários reutilizáveis, testes guiados por dados e execução paralela.",
+      "subtitle": "Advanced Karate: Configuration, Reuse and Data",
+      "formerSubtitle": "Karate Avançado: Configuração, Reuso e Dados",
+      "description": "Environments, reusable features, data-driven scenarios and parallel runs.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Em projetos maiores, o karate-config.js define a URL e as credenciais de cada ambiente, escolhido com -Dkarate.env. Passos repetidos, como obter um token, ficam em um .feature próprio chamado com call ou callonce (callonce executa uma só vez por arquivo). Scenario Outline com Examples roda o mesmo cenário para várias entradas, útil para validações. O Runner executa os cenários em paralelo e gera relatórios em target/karate-reports. Para cada cenário ser independente, cada um cria os próprios dados em vez de depender da ordem de execução.",
-          "code": "// src/test/java/karate-config.js\nfunction fn() {\n  var env = karate.env || 'dev';\n  var config = { baseUrl: 'http://localhost:8080' };\n  if (env == 'qa') config.baseUrl = 'https://qa.exemplo.com';\n  config.senhaQa = java.lang.System.getenv('SENHA_QA'); // senha vem do ambiente, nunca do repositório\n  return config;\n}\n\n# auth/token.feature (reutilizável)\nFeature: obter token\n  Scenario:\n    Given url baseUrl\n    And path 'auth', 'token'\n    And request { usuario: '#(usuario)', senha: '#(senha)' }\n    When method post\n    Then status 200\n    * def token = response.access_token\n\n# clientes/validacoes.feature\nFeature: validações de cliente\n  Background:\n    * def auth = callonce read('classpath:auth/token.feature') { usuario: 'qa', senha: '#(senhaQa)' }\n    * header Authorization = 'Bearer ' + auth.token\n    * url baseUrl\n\n  Scenario Outline: e-mail <email> retorna <status>\n    Given path 'clientes'\n    And request { nome: 'Ana', email: '<email>' }\n    When method post\n    Then status <status>\n\n    Examples:\n      | email           | status |\n      | ana@exemplo.com | 201    |\n      | invalido        | 400    |\n      |                 | 400    |\n\n// Execução paralela no JUnit 5\n@Test\nvoid paralelo() {\n    Results r = Runner.path(\"classpath:clientes\").parallel(4);\n    assertEquals(0, r.getFailCount(), r.getErrorMessages());\n}\n\n# Rodar contra o ambiente de QA\nmvn test -Dkarate.env=qa",
-          "interview_question": "Como você organiza testes Karate para rodar em vários ambientes sem repetir o login em cada cenário?",
+          "title": "Explanation",
+          "explanation": "**Problem:** every feature file logs in by itself, the base URL is hard-coded, and the suite takes 20 minutes because it runs one scenario at a time.\n\n**Concept:** in bigger projects, `karate-config.js` sets the URL and credentials for each environment, chosen with `-Dkarate.env`. Repeated steps, such as getting a token, live in their own `.feature` file and are called with `call` or `callonce` (once per feature file). `Scenario Outline` with `Examples` runs one scenario for many inputs. The Runner executes scenarios in parallel and writes reports to `target/karate-reports`.\n\n**How it works:** each scenario creates its own data instead of relying on execution order — required for running in parallel.",
+          "code": "// src/test/java/karate-config.js\nfunction fn() {\n  var env = karate.env || 'dev';\n  var config = { baseUrl: 'http://localhost:8080' };\n  if (env == 'qa') config.baseUrl = 'https://qa.example.com';\n  config.qaPassword = java.lang.System.getenv('QA_PASSWORD');   // from the environment, never the repo\n  return config;\n}\n\n# auth/token.feature (reusable)\nFeature: get a token\n  Scenario:\n    Given url baseUrl\n    And path 'auth', 'token'\n    And request { user: '#(user)', password: '#(password)' }\n    When method post\n    Then status 200\n    * def token = response.access_token\n\n# customers/validations.feature\nFeature: customer validations\n  Background:\n    * def auth = callonce read('classpath:auth/token.feature') { user: 'qa', password: '#(qaPassword)' }\n    * header Authorization = 'Bearer ' + auth.token\n    * url baseUrl\n\n  Scenario Outline: email <email> returns <status>\n    Given path 'customers'\n    And request { name: 'Ana', email: '<email>' }\n    When method post\n    Then status <status>\n\n    Examples:\n      | email           | status |\n      | ana@example.com | 201    |\n      | invalid         | 400    |\n      |                 | 400    |\n\n// Parallel run with JUnit 5\n@Test\nvoid parallel() {\n    Results r = Runner.path(\"classpath:customers\").parallel(4);\n    assertEquals(0, r.getFailCount(), r.getErrorMessages());\n}\n\n# Against the QA environment\nmvn test -Dkarate.env=qa",
+          "interview_question": "How do you organize Karate tests to run against several environments without logging in for every scenario?",
           "references": [
             "https://github.com/karatelabs/karate#karate-configjs",
             "https://github.com/karatelabs/karate#calling-other-feature-files",
             "https://github.com/karatelabs/karate#parallel-execution"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `call` in the `Background` for the login. The Background runs before every scenario, so each scenario logs in again — slow, and it can hit the auth server's rate limit. `callonce` runs it once per feature file.",
+          "code": "# WRONG: logs in before every scenario\nBackground:\n  * def auth = call read('classpath:auth/token.feature')\n\n# RIGHT\nBackground:\n  * def auth = callonce read('classpath:auth/token.feature')"
         }
       ]
     },
     {
-      "subtitle": "Testes de Mutação",
-      "description": "Seus testes realmente detectam bugs?",
+      "subtitle": "Mutation Testing",
+      "formerSubtitle": "Testes de Mutação",
+      "description": "Do your tests actually catch bugs?",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Cobertura mostra que a linha foi executada, não que o resultado foi verificado — um teste sem asserções cobre tudo. Ferramentas de mutação como o PIT alteram o código (trocam > por >=, removem chamadas, invertem condições) e rodam os testes: se nenhum falha, o mutante \"sobreviveu\" e revela uma verificação ausente. O mutation score é uma medida bem mais honesta da qualidade da suíte.",
-          "code": "<!-- pom.xml -->\n<plugin>\n  <groupId>org.pitest</groupId>\n  <artifactId>pitest-maven</artifactId>\n  <version>1.16.1</version>\n  <configuration>\n    <targetClasses><param>com.loja.pedidos.*</param></targetClasses>\n    <mutationThreshold>80</mutationThreshold>\n  </configuration>\n  <dependencies>\n    <!-- sem este plugin o PIT não encontra testes JUnit 5 -->\n    <dependency>\n      <groupId>org.pitest</groupId>\n      <artifactId>pitest-junit5-plugin</artifactId>\n      <version>1.2.1</version>\n    </dependency>\n  </dependencies>\n</plugin>\n<!-- mvn org.pitest:pitest-maven:mutationCoverage -->",
-          "interview_question": "Por que 100% de cobertura não garante bons testes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** coverage is 90%, and a bug that flips a `>` into `>=` still reaches production.\n\n**Concept:** coverage shows a line ran, not that its result was checked — a test with no assertions covers everything. Mutation tools such as PIT change the code (swap `>` for `>=`, remove calls, invert conditions) and run the tests: if no test fails, the mutant \"survived\" and reveals a missing check. The mutation score is a much more honest measure of a suite.\n\n**How it works:** with JUnit 5, PIT needs the `pitest-junit5-plugin` dependency to find the tests.",
+          "code": "<!-- pom.xml -->\n<plugin>\n  <groupId>org.pitest</groupId>\n  <artifactId>pitest-maven</artifactId>\n  <version>1.16.1</version>\n  <configuration>\n    <targetClasses><param>com.shop.orders.*</param></targetClasses>\n    <mutationThreshold>80</mutationThreshold>\n  </configuration>\n  <dependencies>\n    <dependency>\n      <groupId>org.pitest</groupId>\n      <artifactId>pitest-junit5-plugin</artifactId>\n      <version>1.2.1</version>\n    </dependency>\n  </dependencies>\n</plugin>\n<!-- mvn org.pitest:pitest-maven:mutationCoverage -->",
+          "interview_question": "Why doesn't 100% coverage guarantee good tests?",
           "references": [
-            "https://pitest.org/"
+            "https://pitest.org/",
+            "https://pitest.org/quickstart/maven/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Running PIT over the whole codebase on every pull request. Mutation testing runs the suite many times, and a full run can take hours. Target the business-rule packages, and use incremental analysis (`withHistory`) in CI.",
+          "code": "# WRONG: every class, every PR\nmvn org.pitest:pitest-maven:mutationCoverage\n\n# RIGHT: the domain packages, incremental\nmvn org.pitest:pitest-maven:mutationCoverage -DwithHistory -DtargetClasses=com.shop.orders.domain.*"
         }
       ]
     },
     {
-      "subtitle": "Testes de Arquitetura",
-      "description": "Regras de dependência verificadas no build.",
+      "subtitle": "Architecture Tests",
+      "formerSubtitle": "Testes de Arquitetura",
+      "description": "Dependency rules checked by the build.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "ArchUnit expressa regras de arquitetura como testes JUnit: controllers não acessam repositories diretamente, o domínio não depende de Spring, não há ciclos entre pacotes. Quando alguém viola a regra, o CI falha — a arquitetura deixa de depender só da memória do time e das revisões de código.",
-          "code": "@AnalyzeClasses(packages = \"com.loja\")\nclass ArquiteturaTest {\n\n    @ArchTest\n    static final ArchRule camadas = layeredArchitecture().consideringAllDependencies()\n        .layer(\"Controller\").definedBy(\"..controller..\")\n        .layer(\"Service\").definedBy(\"..service..\")\n        .layer(\"Repository\").definedBy(\"..repository..\")\n        .whereLayer(\"Controller\").mayNotBeAccessedByAnyLayer()\n        .whereLayer(\"Repository\").mayOnlyBeAccessedByLayers(\"Service\");\n\n    @ArchTest\n    static final ArchRule dominioSemSpring = noClasses().that().resideInAPackage(\"..domain..\")\n        .should().dependOnClassesThat().resideInAPackage(\"org.springframework..\");\n}",
-          "interview_question": "Como impedir que a arquitetura em camadas se degrade com o tempo?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the team agreed controllers never touch repositories, and six months later a dozen do.\n\n**Concept:** ArchUnit expresses architecture rules as JUnit tests: controllers do not access repositories, the domain does not depend on Spring, there are no cycles between packages. When someone breaks a rule, CI fails — the architecture no longer depends only on memory and code review.\n\n**How it works:** start with a few rules that matter, and add more as the team agrees on them.",
+          "code": "@AnalyzeClasses(packages = \"com.shop\")\nclass ArchitectureTest {\n\n    @ArchTest\n    static final ArchRule layers = layeredArchitecture().consideringAllDependencies()\n        .layer(\"Controller\").definedBy(\"..controller..\")\n        .layer(\"Service\").definedBy(\"..service..\")\n        .layer(\"Repository\").definedBy(\"..repository..\")\n        .whereLayer(\"Controller\").mayNotBeAccessedByAnyLayer()\n        .whereLayer(\"Repository\").mayOnlyBeAccessedByLayers(\"Service\");\n\n    @ArchTest\n    static final ArchRule domainWithoutSpring = noClasses().that().resideInAPackage(\"..domain..\")\n        .should().dependOnClassesThat().resideInAPackage(\"org.springframework..\");\n}",
+          "interview_question": "How do you stop a layered architecture from degrading over time?",
           "references": [
             "https://www.archunit.org/userguide/html/000_Index.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Adding a strict rule to a legacy codebase in one go. It fails with hundreds of existing violations, so the rule is disabled and forgotten. Freeze the current violations, and fail only on new ones.",
+          "code": "// WRONG: 300 existing violations -> the rule gets @Disabled\n\n// RIGHT: record today's violations; only new ones fail the build\n@ArchTest\nstatic final ArchRule layers = FreezingArchRule.freeze(\n    layeredArchitecture().consideringAllDependencies() /* ...same rule... */);"
         }
       ]
     },
     {
-      "subtitle": "Testes de Carga e Performance",
-      "description": "Validando capacidade e SLOs antes da produção.",
+      "subtitle": "Load and Performance Tests",
+      "formerSubtitle": "Testes de Carga e Performance",
+      "description": "Validating capacity and SLOs before production.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Latência em percentis (p95/p99), throughput, taxa de erros e uso de recursos (CPU, memória, conexões do pool). Teste de carga simula o tráfego esperado; estresse aumenta até quebrar para achar o limite; soak mantém carga por horas para revelar vazamentos. Rode em um ambiente parecido com produção e defina critérios de aprovação (thresholds) para que o teste possa rodar no pipeline.",
-          "code": "// k6: rampa até 200 usuários virtuais com critérios de aprovação\nimport http from 'k6/http';\nimport { check } from 'k6';\n\nexport const options = {\n  stages: [\n    { duration: '2m', target: 200 },\n    { duration: '5m', target: 200 },\n    { duration: '1m', target: 0 },\n  ],\n  thresholds: {\n    http_req_duration: ['p(95)<300'],\n    http_req_failed: ['rate<0.01'],\n  },\n};\n\nexport default function () {\n  const res = http.get('https://staging.loja.com/produtos?page=0');\n  check(res, { 'status 200': (r) => r.status === 200 });\n}",
-          "interview_question": "Quais métricas você acompanha em testes de carga?",
+          "title": "Explanation",
+          "explanation": "**Problem:** Black Friday is the first time the system sees 20 times its normal traffic.\n\n**Concept:** track latency percentiles (p95, p99), throughput, error rate and resource use (CPU, memory, pool connections). A load test simulates the expected traffic; a stress test increases load until something breaks, to find the limit; a soak test holds the load for hours to reveal leaks. Run in an environment close to production, with pass criteria (thresholds), so the test can run in the pipeline.\n\n**How it works:** k6 thresholds make the run fail when the SLO is not met, exactly like a failing unit test.",
+          "code": "// k6: ramp up to 200 virtual users with pass criteria\nimport http from 'k6/http';\nimport { check } from 'k6';\n\nexport const options = {\n  stages: [\n    { duration: '2m', target: 200 },\n    { duration: '5m', target: 200 },\n    { duration: '1m', target: 0 },\n  ],\n  thresholds: {\n    http_req_duration: ['p(95)<300'],\n    http_req_failed: ['rate<0.01'],\n  },\n};\n\nexport default function () {\n  const res = http.get('https://staging.shop.com/products?page=0');\n  check(res, { 'status 200': (r) => r.status === 200 });\n}",
+          "interview_question": "Which metrics do you track in load tests?",
           "references": [
             "https://grafana.com/docs/k6/latest/",
             "https://gatling.io/docs/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Testes Instáveis (Flaky)",
-      "description": "Encontrando e eliminando falhas aleatórias.",
-      "category": "boas-praticas",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Causas típicas: dependência de horário ou fuso (use um Clock injetável), ordem de execução e estado compartilhado entre testes, Thread.sleep para esperar algo assíncrono (use Awaitility), portas fixas e dados aleatórios sem semente. Testes flaky destroem a confiança no CI; isole-os, corrija a causa e não apenas adicione retries.",
-          "code": "// Tempo controlado: o serviço recebe um Clock\nClock fixo = Clock.fixed(Instant.parse(\"2024-05-10T10:00:00Z\"), ZoneOffset.UTC);\nvar service = new CupomService(fixo);\n\n// Espera assíncrona sem sleep\nawait().atMost(Duration.ofSeconds(5))\n       .untilAsserted(() -> assertThat(emailFake.enviados()).hasSize(1));",
-          "interview_question": "Quais são as causas comuns de testes instáveis e como corrigi-las?",
-          "references": [
-            "https://github.com/awaitility/awaitility",
-            "https://martinfowler.com/articles/nonDeterminism.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "Generating the load from a laptop on Wi-Fi. The laptop's CPU or network saturates first, and the test measures the load generator, not the system. Run the generator close to the system, and watch its own CPU.",
+          "code": "WRONG: k6 on a laptop over Wi-Fi -> \"the API maxes out at 300 req/s\"\n       (the laptop was at 100% CPU)\n\nRIGHT: k6 on a machine in the same network/region, its CPU monitored —\n       or distributed k6 for higher loads"
         }
       ]
     },
     {
-      "subtitle": "Testes Baseados em Propriedades",
-      "description": "Gerando centenas de entradas automaticamente.",
+      "subtitle": "Property-Based Testing",
+      "formerSubtitle": "Testes Baseados em Propriedades",
+      "description": "Generating hundreds of inputs automatically.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Em vez de escolher alguns exemplos, você descreve uma propriedade que deve valer para qualquer entrada, e a biblioteca (jqwik) gera centenas de casos, incluindo bordas como zero, negativos e strings vazias. Quando encontra uma falha, ela reduz a entrada ao menor contraexemplo. É excelente para cálculos, conversões e parsers.",
-          "code": "class DescontoProperties {\n    @Property\n    void descontoNuncaDeixaPrecoNegativo(@ForAll @BigRange(min = \"0\", max = \"100000\") BigDecimal preco,\n                                         @ForAll @IntRange(min = 0, max = 100) int percentual) {\n        BigDecimal resultado = Desconto.aplicar(preco, percentual);\n        assertThat(resultado).isBetween(BigDecimal.ZERO, preco);\n    }\n}",
-          "interview_question": "O que são testes baseados em propriedades?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the tests check five hand-picked examples, and the bug appears with an input nobody thought of — zero, a negative number, an empty string.\n\n**Concept:** instead of choosing examples, you describe a property that must hold for any input, and the library (jqwik) generates hundreds of cases, including edge cases such as zero, negatives and empty strings. When it finds a failure, it shrinks the input to the smallest counterexample.\n\n**How it works:** good properties: invariants (\"a discount never makes the price negative\"), round trips (\"parse(format(x)) == x\"), and comparisons with a simpler implementation.",
+          "code": "class DiscountProperties {\n    @Property\n    void discountNeverMakesPriceNegative(@ForAll @BigRange(min = \"0\", max = \"100000\") BigDecimal price,\n                                         @ForAll @IntRange(min = 0, max = 100) int percent) {\n        BigDecimal result = Discount.apply(price, percent);\n        assertThat(result).isBetween(BigDecimal.ZERO, price);\n    }\n}",
+          "interview_question": "What is property-based testing?",
           "references": [
             "https://jqwik.net/docs/current/user-guide.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A property that recomputes the expected value with the same formula as the code. If the formula is wrong, the test is wrong in the same way and always passes. Test invariants, not a copy of the implementation.",
+          "code": "// WRONG: the same formula on both sides\nassertThat(Discount.apply(price, p)).isEqualTo(price.multiply(BigDecimal.valueOf(100 - p)).divide(HUNDRED));\n\n// RIGHT: an invariant the implementation must respect\nassertThat(Discount.apply(price, p)).isBetween(BigDecimal.ZERO, price);"
         }
       ]
     },
     {
-      "subtitle": "Estratégia de Testes no Pipeline",
-      "description": "Feedback rápido sem perder cobertura.",
+      "subtitle": "Test Strategy in the Pipeline",
+      "formerSubtitle": "Estratégia de Testes no Pipeline",
+      "description": "Fast feedback without losing coverage.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Separe por velocidade: testes unitários rodam primeiro e em todo push (falha rápida); integração com Testcontainers roda em seguida, no Maven com o plugin Failsafe (sufixo IT); contratos são verificados antes do merge; testes de carga e E2E rodam em staging antes da promoção para produção. Paralelize, publique relatórios e trate a quebra da main como prioridade.",
-          "code": "mvn test       # Surefire: *Test.java (unitários, segundos)\nmvn verify     # Failsafe: *IT.java (integração com Testcontainers, minutos)\n\nPipeline:\n  push      -> unitários + análise estática\n  PR        -> + integração + verificação de contratos\n  main      -> build da imagem -> deploy em staging -> E2E + carga\n  aprovação -> produção",
-          "interview_question": "Como organizar a execução dos testes em um pipeline de CI?",
+          "title": "Explanation",
+          "explanation": "**Problem:** every push runs the whole suite — unit, integration, end-to-end, load — and feedback takes 40 minutes.\n\n**Concept:** split by speed: unit tests run first, on every push (fail fast); integration tests with Testcontainers run next, through Maven's Failsafe plugin (`*IT` classes); contracts are verified before merging; load and end-to-end tests run in staging before promotion to production. Run in parallel, publish reports, and treat a broken main as the first priority.\n\n**How it works:** `mvn test` runs only Surefire (`*Test`); `mvn verify` also runs Failsafe (`*IT`).",
+          "code": "mvn test      # Surefire: *Test.java (unit, seconds)\nmvn verify    # Failsafe: *IT.java (integration with Testcontainers, minutes)\n\nPipeline:\n  push      -> unit tests + static analysis\n  PR        -> + integration + contract verification\n  main      -> build the image -> deploy to staging -> E2E + load\n  approval  -> production",
+          "interview_question": "How do you organize test execution in a CI pipeline?",
           "references": [
-            "https://maven.apache.org/surefire/maven-failsafe-plugin/"
+            "https://maven.apache.org/surefire/maven-failsafe-plugin/",
+            "https://maven.apache.org/surefire/maven-surefire-plugin/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Naming integration tests `*IT` without configuring Failsafe. Surefire does not run `*IT` classes, and Failsafe is not active by default in a plain Maven project, so those tests silently never run — the build is green either way. Add the plugin, and check the test count in the report.",
+          "code": "<!-- RIGHT: without this, *IT classes are never executed -->\n<plugin>\n  <groupId>org.apache.maven.plugins</groupId>\n  <artifactId>maven-failsafe-plugin</artifactId>\n  <executions>\n    <execution>\n      <goals><goal>integration-test</goal><goal>verify</goal></goals>\n    </execution>\n  </executions>\n</plugin>"
         }
       ]
     }
-  ]
+  ],
+  "version": "JUnit 5, Spring Boot 3.4+"
 }

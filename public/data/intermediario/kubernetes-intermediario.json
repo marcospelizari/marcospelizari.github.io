@@ -1,0 +1,108 @@
+{
+  "title": "Kubernetes & kubectl",
+  "description": "Exposing applications, health checks, graceful shutdown and packaging manifests.",
+  "version": "Kubernetes 1.31+",
+  "resumo": [
+    "Ingress routes HTTP by host and path through one controller; ingress-nginx is retired — prefer the Gateway API.",
+    "Readiness decides traffic; liveness restarts — never tie liveness to the database.",
+    "Graceful shutdown: Spring `server.shutdown: graceful` + `preStop` + a longer `terminationGracePeriodSeconds`.",
+    "Helm: charts + values files per environment; `--set` only for what changes per deploy.",
+    "Kustomize: a base plus overlays in plain YAML; the `images` name must match the manifest exactly."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Ingress: External HTTP Entry",
+      "formerSubtitle": "Ingress: Entrada HTTP Externa",
+      "formerLevel": "essencial",
+      "description": "Routing by host and path, with TLS.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a `LoadBalancer` Service creates one cloud load balancer per service, which gets expensive with many services.\n\n**Concept:** an Ingress defines HTTP rules — by host and path, with TLS — and a single Ingress Controller serves all of them, routing to internal Services. An Ingress does nothing without a controller installed. ingress-nginx, the most used controller, was retired in March 2026 and no longer gets security fixes; for new clusters the Kubernetes project recommends the Gateway API.\n\n**How it works:** `ingressClassName` says which controller handles the Ingress; the TLS certificate lives in a Secret.",
+          "code": "apiVersion: networking.k8s.io/v1\nkind: Ingress\nmetadata:\n  name: shop\nspec:\n  ingressClassName: nginx\n  tls:\n    - hosts: [api.shop.com]\n      secretName: api-shop-tls\n  rules:\n    - host: api.shop.com\n      http:\n        paths:\n          - path: /orders\n            pathType: Prefix\n            backend:\n              service:\n                name: api-orders\n                port: { number: 80 }",
+          "interview_question": "What is the difference between a LoadBalancer Service and an Ingress?",
+          "references": [
+            "https://kubernetes.io/docs/concepts/services-networking/ingress/",
+            "https://kubernetes.io/docs/concepts/services-networking/gateway/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An Ingress that no controller handles — none installed, or the wrong `ingressClassName`. It is accepted, but never gets an address, and nothing is routed.",
+          "code": "kubectl get ingress\n# NAME   CLASS   HOSTS          ADDRESS   PORTS\n# shop   nginx   api.shop.com             80, 443     <- no ADDRESS\n\nkubectl get ingressclass      # which controllers exist? use one of these names"
+        }
+      ]
+    },
+    {
+      "subtitle": "Probes and Graceful Shutdown",
+      "formerSubtitle": "Probes e Shutdown Gracioso",
+      "formerLevel": "avancado",
+      "description": "Deploys without dropped requests.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** every rolling update produces a burst of 502 errors, and pods that start slowly are killed before they are ready.\n\n**Concept:** readiness says whether the pod can receive traffic — while it fails, the pod is removed from the Service. Liveness says whether the process is stuck — when it fails, the kubelet restarts the container; never tie it to external dependencies, or a database outage restarts every pod. A startup probe protects slow-starting applications from the liveness probe. When a pod is removed, Kubernetes sends SIGTERM and, in parallel, removes it from the Service's endpoints — for a moment it may still receive traffic.\n\n**How it works:** enable Spring's graceful shutdown (finish in-flight requests), add a short `preStop` so the endpoints update first, and set `terminationGracePeriodSeconds` longer than both together.",
+          "code": "# application.yml\nserver.shutdown: graceful\nspring.lifecycle.timeout-per-shutdown-phase: 20s\n\n# Deployment (container excerpt)\nspec:\n  terminationGracePeriodSeconds: 40\n  containers:\n    - name: api\n      lifecycle:\n        preStop:\n          sleep: { seconds: 10 }   # Kubernetes 1.30+; before: exec with \"sleep 10\"\n      startupProbe:\n        httpGet: { path: /actuator/health/liveness, port: 8080 }\n        failureThreshold: 30\n        periodSeconds: 5\n      readinessProbe:\n        httpGet: { path: /actuator/health/readiness, port: 8080 }\n      livenessProbe:\n        httpGet: { path: /actuator/health/liveness, port: 8080 }",
+          "interview_question": "How do you avoid 502 errors during a rolling update of a Spring Boot API?",
+          "references": [
+            "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/",
+            "https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#pod-termination",
+            "https://docs.spring.io/spring-boot/reference/web/graceful-shutdown.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A liveness probe that checks the database. When the database has a hiccup, every pod fails liveness and is restarted at the same time — turning a short database problem into a full outage. Dependencies belong in readiness, if anywhere.",
+          "code": "# WRONG: liveness includes the database health\nlivenessProbe:\n  httpGet: { path: /actuator/health, port: 8080 }    # includes \"db\"\n\n# RIGHT: liveness only checks the process itself\nlivenessProbe:\n  httpGet: { path: /actuator/health/liveness, port: 8080 }"
+        }
+      ]
+    },
+    {
+      "subtitle": "Helm",
+      "formerLevel": "avancado",
+      "description": "Packaging manifests into reusable charts.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the same manifests are copied for dev, staging and production with small differences, and installing third-party software means hundreds of lines of YAML.\n\n**Concept:** Helm packages manifests into charts: templates plus a `values.yaml` file, with each environment providing its own values (replicas, image, resources). `helm upgrade --install` installs or updates idempotently, and each installation becomes a versioned release with history and rollback. It is also the standard way to install third-party software in a cluster, such as cert-manager or Prometheus.\n\n**How it works:** `helm template` renders the YAML without applying it — useful to review what will change. `--atomic` rolls back automatically if the upgrade fails.",
+          "code": "helm repo add jetstack https://charts.jetstack.io\nhelm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true\n\n# Your own chart\nhelm create api-orders\nhelm template api-orders ./api-orders -f values-prod.yaml    # render without applying\nhelm upgrade --install api-orders ./api-orders -n orders \\\n  -f values-prod.yaml --set image.tag=1.5.0 --atomic --timeout 5m\n\nhelm history api-orders -n orders\nhelm rollback api-orders 3 -n orders",
+          "interview_question": "What problem does Helm solve?",
+          "references": [
+            "https://helm.sh/docs/intro/using_helm/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Overriding many values with `--set` on the command line. The real configuration of each environment lives only in someone's shell history and cannot be reviewed. Keep values in versioned files; use `--set` only for what changes per deploy, like the image tag.",
+          "code": "# WRONG\nhelm upgrade --install api ./api --set replicas=5 --set resources.limits.memory=1Gi \\\n  --set env.DB_URL=jdbc:... --set ingress.host=api.shop.com\n\n# RIGHT\nhelm upgrade --install api ./api -f values-prod.yaml --set image.tag=1.5.0"
+        }
+      ]
+    },
+    {
+      "subtitle": "Kustomize",
+      "formerLevel": "avancado",
+      "description": "Per-environment variations without templates.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** Helm templates are hard to read for a simple application, but copying manifests per environment duplicates everything.\n\n**Concept:** Kustomize works with plain YAML: a base with the common manifests, and overlays per environment that apply patches (replicas, resources, image). There is no template language, so the files stay easy to read and review. It is built into kubectl (`apply -k`).\n\n**How it works:** a good choice for your own applications in GitOps flows; Helm shines for distributing configurable packages to others.",
+          "code": "k8s/\n  base/\n    deployment.yaml\n    service.yaml\n    kustomization.yaml        # resources: [deployment.yaml, service.yaml]\n  overlays/\n    production/\n      kustomization.yaml\n\n# overlays/production/kustomization.yaml\nresources:\n  - ../../base\nnamespace: orders\nreplicas:\n  - name: api-orders\n    count: 5\nimages:\n  - name: ghcr.io/shop/api-orders\n    newTag: \"1.5.0\"\n\nkubectl kustomize k8s/overlays/production      # show the final YAML\nkubectl apply -k k8s/overlays/production",
+          "interview_question": "When would you use Kustomize instead of Helm?",
+          "references": [
+            "https://kubectl.docs.kubernetes.io/references/kustomize/",
+            "https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An image name in `images:` that does not match the one in the base. Kustomize silently changes nothing, and production keeps running the old tag. The `name` must be exactly the image in the manifest.",
+          "code": "# base/deployment.yaml uses:  ghcr.io/shop/api-orders:1.4.0\nimages:\n  - name: api-orders             # WRONG: no match -> the tag stays 1.4.0\n    newTag: \"1.5.0\"\n\nimages:\n  - name: ghcr.io/shop/api-orders   # RIGHT\n    newTag: \"1.5.0\""
+        }
+      ]
+    }
+  ]
+}

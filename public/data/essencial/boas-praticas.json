@@ -1,161 +1,238 @@
 {
-  "title": "Boas Práticas Gerais",
-  "description": "Recomendações para código limpo, eficiente e colaborativo em Java, backend e DevOps, valorizadas em entrevistas.",
-  "version": "Java 21, Spring Boot 3.3.x",
+  "title": "Best Practices & Clean Code",
+  "description": "Habits that keep code readable, testable and safe to change — and how teams work together.",
+  "version": "Java 21, Spring Boot 3",
   "resumo": [
-    "Boas práticas são acordos que mantêm o código fácil de ler, testar e mudar. Em entrevistas, mostram maturidade: não basta o código funcionar, ele precisa ser sustentável pelo time.",
-    "Organização começa por camadas claras (controller, service, repository), nomes que revelam intenção e classes com uma única responsabilidade. Princípios como SOLID guiam essas decisões.",
-    "Qualidade é verificada automaticamente: testes cobrindo regras de negócio, CI executando build e testes em cada Pull Request e revisões de código focadas em corretude e segurança.",
-    "No banco e nas APIs, evite consultas N+1, valide toda entrada externa, padronize erros e nunca exponha entidades ou dados sensíveis diretamente.",
-    "Em operação, logs com contexto, métricas e deploys automatizados e pequenos reduzem riscos. Segredos ficam fora do repositório e dependências são mantidas atualizadas."
+    "Organize by feature; controllers return DTOs; no catch-all Utils class.",
+    "SRP, DRY (same knowledge, not same text), KISS, YAGNI.",
+    "Names reveal intent and side effects; comments explain why, not what.",
+    "Name your SQL columns, parameterize, paginate, version the schema.",
+    "Test the error contract (400, 404, 409), not only the happy path.",
+    "One change per commit, small PRs, Conventional Commits.",
+    "Log once, with context and placeholders; never secrets or personal data.",
+    "Measure before optimizing; change one thing at a time.",
+    "Access control checks ownership, not only login (OWASP Top 10)."
   ],
   "subsections": [
     {
-      "subtitle": "Código e Organização",
-      "description": "Estruturação de projetos.",
+      "subtitle": "Code Organization",
+      "formerSubtitle": "Código e Organização",
+      "description": "A structure where everyone knows where things go.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use nomes descritivos, siga padrões como MVC (Model-View-Controller), documente com JavaDoc e organize em camadas (controller, service, repository). Isso facilita colaboração e manutenção.",
-          "code": "/**\n * Lista produtos por categoria.\n * @param categoria Categoria desejada\n * @return Produtos da categoria (DTO, não a entidade)\n */\n@GetMapping(\"/produtos\")\npublic List<ProdutoResponse> listarPorCategoria(@RequestParam String categoria) {\n    return service.listarPorCategoria(categoria);\n}",
-          "interview_question": "Como você organiza o código em um projeto backend?"
+          "title": "Explanation",
+          "explanation": "**Problem:** a new developer opens the project and finds `Util2`, 800-line services and no way to tell where a new class should go.\n\n**Concept:** a consistent structure — packages by feature, with controller, service and repository inside — plus names that reveal intent and small classes with one responsibility. Javadoc is for public APIs and non-obvious decisions, not for repeating what the code says.\n\n**How it works:** when you add something, put it next to the feature it belongs to. Controllers return DTOs, never entities.",
+          "code": "com.shop\n ├── orders\n │    ├── OrderController\n │    ├── OrderService\n │    ├── OrderRepository\n │    └── dto/ (CreateOrderRequest, OrderResponse)\n └── catalog\n      └── ...\n\n/**\n * Lists the products of a category.\n * @param category the category slug, e.g. \"books\"\n * @return the products, as DTOs (not entities)\n */\n@GetMapping(\"/products\")\npublic List<ProductResponse> listByCategory(@RequestParam String category) {\n    return service.listByCategory(category);\n}",
+          "interview_question": "How do you organize the code of a backend project?",
+          "references": [
+            "https://martinfowler.com/bliki/PresentationDomainDataLayering.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A catch-all `Utils` class. Unrelated static methods pile up in it, everything depends on it, and nobody knows what is inside. Put each helper next to the code that uses it, or in a small class with a clear name.",
+          "code": "// WRONG\npublic class Utils {\n    static String formatCpf(String s) { ... }\n    static BigDecimal calculateTax(Order o) { ... }\n    static void sendEmail(String to) { ... }\n}\n\n// RIGHT: named for what they do, living with their feature\nclass TaxCalculator { ... }        // orders\nclass EmailSender { ... }          // notifications"
         }
       ]
     },
     {
-      "subtitle": "Princípios de Design",
-      "description": "Aplicação de SOLID e DRY.",
+      "subtitle": "Design Principles: SRP, DRY, KISS and YAGNI",
+      "formerSubtitle": "Princípios de Design",
+      "description": "Four short rules that keep code easy to change.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Siga o SRP (Single Responsibility Principle) para classes com uma função e o DRY (Don't Repeat Yourself) para evitar duplicação. Promove código reutilizável e fácil de testar.",
-          "code": "// Dinheiro: BigDecimal, nunca double (0.1 + 0.2 != 0.3 em double)\npublic BigDecimal aplicarDesconto(BigDecimal valor, BigDecimal percentual) {\n    BigDecimal fator = BigDecimal.ONE.subtract(percentual.movePointLeft(2));\n    return valor.multiply(fator).setScale(2, RoundingMode.HALF_EVEN);\n}",
-          "interview_question": "O que são SRP e DRY e como você os aplica?"
+          "title": "Explanation",
+          "explanation": "**Problem:** the same rule is duplicated in five places and one of them is forgotten in the next change; or an elaborate abstraction was built for a case that never came.\n\n**Concept:** SRP (Single Responsibility): a class has one reason to change. DRY (Don't Repeat Yourself): each piece of knowledge has one representation in the code. KISS (Keep It Simple): the simplest solution that works. YAGNI (You Aren't Gonna Need It): do not build features or extension points before they are needed.\n\n**How it works:** they balance each other: DRY removes duplication, while KISS and YAGNI stop you from building abstractions too early.",
+          "code": "// DRY: the discount rule lives in one place\npublic final class Discount {\n    // Money: BigDecimal, never double (0.1 + 0.2 != 0.3 in double)\n    public static BigDecimal apply(BigDecimal amount, BigDecimal percent) {\n        BigDecimal factor = BigDecimal.ONE.subtract(percent.movePointLeft(2));\n        return amount.multiply(factor).setScale(2, RoundingMode.HALF_EVEN);\n    }\n}\n\n// Every caller uses it instead of repeating the formula\nBigDecimal total = Discount.apply(subtotal, new BigDecimal(\"10\"));",
+          "interview_question": "What are SRP, DRY, KISS and YAGNI, and how do you apply them?",
+          "references": [
+            "https://en.wikipedia.org/wiki/Single-responsibility_principle",
+            "https://en.wikipedia.org/wiki/Don%27t_repeat_yourself"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Applying DRY to code that only looks alike. Two rules that happen to have the same formula today are merged, and when one of them changes, the other breaks. DRY is about the same knowledge, not the same text.",
+          "code": "// WRONG: one method for two different business rules\nBigDecimal fee(BigDecimal amount) { return amount.multiply(new BigDecimal(\"0.02\")); }\n// used for card fees AND for late-payment interest — change one, break the other\n\n// RIGHT: same formula today, different reasons to change\nBigDecimal cardFee(BigDecimal amount) { ... }\nBigDecimal latePaymentInterest(BigDecimal amount) { ... }"
         }
       ]
     },
     {
-      "subtitle": "Bancos de Dados",
-      "description": "Otimização e segurança de dados.",
+      "subtitle": "Databases",
+      "formerSubtitle": "Bancos de Dados",
+      "description": "Everyday practices for the data layer.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use índices, evite SELECT *, normalize tabelas, aplique transações e PreparedStatement para segurança. Garante performance e proteção em sistemas críticos.",
-          "code": "PreparedStatement stmt = conn.prepareStatement(\"SELECT id, nome FROM usuarios WHERE id = ?\");\nstmt.setInt(1, id);\nResultSet rs = stmt.executeQuery();",
-          "interview_question": "Quais práticas você segue para otimizar consultas SQL?"
+          "title": "Explanation",
+          "explanation": "**Problem:** most production performance problems and data bugs start in the database layer: slow queries, missing transactions, schema differences between environments.\n\n**Concept:** select only the columns you need; index the columns you filter and join on; always use parameterized queries; wrap related writes in one transaction; version the schema with migrations (Flyway); paginate lists. Each item has its own lesson in the Databases topic.\n\n**How it works:** check new queries with `EXPLAIN` and the SQL log before they reach production.",
+          "code": "PreparedStatement stmt = conn.prepareStatement(\n    \"SELECT id, name FROM users WHERE id = ?\");   // only the columns needed, parameterized\nstmt.setLong(1, id);\nResultSet rs = stmt.executeQuery();",
+          "interview_question": "Which practices do you follow to write efficient and safe SQL?",
+          "references": [
+            "https://www.postgresql.org/docs/current/performance-tips.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`SELECT *` in application code. It fetches columns nobody uses — sometimes large ones — prevents index-only scans, and changes silently when a column is added. Name the columns.",
+          "code": "-- WRONG\nSELECT * FROM users WHERE id = 42;\n\n-- RIGHT\nSELECT id, name, email FROM users WHERE id = 42;"
         }
       ]
     },
     {
-      "subtitle": "APIs e Testes",
-      "description": "Desenvolvimento e validação de APIs.",
+      "subtitle": "APIs and Testing",
+      "formerSubtitle": "APIs e Testes",
+      "description": "APIs that are predictable, and tests that keep them that way.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use URLs claras, códigos HTTP corretos, valide entradas com @Valid e teste com JUnit e RestAssured, mirando 80%+ de cobertura. Assegura APIs confiáveis e fáceis de usar.",
-          "code": "@Test\nvoid testGetProdutos() {\n    given().when().get(\"/api/produtos\").then().statusCode(200);\n}",
-          "interview_question": "Como você garante a qualidade de uma API REST?"
+          "title": "Explanation",
+          "explanation": "**Problem:** an API without tests breaks its clients silently: a renamed field, a status code that changed, a validation that disappeared.\n\n**Concept:** design clear resource URLs, return the right status codes, validate input with `@Valid`, return errors as Problem Details, and test at every level: unit tests for rules, slices for controllers, a few end-to-end tests for critical flows.\n\n**How it works:** RestAssured (or Karate) calls the running application over HTTP, the way a client does.",
+          "code": "@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)\nclass ProductApiTest {\n    @LocalServerPort int port;\n\n    @BeforeEach\n    void setUp() { RestAssured.port = port; }\n\n    @Test\n    void listsProducts() {\n        given().when().get(\"/api/products\").then().statusCode(200);\n    }\n}",
+          "interview_question": "How do you make sure a REST API stays reliable?",
+          "references": [
+            "https://rest-assured.io/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Testing only the happy path. The 400, 404 and 409 responses are part of the contract, and they are the ones that break without anyone noticing.",
+          "code": "// WRONG: only the success case is tested\n@Test void createsProduct() { ... status 201 ... }\n\n// RIGHT: the error contract is tested too\n@Test void rejectsMissingName()   { ... status 400 ... }\n@Test void returns404ForUnknownId() { ... status 404 ... }\n@Test void rejectsDuplicateSku()  { ... status 409 ... }"
         }
       ]
     },
     {
-      "subtitle": "Git e Colaboração",
-      "description": "Gerenciamento de código em equipe.",
+      "subtitle": "Git and Collaboration",
+      "formerSubtitle": "Git e Colaboração",
+      "description": "A history and a workflow the team can rely on.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Faça commits pequenos com mensagens claras, use branches (ex.: feature/nova-api), revise PRs (Pull Requests) e use .gitignore. Facilita colaboração em projetos distribuídos.",
-          "code": "git commit -m \"feat(produtos): adiciona endpoint /produtos\"\ngit push origin feature/nova-api",
-          "interview_question": "Como você organiza commits em um projeto em equipe?"
+          "title": "Explanation",
+          "explanation": "**Problem:** an unreadable history, huge pull requests and constant conflicts slow the whole team down.\n\n**Concept:** small commits with clear messages (Conventional Commits), short branches named after the task, pull requests reviewed by a teammate, and a `.gitignore` from day one. Each item has its own lesson in the Version Control topic.\n\n**How it works:** integrate with main often, and keep each pull request about one thing.",
+          "code": "git switch -c feature/new-api\ngit commit -m \"feat(products): add GET /products endpoint\"\ngit push -u origin feature/new-api\n# open a pull request, get a review, merge",
+          "interview_question": "How do you organize commits in a team project?",
+          "references": [
+            "https://www.conventionalcommits.org/en/v1.0.0/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Unrelated changes in one commit. It cannot be reverted without undoing the other changes, and the message cannot describe it.",
+          "code": "# WRONG\ngit commit -m \"feat: login + fix typo + bump dependencies\"\n\n# RIGHT: one change per commit\ngit commit -m \"feat(auth): add login endpoint\"\ngit commit -m \"fix(docs): correct README typo\"\ngit commit -m \"chore(deps): upgrade spring boot to 3.3.5\""
         }
       ]
     },
     {
-      "subtitle": "Times Ágeis e Scrum",
-      "description": "Como o trabalho é organizado em sprints.",
+      "subtitle": "Agile Teams and Scrum",
+      "formerSubtitle": "Times Ágeis e Scrum",
+      "description": "How work is organized in sprints.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Métodos ágeis entregam software em ciclos curtos, recebendo feedback a cada entrega em vez de planejar tudo no início. No Scrum, o trabalho acontece em sprints de 1 a 4 semanas. Os papéis são o Product Owner, que prioriza o backlog; o Scrum Master, que remove impedimentos e cuida do processo; e os Developers, que constroem. Os eventos são a Sprint Planning (o que entra na sprint), a Daily (15 minutos para o time inspecionar o progresso rumo à meta da sprint; o formato \"o que fiz, o que vou fazer, o que me impede\" é comum, mas não é regra do Scrum Guide desde 2020), a Sprint Review (mostrar o que foi entregue) e a Retrospectiva (como melhorar o processo). Uma tarefa só está pronta quando atende à Definition of Done do time, que costuma incluir testes, code review aprovado e pipeline verde. Kanban é a alternativa sem sprints: um fluxo contínuo com limite de tarefas em andamento.",
-          "code": "Exemplo de Daily:\nOntem: terminei a atualização do jackson-databind e abri o PR.\nHoje: vou corrigir os comentários do review e começar os testes Karate do endpoint de pedidos.\nImpedimento: preciso de acesso ao ambiente de QA.\n\nDefinition of Done (exemplo):\n[ ] Código revisado e aprovado\n[ ] Testes unitários e de API passando\n[ ] Sem CVE alta ou crítica nova no scan\n[ ] Pipeline verde\n[ ] Critérios de aceite da história atendidos",
-          "interview_question": "Quais são os eventos do Scrum e qual o objetivo de cada um?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the team plans everything upfront, delivers months later, and finds out the plan was wrong.\n\n**Concept:** agile methods deliver software in short cycles and use feedback from each delivery instead of planning everything at the start. In Scrum, work happens in sprints of one to four weeks. Roles: the Product Owner orders the backlog; the Scrum Master removes impediments and looks after the process; the Developers build. Events: Sprint Planning (what goes into the sprint), the Daily (15 minutes for the team to inspect progress toward the sprint goal), Sprint Review (show what was delivered) and the Retrospective (how to improve the process). Kanban is the alternative without sprints: continuous flow with a limit on work in progress.\n\n**How it works:** a task is done only when it meets the team's Definition of Done — usually tests, approved code review and a green pipeline. The \"yesterday, today, blockers\" format for the Daily is common, but the Scrum Guide no longer requires it (since 2020).",
+          "code": "Example Daily:\nYesterday: finished the jackson-databind upgrade and opened the PR.\nToday: address the review comments and start the Karate tests for the orders endpoint.\nBlocker: I need access to the QA environment.\n\nDefinition of Done (example):\n[ ] Code reviewed and approved\n[ ] Unit and API tests passing\n[ ] No new high or critical CVE in the scan\n[ ] Pipeline green\n[ ] The story's acceptance criteria met",
+          "interview_question": "What are the Scrum events, and what is each one for?",
           "references": [
             "https://scrumguides.org/scrum-guide.html",
-            "https://agilemanifesto.org/iso/ptbr/manifesto.html"
+            "https://agilemanifesto.org/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Turning the Daily into a status report to a manager. Everyone talks to one person, nobody coordinates, and blockers wait for the meeting. The Daily is for the developers to plan the next 24 hours together; raise a blocker as soon as it appears.",
+          "code": "WRONG: each person reports to the manager; 25 minutes; problems solved in the meeting\nRIGHT: the team looks at the sprint goal together; 15 minutes;\n       detailed discussions happen right after, with only the people involved"
         }
       ]
     },
     {
-      "subtitle": "Performance e DevOps",
-      "description": "Otimização e implantação.",
+      "subtitle": "Performance and DevOps",
+      "formerSubtitle": "Performance e DevOps",
+      "description": "Measure first, then optimize — and automate delivery.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use cache, assincronismo (@Async), imagens leves no Docker e pipelines CI/CD (Continuous Integration/Continuous Delivery). Monitorar com Prometheus garante sistemas escaláveis.",
-          "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4          # sem isso, não há código no runner\n      - uses: actions/setup-java@v4\n        with: { distribution: temurin, java-version: '21', cache: maven }\n      - run: ./mvnw -B verify",
-          "interview_question": "Quais práticas DevOps você aplicaria para otimizar deploys?"
+          "title": "Explanation",
+          "explanation": "**Problem:** optimizing by guessing: weeks spent tuning code that was never the bottleneck.\n\n**Concept:** measure before changing anything (metrics, profiling, `EXPLAIN`), then fix the biggest bottleneck. Common wins: caching read-heavy data, moving non-urgent work out of the request (`@Async` or a queue), small Docker images, and an automated CI/CD pipeline with monitoring (Prometheus) to see the effect.\n\n**How it works:** change one thing at a time and measure again; otherwise you never know what helped.",
+          "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-java@v4\n        with: { distribution: temurin, java-version: '21', cache: maven }\n      - run: ./mvnw -B verify",
+          "interview_question": "Which practices would you use to make deployments and the application faster?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/actuator/metrics.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Optimizing without measuring. A cache is added for a slow endpoint; the real problem was a missing index, and now there is a cache to keep consistent as well.",
+          "code": "WRONG: endpoint slow -> add a Redis cache -> still slow on cache misses, plus stale data\n\nRIGHT: endpoint slow -> look at metrics and the SQL log -> EXPLAIN shows a Seq Scan\n       -> add the index -> measure again"
         }
       ]
     },
     {
-      "subtitle": "Nomes Significativos",
-      "description": "Código que se explica sozinho.",
+      "subtitle": "Meaningful Names",
+      "formerSubtitle": "Nomes Significativos",
+      "description": "Code that explains itself.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Nomes devem revelar intenção: o que é, por que existe e como é usado. Prefira termos do domínio (calcularFrete, pedidosPendentes) a abreviações (calc, lst, tmp). Métodos são verbos, classes são substantivos, booleanos soam como perguntas (isAtivo, temEstoque). Quando um comentário explica \"o que\" o código faz, normalmente um nome melhor ou a extração de um método resolve; comentários ficam para o \"porquê\".",
-          "code": "// Antes\nint d; // dias desde a criação\nList<int[]> lst = get(1);\nif (u.s == 2) { ... }\n\n// Depois\nint diasDesdeCriacao;\nList<Pedido> pedidosPendentes = buscarPedidosPorStatus(StatusPedido.PENDENTE);\nif (usuario.estaBloqueado()) { ... }",
-          "interview_question": "Como bons nomes reduzem a necessidade de comentários?",
+          "title": "Explanation",
+          "explanation": "**Problem:** `int d; List<int[]> lst = get(1);` — reading the code means guessing what each name means.\n\n**Concept:** names should reveal intent: what it is, why it exists, how it is used. Prefer domain terms (`calculateShipping`, `pendingOrders`) to abbreviations (`calc`, `lst`, `tmp`). Methods are verbs, classes are nouns, booleans read like questions (`isActive`, `hasStock`). When a comment explains *what* the code does, a better name or an extracted method usually removes the need; comments are for the *why*.\n\n**How it works:** rename freely — the IDE does it safely — whenever a name stops matching what the code does.",
+          "code": "// Before\nint d; // days since creation\nList<int[]> lst = get(1);\nif (u.s == 2) { ... }\n\n// After\nint daysSinceCreation;\nList<Order> pendingOrders = findOrdersByStatus(OrderStatus.PENDING);\nif (user.isBlocked()) { ... }",
+          "interview_question": "How do good names reduce the need for comments?",
           "references": [
             "https://martinfowler.com/bliki/TwoHardThings.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A name that hides a side effect. `checkUser` sounds like a read, but it also writes to the database. Name it for everything it does, or split it.",
+          "code": "// WRONG: \"check\" that also saves\nboolean checkUser(User u) {\n    u.setLastLogin(Instant.now());\n    repository.save(u);\n    return u.isActive();\n}\n\n// RIGHT\nboolean isActive(User u) { return u.isActive(); }\nvoid recordLogin(User u) { ... }"
         }
       ]
     },
     {
-      "subtitle": "Logs e Tratamento de Erros",
-      "description": "Falhar de forma visível e diagnosticável.",
+      "subtitle": "Logging and Error Handling",
+      "formerSubtitle": "Logs e Tratamento de Erros",
+      "description": "Failing in a visible, diagnosable way.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Nunca engula exceções (catch vazio) nem logue e relance a mesma exceção em várias camadas, o que duplica logs. Use níveis corretos — ERROR para falhas que exigem ação, WARN para situações anormais recuperáveis, INFO para eventos de negócio, DEBUG para diagnóstico. Inclua contexto (ids de pedido e usuário) com placeholders do SLF4J e jamais registre senhas, tokens ou dados pessoais.",
-          "code": "private static final Logger log = LoggerFactory.getLogger(PagamentoService.class);\n\npublic void processar(Pedido pedido) {\n    try {\n        gateway.cobrar(pedido);\n        log.info(\"Pagamento aprovado pedidoId={} valor={}\", pedido.id(), pedido.total());\n    } catch (GatewayIndisponivelException e) {\n        log.warn(\"Gateway indisponível, pedidoId={} será reprocessado\", pedido.id(), e);\n        fila.reagendar(pedido);\n    }\n}",
-          "interview_question": "Quais erros comuns você evita ao tratar exceções e escrever logs?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a production error with no log, or the same error logged four times with no context — either way, nobody can tell what happened.\n\n**Concept:** never swallow exceptions (empty `catch`). Use the right levels: ERROR for failures that need action, WARN for abnormal but recoverable situations, INFO for business events, DEBUG for diagnosis. Include context (order and user ids) with SLF4J placeholders, and never log passwords, tokens or personal data.\n\n**How it works:** pass the exception as the last argument, so the stack trace is logged.",
+          "code": "private static final Logger log = LoggerFactory.getLogger(PaymentService.class);\n\npublic void process(Order order) {\n    try {\n        gateway.charge(order);\n        log.info(\"Payment approved orderId={} amount={}\", order.id(), order.total());\n    } catch (GatewayUnavailableException e) {\n        log.warn(\"Gateway unavailable, orderId={} will be retried\", order.id(), e);\n        queue.reschedule(order);\n    }\n}",
+          "interview_question": "Which common mistakes do you avoid when handling exceptions and writing logs?",
           "references": [
             "https://www.slf4j.org/manual.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Logging and rethrowing in every layer. The same error appears in the log once per layer, and it looks like four problems. Log it once, where it is handled.",
+          "code": "// WRONG: repository, service and controller each log and rethrow\ncatch (SQLException e) { log.error(\"DB error\", e); throw new DataException(e); }\ncatch (DataException e) { log.error(\"Service error\", e); throw e; }\ncatch (DataException e) { log.error(\"Request failed\", e); throw e; }\n\n// RIGHT: rethrow with context; log once, in the central handler\ncatch (SQLException e) { throw new DataException(\"Could not load order \" + id, e); }"
         }
       ]
     },
     {
       "subtitle": "Code Review",
-      "description": "Revisões que melhoram o código e o time.",
+      "description": "Reviews that improve the code and the team.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Revisando um Pull Request",
-          "explanation": "Comece pelo objetivo: o PR resolve o problema descrito? Depois corretude e casos de borda, testes cobrindo o comportamento, legibilidade e nomes, segurança (validação de entrada, segredos) e impacto em performance. PRs pequenos são revisados melhor e mais rápido. Comentários devem ser objetivos e sobre o código, não sobre a pessoa, diferenciando o que é bloqueante do que é sugestão.",
-          "code": "Checklist de revisão:\n[ ] A descrição explica o que muda e por quê\n[ ] Há testes para o novo comportamento e para os casos de erro\n[ ] Nenhum segredo, senha ou dado sensível no código ou nos logs\n[ ] Entradas externas são validadas\n[ ] Consultas novas não geram N+1 nem carregam dados demais\n[ ] O CI está verde",
-          "interview_question": "O que você observa ao revisar um Pull Request?",
+          "title": "Reviewing a Pull Request",
+          "explanation": "Start with the goal: does the PR solve the problem it describes? Then correctness and edge cases, tests covering the behavior, readability and names, security (input validation, secrets) and performance impact. Small PRs get reviewed better and faster.\n\nKeep comments objective and about the code, not the person, and say which ones are blocking and which are suggestions.",
+          "code": "Review checklist:\n[ ] The description explains what changes and why\n[ ] There are tests for the new behavior and for the error cases\n[ ] No secret, password or sensitive data in the code or the logs\n[ ] External input is validated\n[ ] New queries do not cause N+1 or load too much data\n[ ] CI is green",
+          "interview_question": "What do you look for when reviewing a pull request?",
           "references": [
             "https://google.github.io/eng-practices/review/reviewer/"
           ]
         },
         {
-          "title": "Recebendo uma Revisão",
-          "explanation": "Abrir um bom Pull Request facilita a revisão: um assunto por PR, descrição com o que muda, por quê e como foi testado, e o link da tarefa ou da CVE. Comentários são sobre o código, não sobre você: responda a todos, corrija o que for pedido ou explique com argumentos por que manter, e marque como resolvido só depois de tratar. Quando uma discussão fica longa, uma conversa rápida resolve melhor do que dez comentários. Para um estagiário, revisar PRs dos colegas também é uma ótima forma de aprender o código do time.",
-          "code": "Modelo de descrição de PR:\n\n## O que muda\nAtualiza jackson-databind de 2.17.1 para 2.17.2.\n\n## Por quê\nCorrige a CVE-XXXX-YYYY (CVSS 7.5), apontada pelo Dependency-Check.\n\n## Como foi testado\n- mvn verify (unitários e integração)\n- Testes Karate da API de clientes no ambiente de QA\n\n## Tarefa\nJIRA-123",
-          "interview_question": "Como você reage quando recebe muitos comentários em um Pull Request seu?",
+          "title": "Receiving a Review",
+          "explanation": "A good pull request makes the review easy: one subject per PR, and a description with what changes, why, and how it was tested, plus a link to the task or the CVE. Comments are about the code, not about you: answer every one, fix what is requested or explain with arguments why you would keep it, and resolve a thread only after handling it.\n\nWhen a discussion gets long, a quick call settles it better than ten comments. For an intern, reviewing teammates' PRs is also a great way to learn the codebase.",
+          "code": "PR description template:\n\n## What changes\nUpgrades jackson-databind from 2.17.1 to 2.17.2.\n\n## Why\nFixes CVE-XXXX-YYYY (CVSS 7.5), reported by Dependency-Check.\n\n## How it was tested\n- mvn verify (unit and integration)\n- Karate tests for the customers API in the QA environment\n\n## Task\nJIRA-123",
+          "interview_question": "How do you react when your pull request gets many comments?",
           "references": [
             "https://google.github.io/eng-practices/review/developer/"
           ]
@@ -163,18 +240,24 @@
       ]
     },
     {
-      "subtitle": "Segurança Básica (OWASP)",
-      "description": "Os riscos mais comuns em aplicações web.",
+      "subtitle": "Security Basics (OWASP)",
+      "formerSubtitle": "Segurança Básica (OWASP)",
+      "description": "The most common risks in web applications.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O OWASP Top 10 lista os riscos mais críticos em aplicações web. Entre eles: controle de acesso quebrado (verifique se o usuário pode acessar aquele recurso, não só se está logado), injeção (use consultas parametrizadas), falhas criptográficas (HTTPS e hash de senhas com BCrypt) e componentes vulneráveis (mantenha dependências atualizadas e escaneie-as no CI). Segredos ficam em variáveis de ambiente ou cofres, nunca no repositório.",
-          "code": "// Controle de acesso: busca já filtrada pelo dono do pedido\n@GetMapping(\"/pedidos/{id}\")\nPedidoResponse buscar(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {\n    // pedido de outro cliente = 404 (não revela que ele existe)\n    Pedido pedido = repository.findByIdAndClienteId(id, jwt.getSubject())\n        .orElseThrow(() -> new PedidoNaoEncontradoException(id));\n    return PedidoResponse.from(pedido);\n}\n\n// Hash de senha\nString hash = new BCryptPasswordEncoder().encode(senha);",
-          "interview_question": "Cite riscos do OWASP Top 10 e como mitigá-los em uma API Java.",
+          "title": "Explanation",
+          "explanation": "**Problem:** most breaches exploit a short list of well-known mistakes, not exotic attacks.\n\n**Concept:** the OWASP Top 10 lists the most critical risks in web applications. Among them: broken access control (check that the user may access *that* resource, not only that they are logged in), injection (use parameterized queries), cryptographic failures (HTTPS, and passwords hashed with BCrypt) and vulnerable components (keep dependencies updated and scanned in CI). Secrets go in environment variables or vaults, never in the repository.\n\n**How it works:** check ownership in the query itself, so another user's data never even loads. Returning 404 for someone else's resource also avoids revealing that it exists.",
+          "code": "// Access control: the query already filters by the owner\n@GetMapping(\"/orders/{id}\")\nOrderResponse get(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {\n    // another customer's order = 404 (does not reveal that it exists)\n    Order order = repository.findByIdAndCustomerId(id, jwt.getSubject())\n        .orElseThrow(() -> new OrderNotFoundException(id));\n    return OrderResponse.from(order);\n}\n\n// Password hash\nString hash = new BCryptPasswordEncoder().encode(password);",
+          "interview_question": "Name OWASP Top 10 risks and how to mitigate them in a Java API.",
           "references": [
             "https://owasp.org/www-project-top-ten/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Checking only that the user is logged in. Any authenticated user reads any order just by changing the id in the URL (an IDOR, insecure direct object reference).",
+          "code": "// WRONG: authenticated is not the same as authorized\n@GetMapping(\"/orders/{id}\")\nOrderResponse get(@PathVariable Long id) {\n    return OrderResponse.from(repository.findById(id).orElseThrow());\n}\n// GET /orders/1, /orders/2, /orders/3 ... -> every customer's orders"
         }
       ]
     }

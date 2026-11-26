@@ -1,237 +1,260 @@
 {
-  "title": "Orientação a Objetos",
-  "description": "Princípios e práticas de POO em Java, atualizados para Java 21 (LTS).",
+  "title": "Object-Oriented Programming",
+  "description": "OOP principles and practice in Java, updated for Java 21 (LTS).",
   "version": "Java 21",
   "resumo": [
-    "Objeto = estado (atributos) + comportamento (métodos). Pilares: encapsulamento, herança, polimorfismo e abstração.",
-    "Encapsulamento: atributos `private` e métodos que validam; valor inválido lança exceção, não é ignorado.",
-    "Interface define um contrato (uma classe implementa várias); classe abstrata compartilha código (herança única).",
-    "Overloading: mesmo nome, parâmetros diferentes (decidido na compilação). Overriding: a subclasse redefine o método herdado (decidido na execução).",
-    "Prefira composição (\"tem um\") a herança (\"é um\"): herança profunda acopla.",
-    "Polimorfismo troca cadeias de if/else por implementações de uma interface — o padrão Strategy.",
-    "Record é imutável e gera construtor, accessors (`nome()`), equals, hashCode e toString; sealed limita quem pode implementar.",
-    "Alta coesão e baixo acoplamento. SOLID: SRP, OCP, LSP, ISP e DIP."
+    "Object = state (fields) + behavior (methods). Pillars: encapsulation, inheritance, polymorphism, abstraction.",
+    "Encapsulation: private fields and methods that enforce the rules; an invalid value throws, it is never ignored.",
+    "A constructor leaves the object valid from the start; avoid empty constructor + setters.",
+    "An interface is a contract (a class implements many); an abstract class shares code (single inheritance).",
+    "Overloading: same name, different parameters (compile time). Overriding: a subclass replaces a method (runtime). Always `@Override`.",
+    "Prefer composition (\"has a\") to inheritance (\"is a\").",
+    "Polymorphism replaces if/else chains by type — the Strategy pattern.",
+    "A record is immutable and generates constructor, accessors (`name()`), equals, hashCode and toString."
   ],
   "subsections": [
     {
-      "subtitle": "O que é Programação Orientada a Objetos (POO)?",
-      "description": "Definição e propósito da POO.",
+      "subtitle": "What Is Object-Oriented Programming?",
+      "formerSubtitle": "O que é Programação Orientada a Objetos (POO)?",
+      "description": "Data and behavior together, each object protecting its own rules.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "POO é amplamente usada em Java porque organiza o código em objetos que combinam dados e comportamento, facilitando reutilização, manutenção e modelagem de problemas reais como sistemas de gestão.",
-          "code": "class Carro {\n  String modelo;\n  void acelerar() { System.out.println(\"Vruum!\"); }\n}",
-          "interview_question": "Por que a POO é amplamente usada em linguagens como Java?",
+          "title": "Explanation",
+          "explanation": "**Problem:** in procedural code the data sits in one place and the functions everywhere else. Any function can change any data, so a rule like \"the balance is never negative\" is checked in ten places — and forgotten in the eleventh.\n\n**Concept:** object-oriented programming groups data and the behavior that works on it into objects. A class is the blueprint; an object is an instance of it with its own state. Objects collaborate by calling each other's methods, and each one guards its own rules.\n\n**How it works:** the rule lives inside the class, in the method that changes the data. Callers ask the object to do something (`account.withdraw(50)`) instead of reaching into its data.",
+          "code": "public class BankAccount {\n    private BigDecimal balance = BigDecimal.ZERO;   // state\n\n    public void deposit(BigDecimal amount) {        // behavior\n        balance = balance.add(amount);\n    }\n\n    public void withdraw(BigDecimal amount) {\n        if (balance.compareTo(amount) < 0) throw new IllegalStateException(\"Insufficient funds\");\n        balance = balance.subtract(amount);         // the rule lives here, once\n    }\n}\n\nBankAccount ana = new BankAccount();     // two objects, each with its own state\nBankAccount bruno = new BankAccount();\nana.deposit(new BigDecimal(\"100\"));",
+          "interview_question": "What is OOP and why is it so widely used in Java?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/"
+            "https://docs.oracle.com/javase/tutorial/java/concepts/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Writing classes that are only bags of data, with the logic outside them. The rule gets repeated in every service that touches the data, and nothing stops someone from skipping it.",
+          "code": "// WRONG: the class is just data; every caller re-implements the rule (or forgets it)\naccount.setBalance(account.getBalance().subtract(amount));\n\n// RIGHT: ask the object to do it; the rule is enforced in one place\naccount.withdraw(amount);"
         }
       ]
     },
     {
-      "subtitle": "Pilares da OOP",
-      "description": "Encapsulamento, herança, polimorfismo e abstração.",
+      "subtitle": "The Four Pillars",
+      "formerSubtitle": "Pilares da OOP",
+      "description": "Encapsulation, inheritance, polymorphism and abstraction.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Os pilares da POO ajudam na manutenção ao promover encapsulamento (proteção de dados), herança (reutilização), polimorfismo (flexibilidade) e abstração (simplificação), tornando o sistema mais modular e fácil de alterar.",
-          "code": "class Animal {\n  void som() {}\n}\nclass Cachorro extends Animal {\n  @Override void som() { System.out.println(\"Au\"); }\n}",
-          "interview_question": "Como os pilares da POO ajudam na manutenção de código?"
+          "title": "Explanation",
+          "explanation": "**Problem:** interviews always ask for the four pillars, but each one exists to solve a real problem in code that keeps changing.\n\n**Concept:** Encapsulation: hide the state and expose operations. Inheritance: reuse and specialize an existing type. Polymorphism: the same call behaves according to the object's real type. Abstraction: depend on what something does, not on how it does it (interfaces, abstract classes).\n\n**How it works:** in the example, `Shape` is the abstraction, each class keeps its fields private (encapsulation), `Square` specializes `Rectangle` (inheritance), and `shape.area()` runs the right version for each object (polymorphism).",
+          "code": "public interface Shape { double area(); }                 // abstraction\n\npublic class Circle implements Shape {\n    private final double radius;                           // encapsulation\n    public Circle(double radius) { this.radius = radius; }\n    public double area() { return Math.PI * radius * radius; }\n}\n\npublic class Rectangle implements Shape {\n    protected final double width, height;\n    public Rectangle(double width, double height) { this.width = width; this.height = height; }\n    public double area() { return width * height; }\n}\n\npublic class Square extends Rectangle {                    // inheritance (safe: Rectangle has no setters — see LSP in SOLID)\n    public Square(double side) { super(side, side); }\n}\n\nList<Shape> shapes = List.of(new Circle(1), new Square(2));\ndouble total = shapes.stream().mapToDouble(Shape::area).sum();   // polymorphism",
+          "interview_question": "What are the four pillars of OOP? Give an example of each.",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/java/concepts/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Checking the type and deciding outside the object, instead of letting each type carry its behavior. Every new shape means editing this method. (With a sealed type, a pattern-matching `switch` is acceptable, because the compiler checks that every case is covered.)",
+          "code": "// WRONG: every new shape edits this method\ndouble area(Object shape) {\n    if (shape instanceof Circle c) return Math.PI * c.radius() * c.radius();\n    if (shape instanceof Square s) return s.side() * s.side();\n    throw new IllegalArgumentException(\"Unknown shape\");\n}\n\n// RIGHT: each shape knows its own area\ndouble total = shapes.stream().mapToDouble(Shape::area).sum();"
         }
       ]
     },
     {
-      "subtitle": "Construtores",
-      "description": "Inicialização de objetos com construtores.",
+      "subtitle": "Constructors",
+      "formerSubtitle": "Construtores",
+      "description": "Creating objects that are valid from the start.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Se nenhum construtor for declarado, o compilador cria um construtor padrão sem parâmetros; ao declarar qualquer construtor, esse padrão deixa de existir. Os valores default (0, false, null) vêm da JVM para todo campo não inicializado, com ou sem construtor. Construtores personalizados garantem valores iniciais obrigatórios, como o modelo do carro.",
-          "code": "class Carro {\n  String modelo;\n  Carro(String modelo) { this.modelo = modelo; }\n  Carro() { this.modelo = \"Default\"; }\n}",
-          "interview_question": "O que acontece se um construtor não for definido em uma classe?"
+          "title": "Explanation",
+          "explanation": "**Problem:** a new `Order` with no customer or a negative total is invalid from the moment it exists, and the bug surfaces later, far away.\n\n**Concept:** a constructor runs when `new` creates the object. It has the class name and no return type, and its job is to leave the object in a valid state. If a class declares no constructor, the compiler adds a no-argument one; declaring any constructor removes it. Fields not set get default values (0, false, null).\n\n**How it works:** require the mandatory data as parameters and validate it before assigning. `this(...)` calls another constructor of the same class, so the validation stays in one place.",
+          "code": "public class Order {\n    private final String customer;\n    private final BigDecimal total;\n\n    public Order(String customer, BigDecimal total) {\n        if (customer == null || customer.isBlank()) throw new IllegalArgumentException(\"Customer is required\");\n        if (total.signum() < 0) throw new IllegalArgumentException(\"Total cannot be negative\");\n        this.customer = customer;\n        this.total = total;\n    }\n\n    public Order(String customer) {\n        this(customer, BigDecimal.ZERO);   // reuses the main constructor\n    }\n}",
+          "interview_question": "What is a constructor for, and what happens if a class does not declare one?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/constructors.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An empty constructor followed by setters. The object exists in an invalid state until every setter is called, and a forgotten one is not caught by the compiler.",
+          "code": "// WRONG: invalid until every setter is called\nOrder order = new Order();\norder.setTotal(new BigDecimal(\"50\"));\n// forgot setCustomer(...): an order with no customer reaches the database\n\n// RIGHT: required data in the constructor\nOrder order = new Order(\"Ana\", new BigDecimal(\"50\"));"
         }
       ]
     },
     {
-      "subtitle": "Getters e Setters",
-      "description": "Implementação prática de encapsulamento.",
+      "subtitle": "Getters and Setters",
+      "formerSubtitle": "Getters e Setters",
+      "description": "Controlled access to private fields.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Getters e setters são preferidos porque permitem validação (ex.: idade > 0), controle de acesso e encapsulamento, escondendo a implementação interna e protegendo dados sensíveis.",
-          "code": "class Pessoa {\n  private int idade;\n  public int getIdade() { return idade; }\n  public void setIdade(int idade) {\n    if (idade <= 0) throw new IllegalArgumentException(\"Idade inválida: \" + idade);\n    this.idade = idade;\n  }\n}",
-          "interview_question": "Por que getters e setters são preferidos a atributos públicos?"
+          "title": "Explanation",
+          "explanation": "**Problem:** with a public `age` field, any code anywhere can set it to -5.\n\n**Concept:** a getter reads a private field and a setter changes it — and can validate first. They are part of encapsulation: the class controls access and can change how it stores the data later without breaking callers.\n\n**How it works:** add a getter when other classes need to read a value. Add a setter only when the value really changes after creation, and validate it. For business changes, a method named after the action (`deposit`, `cancel`) says more than a generic setter.",
+          "code": "public class Person {\n    private int age;\n\n    public int getAge() { return age; }\n\n    public void setAge(int age) {\n        if (age < 0) throw new IllegalArgumentException(\"Invalid age: \" + age);\n        this.age = age;\n    }\n}",
+          "interview_question": "Why use getters and setters instead of public fields, and when should a class not have setters?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/accesscontrol.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Generating a setter for every field. Anyone can change the id or set any balance, and the class loses control of its own rules.",
+          "code": "// WRONG: a setter for everything\npublic void setId(Long id) { this.id = id; }\npublic void setBalance(BigDecimal balance) { this.balance = balance; }\n\n// RIGHT: no setter for the id; the balance changes only through business operations\npublic void deposit(BigDecimal amount) { ... }\npublic void withdraw(BigDecimal amount) { ... }"
         }
       ]
     },
     {
-      "subtitle": "Classe Abstrata vs Interface",
-      "description": "Diferenças entre abstrações em Java.",
+      "subtitle": "Abstract Class vs Interface",
+      "formerSubtitle": "Classe Abstrata vs Interface",
+      "description": "A contract, or a partial implementation.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Default methods (Java 8+) em interfaces adicionam comportamento sem quebrar classes existentes, reduzindo a necessidade de classes abstratas para implementação parcial, como um método padrão para desenhar.",
-          "code": "abstract class Forma {\n  abstract double area();\n}\ninterface Desenhavel {\n  default void desenhar() { System.out.println(\"Desenhando\"); }\n}",
-          "interview_question": "Como default methods em interfaces mudam o uso de classes abstratas?",
+          "title": "Explanation",
+          "explanation": "**Problem:** several payment methods share a contract (`pay`), and some of them also share code. Where does each part belong?\n\n**Concept:** an interface is a contract: what a type can do. A class can implement many interfaces; methods are abstract by default, and since Java 8 an interface can also have `default` and `static` methods, but no instance state. An abstract class is a partial implementation: it can have fields, constructors, implemented and abstract methods, and a class extends only one. Neither can be instantiated.\n\n**How it works:** default to interfaces for contracts — Spring injects dependencies by interface. Use an abstract class when subclasses share state and the same algorithm, with only some steps different (the Template Method pattern).",
+          "code": "public interface PaymentMethod {\n    Receipt pay(BigDecimal amount);\n    default boolean supportsRefund() { return false; }     // default method\n}\n\npublic abstract class CardPayment implements PaymentMethod {\n    protected final String cardNumber;                     // shared state\n    protected CardPayment(String cardNumber) { this.cardNumber = cardNumber; }\n\n    public Receipt pay(BigDecimal amount) {                // shared algorithm\n        validate(amount);\n        return charge(amount);\n    }\n    protected abstract Receipt charge(BigDecimal amount);  // each card type fills this in\n    private void validate(BigDecimal amount) { ... }\n}\n\npublic class CreditCard extends CardPayment { ... }\npublic class Pix implements PaymentMethod { ... }",
+          "interview_question": "What is the difference between an abstract class and an interface, and when do you use each?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Interface.html"
+            "https://docs.oracle.com/javase/tutorial/java/IandI/abstract.html",
+            "https://docs.oracle.com/javase/tutorial/java/IandI/createinterface.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An abstract class with only abstract methods. It is just a contract, but it uses up the single inheritance slot of every class that extends it. Make it an interface.",
+          "code": "// WRONG: a pure contract as an abstract class\npublic abstract class Notifier {\n    public abstract void send(String message);\n}\n\n// RIGHT: an interface; a class can implement several\npublic interface Notifier {\n    void send(String message);\n}\npublic class EmailNotifier implements Notifier, AutoCloseable { ... }"
         }
       ]
     },
     {
       "subtitle": "Overloading vs Overriding",
-      "description": "Formas de polimorfismo em Java.",
+      "description": "Same name, different parameters — or the same method, replaced.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O compilador diferencia métodos sobrecarregados pela assinatura (número/tipo de parâmetros), permitindo múltiplas versões na mesma classe, como 'soma(int)' e 'soma(double)'.",
-          "code": "class Calc {\n  int soma(int a, int b) { return a + b; }\n  double soma(double a, double b) { return a + b; }\n}\nclass Filho extends Calc {\n  @Override int soma(int a, int b) { return a + b + 1; }\n}",
-          "interview_question": "Como o compilador diferencia métodos sobrecarregados?"
+          "title": "Explanation",
+          "explanation": "**Problem:** two different mechanisms with similar names, often confused in interviews and in code.\n\n**Concept:** overloading is several methods with the same name and different parameter lists, in the same class; the compiler chooses by the argument types, at compile time. Overriding is a subclass replacing an inherited method with the same signature; the JVM chooses by the object's real type, at runtime. `@Override` asks the compiler to check that you are really overriding.\n\n**How it works:** in the example, `print(5)` picks the `int` version when compiling. `a.sound()` runs the `Dog` version even though the variable type is `Animal`.",
+          "code": "public class Printer {\n    void print(int n)    { System.out.println(\"int \" + n); }     // overloads\n    void print(String s) { System.out.println(\"text \" + s); }\n}\n\nclass Animal { String sound() { return \"...\"; } }\nclass Dog extends Animal {\n    @Override String sound() { return \"Woof\"; }                    // override\n}\n\nAnimal a = new Dog();\na.sound();                 // \"Woof\": decided at runtime by the real type\nnew Printer().print(5);    // \"int 5\": decided at compile time by the argument",
+          "interview_question": "What is the difference between overloading and overriding?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/methods.html",
+            "https://docs.oracle.com/javase/tutorial/java/IandI/override.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A signature that does not match the parent creates an overload by accident. The classic case is `equals(Order)` instead of `equals(Object)`: collections never call it. `@Override` turns this into a compile error.",
+          "code": "// WRONG: an OVERLOAD, not an override of equals(Object)\npublic boolean equals(Order other) { return id.equals(other.id); }\n// HashSet and List.contains call equals(Object) and never use it\n\n// RIGHT: @Override makes the compiler check the signature\n@Override\npublic boolean equals(Object o) { ... }"
         }
       ]
     },
     {
-      "subtitle": "This e Super",
-      "description": "Referência a instância atual e superclasse.",
+      "subtitle": "this and super",
+      "formerSubtitle": "This e Super",
+      "description": "Referring to the current object and to the parent class.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use 'super()' no construtor da subclasse para chamar o construtor da superclasse, inicializando atributos herdados corretamente, como garantir que um 'Filho' herde dados de 'Pai'.",
-          "code": "class Pai {\n  void metodo() { System.out.println(\"Pai\"); }\n}\nclass Filho extends Pai {\n  int id;\n  Filho(int id) { super(); this.id = id; }\n  @Override void metodo() { super.metodo(); }\n}",
-          "interview_question": "Como usar super para chamar um construtor da superclasse?"
+          "title": "Explanation",
+          "explanation": "**Problem:** a parameter with the same name as a field hides the field, and a subclass needs to run its parent's setup before its own.\n\n**Concept:** `this` refers to the current object: `this.name` is the field, as opposed to the `name` parameter, and `this(...)` calls another constructor of the same class. `super` refers to the parent class: `super(...)` calls the parent constructor and must be the first statement; `super.method()` calls the parent's version of an overridden method.\n\n**How it works:** a subclass constructor always calls a parent constructor — explicitly with `super(...)`, or implicitly the no-argument one.",
+          "code": "public class Employee {\n    protected final String name;\n    public Employee(String name) { this.name = name; }    // this.name = field, name = parameter\n    public String badge() { return name; }\n}\n\npublic class Manager extends Employee {\n    private final String team;\n    public Manager(String name, String team) {\n        super(name);                                      // parent constructor, first line\n        this.team = team;\n    }\n    @Override\n    public String badge() {\n        return super.badge() + \" (manager, \" + team + \")\";   // parent version + more\n    }\n}",
+          "interview_question": "What do this and super refer to, and when do you use each?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/java/javaOO/thiskey.html",
+            "https://docs.oracle.com/javase/tutorial/java/IandI/super.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Forgetting `this.` in a constructor: `name = name` assigns the parameter to itself and the field stays null. Making the field `final` turns this bug into a compile error.",
+          "code": "// WRONG: the field stays null\npublic Employee(String name) { name = name; }\n\n// RIGHT\npublic Employee(String name) { this.name = name; }"
         }
       ]
     },
     {
-      "subtitle": "Composição vs Herança",
-      "description": "Modelagem de relações 'é um' e 'tem um'.",
+      "subtitle": "Composition vs Inheritance",
+      "formerSubtitle": "Composição vs Herança",
+      "description": "\"Has a\" versus \"is a\".",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Composição é mais flexível que herança porque permite trocar componentes (ex.: trocar Motor) sem alterar a classe, evitando acoplamento rígido e problemas de herança profunda.",
-          "code": "class Motor {\n  void ligar() { System.out.println(\"Ligado\"); }\n}\nclass Carro {\n  Motor motor = new Motor();\n  void iniciar() { motor.ligar(); }\n}",
-          "interview_question": "Por que composição é considerada mais flexível que herança?"
+          "title": "Explanation",
+          "explanation": "**Problem:** an inheritance tree keeps growing: `EmailNotifier`, `SmsNotifier`, `EmailRetryNotifier`, `SmsRetryNotifier`... every combination of features becomes a new class.\n\n**Concept:** inheritance means \"is a\": the relationship is fixed at compile time and the subclass depends on its parent's internals. Composition means \"has a\": an object holds another and delegates work to it, so parts can be swapped and combined.\n\n**How it works:** prefer composition. Inherit only when it is a real \"is a\" and the parent was designed to be extended. In the example, any channel can be combined with any number of attempts, without new classes.",
+          "code": "public interface Channel { void send(String to, String message); }\n\npublic class Notifier {\n    private final Channel channel;          // has a channel\n    private final int attempts;\n\n    public Notifier(Channel channel, int attempts) {\n        this.channel = channel;\n        this.attempts = attempts;\n    }\n\n    public void notify(String to, String message) {\n        for (int i = 1; i <= attempts; i++) {\n            try { channel.send(to, message); return; }\n            catch (RuntimeException e) { if (i == attempts) throw e; }\n        }\n    }\n}\n\nnew Notifier(new EmailChannel(), 3);    // email with retry\nnew Notifier(new SmsChannel(), 1);      // SMS without retry — no new class",
+          "interview_question": "Why is composition often preferred over inheritance?",
+          "references": [
+            "https://en.wikipedia.org/wiki/Composition_over_inheritance"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "One subclass per combination of features. Each new feature doubles the number of classes, and a change in the parent ripples through all of them.",
+          "code": "// WRONG: one subclass per combination\nclass EmailNotifier extends Notifier { }\nclass EmailRetryNotifier extends EmailNotifier { }\nclass SmsNotifier extends Notifier { }\nclass SmsRetryNotifier extends SmsNotifier { }   // and so on, for every new feature\n\n// RIGHT: combine parts (see the Notifier above)"
         }
       ]
     },
     {
-      "subtitle": "Imutabilidade e Record",
-      "description": "Objetos imutáveis e uso de records.",
+      "subtitle": "Immutability and Records",
+      "formerSubtitle": "Imutabilidade e Record",
+      "description": "Objects that never change after creation.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Records simplificam classes imutáveis gerando automaticamente construtor, accessors (`nome()`, não `getNome()`), equals(), hashCode() e toString(), reduzindo boilerplate em comparação com classes tradicionais. O construtor compacto valida os dados na criação.",
-          "code": "public record Usuario(String nome, int idade) {\n  public Usuario {\n    if (idade < 0) throw new IllegalArgumentException(\"Idade inválida\");\n  }\n}",
-          "interview_question": "Como records simplificam a criação de classes imutáveis?",
+          "title": "Explanation",
+          "explanation": "**Problem:** an object shared by two parts of the code is changed by one of them, and the other sees its value change \"by itself\". With threads, it gets worse.\n\n**Concept:** an immutable object cannot change after construction: `final` fields, no setters, and copies of any mutable input. It is safe to share, to cache and to use as a map key. A record (Java 16) declares an immutable data class in one line and generates the constructor, accessors (`amount()`, not `getAmount()`), `equals`, `hashCode` and `toString`. A compact constructor validates the data.\n\n**How it works:** to \"change\" an immutable object, return a new one, the way `String` and `BigDecimal` do.",
+          "code": "public record Money(BigDecimal amount, String currency) {\n    public Money {                                       // compact constructor: validation\n        if (amount.signum() < 0) throw new IllegalArgumentException(\"Negative amount\");\n        Objects.requireNonNull(currency);\n    }\n    public Money plus(Money other) {                     // \"changing\" returns a new object\n        if (!currency.equals(other.currency)) throw new IllegalArgumentException(\"Different currencies\");\n        return new Money(amount.add(other.amount), currency);\n    }\n}\n\nMoney price = new Money(new BigDecimal(\"10.00\"), \"BRL\");\nprice.amount();                                          // accessor: amount(), not getAmount()\nMoney total = price.plus(price);                         // price is unchanged",
+          "interview_question": "What makes an object immutable, and how do records help?",
           "references": [
-            "https://openjdk.java.net/jeps/395"
+            "https://openjdk.org/jeps/395",
+            "https://docs.oracle.com/en/java/javase/21/language/records.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Sealed Classes",
-      "description": "Controle de herança com classes seladas.",
-      "category": "conceitos",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Sealed classes ajudam na modelagem de domínios ao restringir herança a classes específicas (ex.: 'Circulo', 'Quadrado'), prevenindo extensões inesperadas e controlando hierarquias.",
-          "code": "sealed interface Forma permits Circulo, Quadrado {\n  double area();\n}\nfinal class Circulo implements Forma {\n  double raio;\n  public double area() { return Math.PI * raio * raio; }\n}\nfinal class Quadrado implements Forma {\n  double lado;\n  public double area() { return lado * lado; }\n}",
-          "interview_question": "Como sealed classes ajudam na modelagem de domínios?",
-          "references": [
-            "https://openjdk.java.net/jeps/409"
-          ]
+          "title": "Common mistake",
+          "explanation": "A record holding a mutable list. The record itself cannot be reassigned, but whoever created the list can still change it. Copy it into an immutable list in the compact constructor.",
+          "code": "// WRONG: the record is \"immutable\", but the list inside is not\npublic record Cart(List<String> items) {}\nList<String> list = new ArrayList<>(List.of(\"book\"));\nCart cart = new Cart(list);\nlist.add(\"pen\");            // cart.items() now has 2 items\n\n// RIGHT: copy into an immutable list\npublic record Cart(List<String> items) {\n    public Cart { items = List.copyOf(items); }\n}"
         }
       ]
     },
     {
-      "subtitle": "Pattern Matching",
-      "description": "Simplificação de verificações de tipo.",
+      "subtitle": "Polymorphism with Interfaces",
+      "formerSubtitle": "Polimorfismo com Interfaces",
+      "description": "Replacing if/else chains with implementations.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Pattern matching melhora a legibilidade combinando instanceof com declaração de variável em uma linha, reduzindo boilerplate como casts explícitos, facilitando manipulação de objetos diversos.",
-          "code": "Object obj = \"Texto\";\nif (obj instanceof String s) {\n  System.out.println(s.toUpperCase());\n}",
-          "interview_question": "Como pattern matching melhora a legibilidade do código?",
-          "references": [
-            "https://openjdk.java.net/jeps/394"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Polimorfismo com Interfaces",
-      "description": "Trocar comportamento sem if/else.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Em vez de testar o tipo do objeto e decidir o comportamento com if/else ou switch, cada implementação de uma interface carrega sua própria regra. O código cliente depende apenas da abstração e novas variações entram como novas classes, sem alterar o código existente (princípio aberto/fechado). Esse é o núcleo do padrão Strategy.",
-          "code": "interface CalculoFrete {\n    BigDecimal calcular(BigDecimal peso);\n}\n\nclass FreteSedex implements CalculoFrete {\n    public BigDecimal calcular(BigDecimal peso) { return peso.multiply(new BigDecimal(\"12.50\")); }\n}\n\nclass FretePac implements CalculoFrete {\n    public BigDecimal calcular(BigDecimal peso) { return peso.multiply(new BigDecimal(\"7.90\")); }\n}\n\nclass Checkout {\n    private final CalculoFrete frete;\n    Checkout(CalculoFrete frete) { this.frete = frete; }\n    BigDecimal total(BigDecimal subtotal, BigDecimal peso) {\n        return subtotal.add(frete.calcular(peso));\n    }\n}",
-          "interview_question": "Como o polimorfismo elimina cadeias de if/else por tipo?",
+          "title": "Explanation",
+          "explanation": "**Problem:** shipping cost is calculated with an if/else per carrier. Every new carrier edits the same method and risks breaking the others.\n\n**Concept:** each implementation of an interface carries its own rule, and the client depends only on the interface. New variations come in as new classes, without touching existing code (the Open/Closed principle). This is the Strategy pattern.\n\n**How it works:** `Checkout` receives a `ShippingCost` and never asks which one it is. Adding a carrier means writing one new class; `Checkout` and the other carriers stay as they are.",
+          "code": "interface ShippingCost {\n    BigDecimal calculate(BigDecimal weight);\n}\n\nclass ExpressShipping implements ShippingCost {\n    public BigDecimal calculate(BigDecimal weight) { return weight.multiply(new BigDecimal(\"12.50\")); }\n}\n\nclass StandardShipping implements ShippingCost {\n    public BigDecimal calculate(BigDecimal weight) { return weight.multiply(new BigDecimal(\"7.90\")); }\n}\n\nclass Checkout {\n    private final ShippingCost shipping;\n    Checkout(ShippingCost shipping) { this.shipping = shipping; }\n\n    BigDecimal total(BigDecimal subtotal, BigDecimal weight) {\n        return subtotal.add(shipping.calculate(weight));\n    }\n}",
+          "interview_question": "How does polymorphism replace if/else chains by type?",
           "references": [
             "https://refactoring.guru/design-patterns/strategy"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A conditional that grows with every new variation. Each change edits — and can break — code that already works.",
+          "code": "// WRONG: every new carrier edits this method\nBigDecimal shipping(String carrier, BigDecimal weight) {\n    if (carrier.equals(\"EXPRESS\")) return weight.multiply(new BigDecimal(\"12.50\"));\n    else if (carrier.equals(\"STANDARD\")) return weight.multiply(new BigDecimal(\"7.90\"));\n    else throw new IllegalArgumentException(carrier);\n}\n\n// RIGHT: a new carrier is a new ShippingCost implementation; Checkout does not change"
         }
       ]
     },
     {
-      "subtitle": "Enums com Comportamento",
-      "description": "Enums são classes completas em Java.",
+      "subtitle": "Enums with Behavior",
+      "formerSubtitle": "Enums com Comportamento",
+      "description": "Enums are full classes in Java.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Enums em Java são classes: podem ter atributos, construtores, métodos e até métodos abstratos implementados por constante. Isso permite modelar estados e regras de forma segura (o compilador conhece todos os valores), elimina \"números mágicos\" e funciona muito bem com switch expressions, que exigem cobertura de todos os casos.",
-          "code": "public enum StatusPedido {\n    CRIADO {\n        boolean podeCancelar() { return true; }\n    },\n    PAGO {\n        boolean podeCancelar() { return true; }\n    },\n    ENVIADO {\n        boolean podeCancelar() { return false; }\n    };\n\n    abstract boolean podeCancelar();\n}\n\nString descricao = switch (status) {\n    case CRIADO -> \"Aguardando pagamento\";\n    case PAGO -> \"Pagamento aprovado\";\n    case ENVIADO -> \"A caminho\";\n};",
-          "interview_question": "Que vantagens um enum oferece além de uma lista de constantes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a status stored as a String or an int (\"PAID\", 2): typos compile, invalid values are accepted, and the rule \"can this order be cancelled?\" is scattered around the code.\n\n**Concept:** an enum is a fixed, type-safe set of constants. In Java an enum is a class: it can have fields, a constructor and methods. It works with `switch` (exhaustive, no `default` needed) and with `EnumMap` and `EnumSet`.\n\n**How it works:** put the rules that depend on the status into the enum itself, so they live in one place.",
+          "code": "public enum OrderStatus {\n    CREATED(true), PAID(true), SHIPPED(false), DELIVERED(false);\n\n    private final boolean cancellable;\n    OrderStatus(boolean cancellable) { this.cancellable = cancellable; }\n    public boolean canCancel() { return cancellable; }\n}\n\nif (order.status().canCancel()) { ... }\n\nString label = switch (status) {      // exhaustive: no default needed\n    case CREATED -> \"Awaiting payment\";\n    case PAID -> \"Payment approved\";\n    case SHIPPED -> \"On the way\";\n    case DELIVERED -> \"Delivered\";\n};",
+          "interview_question": "What advantages does an enum have over a list of constants?",
           "references": [
             "https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Coesão e Acoplamento",
-      "description": "Métricas qualitativas de um bom design.",
-      "category": "boas-praticas",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Coesão mede o quanto as responsabilidades de uma classe estão relacionadas: uma classe coesa faz uma coisa bem feita. Acoplamento mede o quanto uma classe depende dos detalhes de outras. Alta coesão facilita entender e testar; baixo acoplamento permite trocar implementações sem efeito cascata. Na prática: dependa de interfaces, injete dependências pelo construtor e evite classes \"Utils\" ou \"Manager\" que acumulam responsabilidades sem relação.",
-          "code": "// Acoplado: cria a dependência concreta internamente\nclass RelatorioService {\n    private final MySqlVendasDao dao = new MySqlVendasDao();\n}\n\n// Desacoplado: depende de abstração, recebida pelo construtor\nclass RelatorioServiceDesacoplado {\n    private final VendasRepository vendas;\n    RelatorioServiceDesacoplado(VendasRepository vendas) { this.vendas = vendas; }\n}",
-          "interview_question": "O que significa \"alta coesão e baixo acoplamento\"?",
-          "references": [
-            "https://martinfowler.com/ieeeSoftware/coupling.pdf"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Introdução ao SOLID",
-      "description": "Cinco princípios para código orientado a objetos sustentável.",
-      "category": "boas-praticas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "S — Single Responsibility: uma classe deve ter um único motivo para mudar. O — Open/Closed: aberta para extensão, fechada para modificação. L — Liskov Substitution: subtipos devem poder substituir o tipo base sem quebrar o comportamento esperado. I — Interface Segregation: prefira interfaces pequenas e específicas. D — Dependency Inversion: módulos de alto nível dependem de abstrações, não de implementações. O Spring aplica o D diretamente com injeção de dependências.",
-          "code": "// ISP: em vez de uma interface \"gorda\"...\ninterface Impressora { void imprimir(); void escanear(); void enviarFax(); }\n\n// ...interfaces focadas\ninterface Imprime { void imprimir(); }\ninterface Escaneia { void escanear(); }\n\nclass ImpressoraSimples implements Imprime {\n    public void imprimir() { /* ... */ }\n}",
-          "interview_question": "Explique brevemente cada letra do SOLID.",
-          "references": [
-            "https://en.wikipedia.org/wiki/SOLID"
-          ]
+          "title": "Common mistake",
+          "explanation": "Saving enums by position. JPA's default (`EnumType.ORDINAL`) stores 0, 1, 2...; add a constant in the middle and every saved row now means a different status. Save the name.",
+          "code": "// WRONG: @Enumerated defaults to ORDINAL — the position is saved\n@Enumerated\nprivate OrderStatus status;\n// insert a new constant before PAID and every saved PAID order now reads as another status\n\n// RIGHT: save the name\n@Enumerated(EnumType.STRING)\nprivate OrderStatus status;"
         }
       ]
     }

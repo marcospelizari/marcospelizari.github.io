@@ -35,7 +35,7 @@ describe('HomePage', () => {
   }
 
   function card(el: HTMLElement, title: string): string {
-    const cards = Array.from(el.querySelectorAll('[aria-label="Resumo do progresso"] > div'));
+    const cards = Array.from(el.querySelectorAll('[aria-label="Progress summary"] > div'));
     return cards.find((c) => c.textContent!.includes(title))!.textContent!.replace(/\s+/g, ' ');
   }
 
@@ -45,10 +45,10 @@ describe('HomePage', () => {
     expect(requests.length).toBe(files);
 
     const el: HTMLElement = fixture.nativeElement;
-    expect(card(el, 'Módulos concluídos')).toContain(`0 / ${files}`);
-    expect(card(el, 'Seções estudadas')).toContain(`0 / ${files * 2}`);
-    expect(card(el, 'Material de estudo')).toContain(`${files} snippets`);
-    expect(card(el, 'Material de estudo')).toContain(`${files} perguntas`);
+    expect(card(el, 'Modules completed')).toContain(`0 / ${files}`);
+    expect(card(el, 'Sections studied')).toContain(`0 / ${files * 2}`);
+    expect(card(el, 'Study material')).toContain(`${files} snippets`);
+    expect(card(el, 'Study material')).toContain(`${files} interview questions`);
   });
 
   it('updates progress when sections are marked as studied', async () => {
@@ -60,8 +60,8 @@ describe('HomePage', () => {
     await fixture.whenStable();
 
     const el: HTMLElement = fixture.nativeElement;
-    expect(card(el, 'Módulos concluídos')).toContain(`1 / ${TOPIC_FILES.length}`);
-    expect(card(el, 'Seções estudadas')).toContain('2 /');
-    expect(card(el, 'Esta semana')).toContain('2 seções');
+    expect(card(el, 'Modules completed')).toContain(`1 / ${TOPIC_FILES.length}`);
+    expect(card(el, 'Sections studied')).toContain('2 /');
+    expect(card(el, 'This week')).toContain('2 sections');
   });
 });

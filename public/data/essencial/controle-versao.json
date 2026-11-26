@@ -1,220 +1,304 @@
 {
-  "title": "Controle de Versão (Git)",
-  "description": "Conceitos básicos de versionamento com Git para entrevistas, atualizados para práticas modernas (Git 2.43).",
-  "version": "Git 2.43",
+  "title": "Version Control (Git)",
+  "description": "The Git you use every day: committing, branching, integrating, undoing and collaborating.",
+  "version": "Git 2.43+",
   "resumo": [
-    "Fluxo: `git add` (staging), `git commit` (histórico local), `git push` (remoto).",
-    "`git fetch` baixa sem mesclar; `git pull` = fetch + merge.",
-    "Uma branch curta por tarefa, integrada por Pull Request revisado.",
-    "Merge preserva o histórico; rebase deixa linear mas reescreve commits — nunca em branch compartilhada.",
-    "Antes de commitar: `git diff` (fora do staging) e `git diff --staged` (vai no commit).",
-    "Desfazer: `git revert` cria um commit inverso (seguro); `reset --soft/--mixed/--hard` só em commits não enviados.",
-    "`git stash` guarda mudanças para trocar de branch; `.gitignore` não afeta arquivo já rastreado (`git rm --cached`).",
-    "Conventional Commits (`feat:`, `fix:`) e tags SemVer (MAJOR.MINOR.PATCH)."
+    "Flow: `git add` (staging), `git commit` (local history), `git push` (remote). A commit is local until you push.",
+    "`git fetch` downloads without merging; `git pull` = fetch + merge (or `--rebase`).",
+    "One short branch per task, merged through a reviewed pull request.",
+    "Merge keeps the history; rebase makes it linear but rewrites commits — never on a shared branch.",
+    "Before committing: `git diff` (not staged) and `git diff --staged` (going into the commit).",
+    "Undo: `git revert` adds a reverse commit (safe); `reset --soft/--mixed/--hard` only for commits not pushed.",
+    "`git stash -u` puts work aside; `.gitignore` does not affect files already tracked (`git rm --cached`).",
+    "Conventional Commits (`feat:`, `fix:`) and SemVer tags (MAJOR.MINOR.PATCH); `git push` does not push tags."
   ],
   "subsections": [
     {
-      "subtitle": "O que é Git?",
-      "description": "Definição e propósito do Git.",
+      "subtitle": "What Is Git?",
+      "formerSubtitle": "O que é Git?",
+      "description": "A distributed history of every change to the code.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Git é essencial para equipes porque rastreia mudanças, permite colaboração paralela e suporta recuperação de versões, centralizando o controle de código em projetos distribuídos.",
-          "code": "git init   # Inicia um novo repositório\ngit status # Mostra o estado atual dos arquivos",
-          "interview_question": "Por que o Git é essencial para equipes de desenvolvimento?",
+          "title": "Explanation",
+          "explanation": "**Problem:** code shared by zip file or email: no history, files named \"final_v2_real.zip\", and two people overwriting each other's work.\n\n**Concept:** Git is a distributed version control system: every clone has the full history. A commit is a snapshot of the project with an author, a date, a message and a pointer to its parent commit. Your work moves through three areas: the working directory (your files), the staging area or index (what goes into the next commit) and the repository (the history, in `.git`). A remote such as `origin` on GitHub is just another copy of the repository.\n\n**How it works:** you change files, choose what to stage with `git add`, record it with `git commit`, and share it with `git push`.",
+          "code": "working directory --git add--> staging area --git commit--> local repository --git push--> remote (origin)\n                                                                     <--git fetch / git pull--\n\ngit init                                   # new repository in the current folder\ngit config --global user.name \"Ana Silva\"\ngit config --global user.email \"ana@example.com\"\ngit status                                 # what changed, what is staged",
+          "interview_question": "What is Git, and what are the working directory, the staging area and the repository?",
           "references": [
+            "https://git-scm.com/book/en/v2/Getting-Started-What-is-Git%3F",
             "https://git-scm.com/doc"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Thinking `git commit` shares or backs up your work. A commit is local until you push it; if your laptop breaks before that, it is gone.",
+          "code": "git commit -m \"fix: correct the tax rate\"\n# the laptop breaks: the fix is lost — the commit existed only here\n\ngit push          # now it is on the remote"
         }
       ]
     },
     {
-      "subtitle": "Fluxo Básico: Clone, Commit e Push",
-      "description": "Comandos iniciais para versionamento.",
+      "subtitle": "Basic Workflow: Clone, Commit and Push",
+      "formerSubtitle": "Fluxo Básico: Clone, Commit e Push",
+      "description": "Getting a project, changing it and sending the change back.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Push só envia commits. Sem commit novo, o Git responde \"Everything up-to-date\" e nada sobe — mesmo que haja arquivos modificados ou no staging.",
-          "code": "git clone <url>              # Clona repositório\ngit add .                   # Adiciona todos os arquivos modificados\ngit commit -m \"feat: add login\" # Commit com mensagem padronizada\ngit push origin main        # Envia para o remoto",
-          "interview_question": "O que acontece quando você faz um push sem commitar mudanças?"
-        }
-      ]
-    },
-    {
-      "subtitle": "Branch e Merge",
-      "description": "Trabalho paralelo e integração de código.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Resolva conflitos editando os arquivos (marcados com <<<<<<<, ======= e >>>>>>>), escolhendo ou combinando mudanças. Use 'git add' nos resolvidos e 'git commit' para finalizar, integrando o trabalho de forma segura.",
-          "code": "git switch -c nova-feature # Cria e alterna para nova branch\ngit add .                 # Adiciona mudanças\ngit commit -m \"nova funcionalidade\"\ngit switch main           # Volta para main\ngit merge nova-feature    # Integra mudanças",
-          "interview_question": "Como resolver conflitos de merge em um projeto?",
+          "title": "Explanation",
+          "explanation": "**Problem:** you need the team's project on your machine, make a change, and send it back without breaking anyone's work.\n\n**Concept:** `git clone` copies a remote repository, history included. `git add` stages changes, `git commit` records them with a message, `git push` sends your commits to the remote, and `git pull` brings in other people's commits.\n\n**How it works:** commit small, one logical change at a time, with a message that says what and why. Push only commits: without a new commit, `git push` answers \"Everything up-to-date\".",
+          "code": "git clone https://github.com/shop/api.git\ncd api\n# ... edit files ...\ngit status                            # see what changed\ngit add src/OrderService.java         # stage it\ngit commit -m \"feat: add order cancellation\"\ngit push origin main                  # send it to the remote\ngit log --oneline -3                  # the latest commits",
+          "interview_question": "What is the basic Git workflow, from clone to push?",
           "references": [
-            "https://git-scm.com/docs/git-merge"
+            "https://git-scm.com/book/en/v2/Git-Basics-Recording-Changes-to-the-Repository"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`git add .` without looking. It stages everything — passwords in `.env`, build output, IDE files — and they go into the history. Check `git status` and `git diff --staged` first.",
+          "code": "# WRONG\ngit add .\ngit commit -m \"feat: add login\"\n# also committed: .env with passwords, target/, .idea/\n\n# RIGHT: look before you commit\ngit status\ngit diff --staged\ngit restore --staged .env        # unstage what should not go in"
+        }
+      ]
+    },
+    {
+      "subtitle": "Branches and Merging",
+      "formerSubtitle": "Branch e Merge",
+      "description": "Parallel lines of work, brought back together.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you are building a feature for a week while a production bug has to be fixed today — in the same code.\n\n**Concept:** a branch is a movable pointer to a commit; creating one is instant. `HEAD` marks where you are. Merging integrates one branch into another: a fast-forward if the target did not move, otherwise a merge commit with two parents. A conflict happens when both sides changed the same lines.\n\n**How it works:** to resolve a conflict, edit the file, keep the right version (or combine both), remove the markers, then `git add` and `git commit`. Run the tests afterwards: a merge without textual conflicts can still break the logic.",
+          "code": "git switch -c feature/discount      # create and switch to a new branch\n# ... commits ...\ngit switch main\ngit merge feature/discount          # integrate\n\n# A conflict looks like this in the file:\n<<<<<<< HEAD\nprice = 10;\n=======\nprice = 12;\n>>>>>>> feature/discount\n\n# edit, keep the right line, remove the markers, then:\ngit add Price.java\ngit commit",
+          "interview_question": "How do you resolve a merge conflict?",
+          "references": [
+            "https://git-scm.com/docs/git-merge",
+            "https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Committing the conflict markers. The file no longer compiles, or worse, a config file is silently wrong. `git diff --check` catches leftover markers before you commit.",
+          "code": "git add .\ngit diff --cached --check\n# Price.java:12: leftover conflict marker\n# -> fix the file before committing"
         }
       ]
     },
     {
       "subtitle": "Merge vs Rebase",
-      "description": "Formas de integrar histórico.",
+      "description": "Two ways to bring main's changes into your branch.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Rebase causa problemas em equipes ao reescrever o histórico, criando novos commits que podem conflitar com mudanças remotas, gerando confusão ou perda de trabalho se não for coordenado.",
-          "code": "# Opção A: merge (preserva o histórico, cria commit de merge)\ngit switch feature\ngit merge main\n\n# Opção B: rebase (histórico linear; reescreve os commits da feature)\ngit switch feature\ngit rebase main",
-          "interview_question": "Por que rebase pode causar problemas em equipes?"
+          "title": "Explanation",
+          "explanation": "**Problem:** main moved on while you worked on your branch. You need its changes — and there are two ways to get them, with different histories.\n\n**Concept:** merge keeps the history as it happened and adds a merge commit with two parents. Rebase replays your commits on top of the latest main, giving a straight line — but it creates new commits with new hashes, which rewrites history.\n\n**How it works:** the golden rule: never rebase commits that other people already have. Rebasing your own branch is fine; if it was already pushed, update it with `git push --force-with-lease`, which refuses to overwrite commits you have not seen.",
+          "code": "Before:                  A---B---C  main\n                              \\\n                               D---E  feature\n\nMerge main into feature:  A---B---C-------M  feature    (M has two parents)\n                              \\         /\n                               D-------E\n\nRebase feature onto main: A---B---C---D'---E'  feature  (D', E' are new commits)\n\n# Option A: merge\ngit switch feature\ngit merge main\n\n# Option B: rebase\ngit switch feature\ngit rebase main",
+          "interview_question": "What is the difference between merge and rebase, and when can rebase cause problems?",
+          "references": [
+            "https://git-scm.com/book/en/v2/Git-Branching-Rebasing"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Rebasing a shared branch and force-pushing it. Everyone who already pulled it now has a history that no longer exists on the remote, and commits can be lost when they sync.",
+          "code": "# WRONG: rewriting main, which everybody has\ngit switch main\ngit rebase -i HEAD~5\ngit push --force\n\n# RIGHT: rebase only your own branch, and force with lease\ngit switch feature/login\ngit rebase main\ngit push --force-with-lease"
         }
       ]
     },
     {
-      "subtitle": "Pull e Fetch",
-      "description": "Sincronizando com repositório remoto.",
+      "subtitle": "Fetch and Pull",
+      "formerSubtitle": "Pull e Fetch",
+      "description": "Getting other people's commits — with or without merging.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use 'git fetch' para revisar mudanças remotas antes de integrá-las, evitando merges automáticos. Use 'git pull' para sincronizar rápido, confiando que as mudanças podem ser mescladas sem conflitos.",
-          "code": "git fetch origin          # Baixa mudanças sem mesclar\ngit pull origin main      # Baixa e mescla mudanças",
-          "interview_question": "Quando usar git fetch em vez de git pull?"
+          "title": "Explanation",
+          "explanation": "**Problem:** teammates pushed while you worked. You need their changes, and you may want to see them before mixing them with yours.\n\n**Concept:** `git fetch` downloads new commits and updates the remote-tracking branches (`origin/main`) without touching your files. `git pull` is `git fetch` followed by a merge — or a rebase, with `--rebase` — into your current branch.\n\n**How it works:** fetch first when you want to inspect what changed. `git pull --rebase` replays your local commits on top of the remote ones and avoids small merge commits; `pull.rebase true` makes it the default.",
+          "code": "git fetch origin\ngit log --oneline HEAD..origin/main     # remote commits you do not have yet\ngit diff HEAD origin/main               # what they change\ngit merge origin/main                   # integrate when ready\n\ngit pull --rebase                       # fetch + replay your commits on top\ngit config --global pull.rebase true    # make it the default",
+          "interview_question": "When would you use git fetch instead of git pull?",
+          "references": [
+            "https://git-scm.com/docs/git-fetch",
+            "https://git-scm.com/docs/git-pull"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Pulling with uncommitted changes in files that the incoming commits also change. Git refuses, to protect your work. Commit or stash first.",
+          "code": "git pull\n# error: Your local changes to the following files would be overwritten by merge:\n#   src/OrderService.java\n# Please commit your changes or stash them before you merge.\n\n# RIGHT\ngit stash\ngit pull\ngit stash pop"
         }
       ]
     },
     {
       "subtitle": ".gitignore",
-      "description": "Ignorando arquivos desnecessários.",
+      "description": "Files Git should never track.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Se um arquivo rastreado for adicionado ao .gitignore, ele continua monitorado. Use 'git rm --cached <arquivo>' para removê-lo do rastreamento antes de ignorá-lo, garantindo exclusão do repositório.",
-          "code": "# Conteúdo do arquivo .gitignore\n*.log\nnode_modules/\n.env\n\n# Comandos no terminal\ngit rm --cached .env      # para de rastrear um arquivo que já estava no Git\ngit add .gitignore\ngit commit -m \"chore: adiciona .gitignore\"",
-          "interview_question": "O que acontece se um arquivo já rastreado for adicionado ao .gitignore?"
+          "title": "Explanation",
+          "explanation": "**Problem:** build output, logs, IDE settings and an `.env` file with passwords end up in the repository.\n\n**Concept:** `.gitignore` lists patterns of files Git should not track: `*.log`, `target/`, `.env`, `.idea/`. `*` is a wildcard, a trailing `/` means a directory, a leading `/` means only at the root, and `!` makes an exception. It only applies to files that are not tracked yet.\n\n**How it works:** create it when the project starts (GitHub has templates per language) and commit it. `git check-ignore -v` tells you which rule ignores a file.",
+          "code": "# .gitignore for a Java/Maven project\ntarget/\n*.log\n.env\n.idea/\n*.iml\n.vscode/\n!.vscode/settings.json      # exception: keep this one\n\n# Which rule ignores this file?\ngit check-ignore -v target/app.jar",
+          "interview_question": "What happens if a file that is already tracked is added to .gitignore?",
+          "references": [
+            "https://git-scm.com/docs/gitignore",
+            "https://github.com/github/gitignore"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Adding an already tracked file to `.gitignore` and expecting Git to forget it. It stays tracked. Remove it from the index with `git rm --cached` (the file stays on disk). If it was a secret, it is still in the history: change the password.",
+          "code": "# Content of .gitignore\n.env\n\n# Terminal\ngit rm --cached .env      # stop tracking a file that was already committed\ngit add .gitignore\ngit commit -m \"chore: stop tracking .env\""
         }
       ]
     },
     {
-      "subtitle": "Status, Diff e Restore",
-      "description": "Inspecionando e revertendo mudanças locais.",
+      "subtitle": "Status, Diff and Restore",
+      "formerSubtitle": "Status, Diff e Restore",
+      "description": "Seeing exactly what changed, and undoing local changes.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "`git diff` mostra o que mudou no working directory e ainda não foi para o staging; `git diff --staged` mostra o que está no staging e vai entrar no próximo commit. Revise os dois antes de commitar.",
-          "code": "git status                # Mostra estado dos arquivos\ngit diff arquivo.java     # Mostra mudanças no arquivo\ngit restore arquivo.java  # Reverte mudanças não commitadas",
-          "interview_question": "Como usar git diff para revisar mudanças antes de um commit?"
+          "title": "Explanation",
+          "explanation": "**Problem:** before committing you need to know exactly what changed — and sometimes you want to throw an experiment away.\n\n**Concept:** `git status` lists modified, staged and untracked files. `git diff` shows changes in the working directory that are not staged yet; `git diff --staged` shows what is staged and will go into the next commit. `git restore --staged` unstages a file and keeps the change; `git restore` discards the change.\n\n**How it works:** review both diffs before every commit. `git status -s` gives a short view: `M` modified, `A` added, `??` untracked.",
+          "code": "git status -s                     # short view\ngit diff                          # changes not staged yet\ngit diff --staged                 # what goes into the next commit\ngit restore --staged Order.java   # unstage, keep the change\ngit restore Order.java            # discard the local change",
+          "interview_question": "How do you use git diff to review changes before a commit?",
+          "references": [
+            "https://git-scm.com/docs/git-diff",
+            "https://git-scm.com/docs/git-restore"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Discarding work you might still want. `git restore` on uncommitted changes cannot be undone — they were never committed, so the reflog cannot bring them back. When in doubt, stash instead.",
+          "code": "# WRONG: uncommitted work is gone for good\ngit restore .\n\n# RIGHT when unsure: put it aside\ngit stash push -m \"experiment with the new tax rule\""
         }
       ]
     },
     {
-      "subtitle": "Revert e Reset",
-      "description": "Desfazendo alterações de forma segura.",
+      "subtitle": "Revert and Reset",
+      "formerSubtitle": "Revert e Reset",
+      "description": "Undoing commits — safely on shared branches, or locally.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "'git reset --soft HEAD~1' desfaz o commit e mantém as mudanças no staging. '--mixed' (padrão) desfaz o commit e devolve as mudanças ao working directory, fora do staging. '--hard' descarta commit e mudanças. Em commits já enviados ao remoto, prefira 'git revert'.",
-          "code": "git revert HEAD           # Cria commit que anula o último\ngit reset --soft HEAD~1   # Volta um commit, mudanças no staging\ngit reset HEAD~1          # --mixed (padrão): mudanças fora do staging\ngit reset --hard HEAD~1   # Descarta tudo (cuidado)",
-          "interview_question": "Qual a diferença entre git reset --soft e --hard?"
+          "title": "Explanation",
+          "explanation": "**Problem:** a bad commit went in. It may already be pushed, or it may exist only on your machine — and the right way to undo it differs.\n\n**Concept:** `git revert` creates a new commit that undoes a previous one; history is kept, so it is safe on shared branches. `git reset` moves the branch back to an earlier commit: `--soft` keeps the changes staged, `--mixed` (the default) keeps them unstaged, and `--hard` deletes them. Reset rewrites history, so use it only on commits that were not pushed.\n\n**How it works:** pushed commit: revert. Local commit you want to redo: reset `--soft` or `--mixed`. `--hard` only when you really want to throw the changes away.",
+          "code": "git revert HEAD            # a new commit that undoes the last one\ngit reset --soft HEAD~1    # undo the commit; changes stay staged\ngit reset HEAD~1           # --mixed (default): changes stay, unstaged\ngit reset --hard HEAD~1    # undo the commit AND discard the changes",
+          "interview_question": "What is the difference between git revert and git reset, and between reset --soft and --hard?",
+          "references": [
+            "https://git-scm.com/docs/git-revert",
+            "https://git-scm.com/docs/git-reset"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Undoing a pushed commit with reset and force push. Everyone who pulled it now has a commit that no longer exists on the remote. On shared branches, revert.",
+          "code": "# WRONG\ngit reset --hard HEAD~1\ngit push --force\n\n# RIGHT\ngit revert a1b2c3d\ngit push"
         }
       ]
     },
     {
       "subtitle": "Git Stash",
-      "description": "Salvando mudanças temporariamente.",
+      "description": "Putting unfinished work aside for a moment.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "'Git stash' salva mudanças não commitadas, permitindo alternar branches para tarefas urgentes e recuperar com 'git stash pop', ideal para fluxos dinâmicos como corrigir bugs em paralelo.",
-          "code": "git stash                 # Salva mudanças temporariamente\ngit switch main           # Alterna para main\ngit stash pop             # Recupera mudanças salvas",
-          "interview_question": "Como git stash ajuda em fluxos de trabalho dinâmicos?",
+          "title": "Explanation",
+          "explanation": "**Problem:** you are halfway through a change when an urgent bug on main needs fixing. Half-done work should not be committed, and switching branches would carry it along — or be refused.\n\n**Concept:** `git stash` saves your uncommitted changes (staged and unstaged) on a stack and cleans the working directory. `git stash pop` brings them back and removes the entry; `git stash apply` brings them back and keeps it.\n\n**How it works:** give each stash a message, so `git stash list` tells you what is what. Stashes are local and easy to forget — do not use them as long-term storage.",
+          "code": "git stash push -m \"half-done discount screen\"\ngit switch main\n# ... fix the bug, commit, push ...\ngit switch feature/discount\ngit stash list           # stash@{0}: On feature/discount: half-done discount screen\ngit stash pop            # changes are back, entry removed",
+          "interview_question": "How does git stash help when you have to switch tasks?",
           "references": [
             "https://git-scm.com/docs/git-stash"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Expecting new files to be stashed. By default, untracked files stay in the working directory and follow you to the other branch. Add `-u`.",
+          "code": "git stash\ngit switch main\ngit status          # NewFile.java is still here: untracked files are not stashed\n\n# RIGHT\ngit stash push -u -m \"wip\""
         }
       ]
     },
     {
-      "subtitle": "Git Log e Blame",
-      "description": "Inspecionando histórico e autoria.",
+      "subtitle": "Log and Blame",
+      "formerSubtitle": "Git Log e Blame",
+      "description": "Who changed a line, when, and why.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use 'git blame arquivo.java' para rastrear bugs, mostrando quem alterou cada linha com data e commit, ajudando a identificar a origem de um erro em um arquivo de código.",
-          "code": "git log --oneline         # Mostra histórico resumido\ngit blame arquivo.java    # Mostra autoria por linha",
-          "interview_question": "Como usar git blame para investigar bugs?"
+          "title": "Explanation",
+          "explanation": "**Problem:** a line looks wrong. Who changed it, when, and why?\n\n**Concept:** `git log` shows the history: `--oneline` for a short view, `--graph` for branches, `-p` for the changes, `-S \"text\"` for commits that added or removed a piece of text, `-- path` for one file. `git blame` shows, for every line, the last commit that changed it. `git show <hash>` displays that commit's message and diff.\n\n**How it works:** blame finds the commit; the commit message and its pull request explain the why. That is a big reason to write good commit messages.",
+          "code": "git log --oneline --graph --all           # history as a graph\ngit log -p -- src/TaxService.java         # every change to one file\ngit log -S \"TAX_RATE\"                     # commits that added or removed this text\ngit blame -L 40,60 src/TaxService.java    # who last changed lines 40-60\ngit show 3f9a2b1                          # the full commit: message + diff",
+          "interview_question": "How do you use git log and git blame to investigate a bug?",
+          "references": [
+            "https://git-scm.com/docs/git-log",
+            "https://git-scm.com/docs/git-blame"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Trusting blame after a mass reformat or file move. Every line shows the formatting commit, not the real origin. Ignore whitespace, follow moved lines, and list reformat commits in an ignore file.",
+          "code": "git blame src/TaxService.java   # every line: \"style: reformat code\"\n\n# RIGHT\ngit blame -w -M -C src/TaxService.java                  # ignore whitespace, follow moved lines\ngit config blame.ignoreRevsFile .git-blame-ignore-revs  # skip known reformat commits"
         }
       ]
     },
     {
       "subtitle": "Pull Requests",
-      "description": "Colaboração em plataformas como GitHub.",
+      "description": "Proposing, reviewing and merging changes.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Pull Requests são importantes porque permitem revisão de código, discussões e aprovações antes da integração, garantindo qualidade e alinhamento em projetos colaborativos como um app de equipe.",
-          "code": "git push origin feature   # Envia branch para remoto\n# Cria PR na plataforma (ex.: GitHub)\ngit pull origin main      # Sincroniza após aprovação",
-          "interview_question": "Qual a importância de pull requests em projetos colaborativos?",
+          "title": "Explanation",
+          "explanation": "**Problem:** code that goes straight to main without anyone looking brings bugs, inconsistent style, and knowledge stuck in one person's head.\n\n**Concept:** a pull request (a merge request in GitLab) proposes merging a branch. It shows the diff, runs CI, and lets reviewers comment and approve before the merge. It can be merged with a merge commit, squashed into one commit, or rebased.\n\n**How it works:** keep a PR small and about one subject, with a description of what changes, why, and how it was tested. Push fixes to the same branch; the PR updates itself.",
+          "code": "git switch -c feature/cancel-order\ngit commit -m \"feat(orders): allow cancelling unpaid orders\"\ngit push -u origin feature/cancel-order\n# open the PR on GitHub (or: gh pr create --fill)\n# CI runs, reviewers comment -> push more commits to the same branch\n# approved + CI green -> merge (squash), delete the branch\ngit switch main && git pull",
+          "interview_question": "Why are pull requests important in team projects?",
           "references": [
             "https://docs.github.com/en/pull-requests"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A huge PR with several subjects. Nobody can review 3,000 lines properly, so it gets approved without real review. Split it into PRs that each do one thing.",
+          "code": "WRONG: one PR \"various changes\" — 48 files, +3,200 lines:\n       new feature + refactor + dependency upgrade\n\nRIGHT: three PRs\n  1. chore(deps): upgrade jackson to 2.17.2\n  2. refactor(orders): extract PriceCalculator\n  3. feat(orders): allow cancelling unpaid orders"
         }
       ]
     },
     {
       "subtitle": "Conventional Commits",
-      "description": "Mensagens de commit padronizadas e legíveis.",
+      "description": "Standard, readable commit messages.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O padrão Conventional Commits usa o formato tipo(escopo): descrição — feat para funcionalidade, fix para correção, refactor, test, docs, chore, ci. O assunto fica no imperativo e curto; o corpo explica o porquê. Isso facilita revisões, gera changelogs automaticamente e permite versionamento semântico automatizado (feat → minor, fix → patch, BREAKING CHANGE → major).",
-          "code": "git commit -m \"feat(pedidos): adiciona cancelamento de pedido\"\ngit commit -m \"fix(auth): corrige expiração do token JWT\"\ngit commit -m \"refactor: extrai cálculo de frete para Strategy\"\n\n# Mudança incompatível\ngit commit -m \"feat(api)!: remove endpoint /v1/usuarios\" -m \"BREAKING CHANGE: use /v2/usuarios\"",
-          "interview_question": "Como escrever boas mensagens de commit?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a history full of \"fix\", \"wip\" and \"changes\" says nothing. Finding when a feature arrived, or writing release notes, means reading every diff.\n\n**Concept:** Conventional Commits uses the format `type(scope): description`. Common types: `feat` (new feature), `fix` (bug fix), `refactor`, `test`, `docs`, `chore`, `ci`. The subject is short and imperative; the body explains why. A breaking change is marked with `!` or a `BREAKING CHANGE:` footer.\n\n**How it works:** tools read these messages to generate changelogs and choose the next version automatically: `feat` → minor, `fix` → patch, breaking change → major.",
+          "code": "git commit -m \"feat(orders): add order cancellation\"\ngit commit -m \"fix(auth): correct JWT token expiry\"\ngit commit -m \"refactor: extract shipping calculation into a Strategy\"\n\n# Breaking change\ngit commit -m \"feat(api)!: remove the /v1/users endpoint\" -m \"BREAKING CHANGE: use /v2/users\"",
+          "interview_question": "How do you write good commit messages?",
           "references": [
-            "https://www.conventionalcommits.org/pt-br/v1.0.0/"
+            "https://www.conventionalcommits.org/en/v1.0.0/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Estratégias de Branching",
-      "description": "Git Flow, GitHub Flow e Trunk-Based Development.",
-      "category": "conceitos",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Git Flow usa branches de longa duração (main, develop, release, hotfix) e funciona bem para releases planejadas, mas gera merges grandes e integração tardia. GitHub Flow simplifica: main sempre implantável e branches curtas de feature com Pull Request. Trunk-Based Development leva isso ao extremo: integrações no trunk várias vezes ao dia, com feature flags escondendo trabalho incompleto — é o modelo que melhor combina com CI/CD.",
-          "code": "# GitHub Flow\ngit switch -c feature/cancelar-pedido\n# ... commits pequenos ...\ngit push -u origin feature/cancelar-pedido\n# abre PR -> revisão -> CI verde -> merge na main -> deploy\n\n# Git Flow (resumo)\n# main <- release/1.4 <- develop <- feature/*\n# main <- hotfix/1.4.1",
-          "interview_question": "Qual a diferença entre Git Flow e Trunk-Based Development?",
-          "references": [
-            "https://docs.github.com/en/get-started/using-github/github-flow",
-            "https://trunkbaseddevelopment.com/"
-          ]
+          "title": "Common mistake",
+          "explanation": "Messages that only say what changed in the code, not why. The diff already shows what; the message is the only place for the reason.",
+          "code": "# WRONG\ngit commit -m \"fix\"\ngit commit -m \"change timeout to 5s\"\n\n# RIGHT\ngit commit -m \"fix(payment): raise gateway timeout to 5s\" \\\n           -m \"The gateway takes up to 4s at peak; 2s caused failed payments.\""
         }
       ]
     },
     {
-      "subtitle": "Tags e Versionamento Semântico",
-      "description": "Marcando releases no histórico.",
+      "subtitle": "Tags and Semantic Versioning",
+      "formerSubtitle": "Tags e Versionamento Semântico",
+      "description": "Marking releases in the history.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Tags marcam commits específicos, normalmente releases. Tags anotadas (-a) guardam autor, data e mensagem e são as recomendadas. O Versionamento Semântico (MAJOR.MINOR.PATCH) comunica o impacto: MAJOR para mudanças incompatíveis, MINOR para funcionalidades compatíveis e PATCH para correções. Pipelines de CI/CD costumam publicar artefatos quando uma tag v* é enviada.",
-          "code": "git tag -a v1.4.0 -m \"Release 1.4.0: cancelamento de pedidos\"\ngit push origin v1.4.0\n\ngit tag --list \"v1.*\"     # lista tags\ngit checkout v1.3.2       # inspeciona uma versão antiga (detached HEAD)",
-          "interview_question": "Como versionar releases com tags no Git?",
+          "title": "Explanation",
+          "explanation": "**Problem:** \"which code is running in production?\" With no marks in the history, nobody can answer quickly — or roll back to the previous release.\n\n**Concept:** a tag is a fixed name for a commit, usually a release. Annotated tags (`-a`) store author, date and message, and are the recommended kind. Semantic Versioning (`MAJOR.MINOR.PATCH`) tells users the impact: MAJOR for incompatible changes, MINOR for compatible features, PATCH for fixes.\n\n**How it works:** CI/CD pipelines often build and publish a release when a `v*` tag is pushed. Checking out a tag puts you in \"detached HEAD\" — fine for looking around; create a branch if you need to change something.",
+          "code": "git tag -a v1.4.0 -m \"Release 1.4.0: order cancellation\"\ngit push origin v1.4.0\n\ngit tag --list \"v1.*\"       # list tags\ngit checkout v1.3.2         # inspect an old version (detached HEAD)",
+          "interview_question": "How do you version releases with tags in Git?",
           "references": [
-            "https://semver.org/lang/pt-BR/",
+            "https://semver.org/",
             "https://git-scm.com/book/en/v2/Git-Basics-Tagging"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Forgetting that `git push` does not push tags. The tag exists only on your machine, and the release pipeline never starts. Push the tag itself, or use `--follow-tags`.",
+          "code": "git tag -a v1.4.0 -m \"Release 1.4.0\"\ngit push                  # pushes commits, NOT tags\n\n# RIGHT\ngit push origin v1.4.0    # or: git push --follow-tags"
         }
       ]
     }

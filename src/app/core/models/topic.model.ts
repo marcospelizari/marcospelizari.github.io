@@ -1,4 +1,4 @@
-export type Level = 'essencial' | 'avancado';
+export type Level = 'essencial' | 'intermediario' | 'avancado';
 
 export interface Topic {
   slug: string;

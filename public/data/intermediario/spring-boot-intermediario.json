@@ -1,0 +1,180 @@
+{
+  "title": "Spring Boot",
+  "description": "Configuration per environment, bean lifecycle, transactions, proxies and JPA performance.",
+  "version": "Spring Boot 3.4+",
+  "resumo": [
+    "Profiles (`application-prod.yml`) override the defaults; `@ConfigurationProperties` + `@Validated` for typed settings.",
+    "Beans are singletons by default: never keep per-request state in fields.",
+    "Actuator: health, metrics and probes; expose only what you need. Flyway versions the schema; never edit an applied migration.",
+    "`@Transactional` rolls back on unchecked exceptions; checked ones need `rollbackFor`. Never call HTTP inside a transaction.",
+    "A caught inner failure still marks a shared transaction rollback-only — use `REQUIRES_NEW` per unit of work.",
+    "Proxies: self-invocation, private and final methods skip `@Transactional`, `@Cacheable` and `@Async`.",
+    "N+1: fetch join, `@EntityGraph` or projections; keep relationships LAZY; never fetch-join a collection with pagination."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Profiles and @ConfigurationProperties",
+      "formerSubtitle": "Profiles e @ConfigurationProperties",
+      "formerLevel": "essencial",
+      "description": "Per-environment configuration, typed and validated.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** development uses a local database and a payment sandbox; production uses the real ones. And `@Value` strings scattered across the code are untyped and unchecked.\n\n**Concept:** a profile is a named set of configuration: `application-dev.yml`, `application-prod.yml`, activated with `spring.profiles.active` (or the `SPRING_PROFILES_ACTIVE` variable). The profile file overrides the default one. `@ConfigurationProperties` binds a prefix to a typed class or record, which `@Validated` checks at startup.\n\n**How it works:** keep shared defaults in `application.yml` and only the differences in each profile file. Group related settings in one properties record instead of many `@Value` fields.",
+          "code": "# application.yml (defaults)\npayment:\n  url: https://sandbox.gateway.com\n  timeout: 5s\n\n# application-prod.yml (another file; only what changes)\npayment:\n  url: https://api.gateway.com\n\n# Activate: SPRING_PROFILES_ACTIVE=prod\n\n@Validated\n@ConfigurationProperties(prefix = \"payment\")\npublic record PaymentProperties(@NotBlank String url, @NotNull Duration timeout) {}\n\n@SpringBootApplication\n@EnableConfigurationProperties(PaymentProperties.class)\npublic class Application {}",
+          "interview_question": "How do you separate dev, test and production configuration in Spring Boot?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/features/external-config.html",
+            "https://docs.spring.io/spring-boot/reference/features/profiles.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Production secrets in a versioned profile file. Everyone with access to the repository has the password, forever (git history keeps it). Reference an environment variable or a secrets manager.",
+          "code": "# WRONG: application-prod.yml in git\nspring:\n  datasource:\n    password: S3cr3t!\n\n# RIGHT\nspring:\n  datasource:\n    password: ${DB_PASSWORD}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Bean Scopes and Lifecycle",
+      "formerSubtitle": "Escopos e Ciclo de Vida de Beans",
+      "formerLevel": "essencial",
+      "description": "Singleton by default — so keep beans stateless.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a service keeps the \"current cart\" in a field, and two requests at the same time overwrite each other's data.\n\n**Concept:** the default scope is singleton: one instance per application, shared by every request — and requests run on different threads. Other scopes: prototype (a new instance for each injection), request and session (web). Lifecycle: create, inject dependencies, run `@PostConstruct`, use, and run `@PreDestroy` on shutdown.\n\n**How it works:** singleton beans such as `@Service` and `@Repository` must be stateless: no per-request data in fields. Request data travels as parameters or lives in the database or session.",
+          "code": "@Service   // singleton: one instance shared by all requests\npublic class CatalogService {\n    private final ProductRepository products;\n\n    public CatalogService(ProductRepository products) {\n        this.products = products;\n    }\n\n    @PostConstruct\n    void warmUpCache() {\n        // runs once, after injection\n    }\n}\n\n@Component\n@Scope(\"prototype\")\npublic class ReportGenerator { }   // a new instance for each injection",
+          "interview_question": "What is the default scope of a Spring bean, and what care does it require?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/core/beans/factory-scopes.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Per-request state in a singleton field. Every user shares the same list, so one sees another's cart, and concurrent changes corrupt it.",
+          "code": "// WRONG: one list for all users\n@Service\npublic class CartService {\n    private final List<Item> items = new ArrayList<>();\n    public void add(Item item) { items.add(item); }\n}\n\n// RIGHT: state in the database, identified by a parameter\n@Service\npublic class CartService {\n    private final CartRepository carts;\n    public CartService(CartRepository carts) { this.carts = carts; }\n\n    @Transactional\n    public void add(Long cartId, Item item) {\n        carts.findById(cartId).orElseThrow().add(item);\n    }\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Boot Actuator",
+      "formerLevel": "essencial",
+      "description": "Health checks and metrics, ready for production.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** in production, load balancers and Kubernetes need to know whether the application is alive and ready, and you need metrics — without writing those endpoints yourself.\n\n**Concept:** Actuator adds operational endpoints under `/actuator`: `health` (UP or DOWN, including the database), `info`, `metrics`, `prometheus` (with `micrometer-registry-prometheus`), and the liveness and readiness probes. Over HTTP, only `health` is exposed by default.\n\n**How it works:** expose what your platform needs and nothing more. Some endpoints reveal configuration and internals, so keep them unexposed or protected.",
+          "code": "# application.yml\nmanagement:\n  endpoints:\n    web:\n      exposure:\n        include: health,info,prometheus\n  endpoint:\n    health:\n      probes:\n        enabled: true   # /actuator/health/liveness and /readiness\n\n$ curl localhost:8080/actuator/health\n{\"status\":\"UP\"}",
+          "interview_question": "What is Spring Boot Actuator for, and which endpoints are risky to expose?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/actuator/index.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Exposing every endpoint with `include: \"*\"`. `env`, `configprops` and `heapdump` reveal configuration and memory contents to anyone who can reach the application. List only what you need, and consider a separate internal port.",
+          "code": "# WRONG: exposes env, configprops, heapdump...\nmanagement.endpoints.web.exposure.include: \"*\"\n\n# RIGHT\nmanagement:\n  endpoints.web.exposure.include: health,info,prometheus\n  server.port: 9090          # Actuator on an internal port, not exposed publicly"
+        }
+      ]
+    },
+    {
+      "subtitle": "Database Migrations with Flyway",
+      "formerSubtitle": "Migrations com Flyway",
+      "formerLevel": "essencial",
+      "description": "Versioning the schema together with the code.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** someone adds a column on their machine, but test and production do not have it, and the application breaks on deploy. `ddl-auto=update` changes the schema implicitly, does not drop or rename columns correctly, and keeps no history.\n\n**Concept:** Flyway applies versioned SQL scripts in order (`V1__`, `V2__`...) when the application starts, records which ones ran in the `flyway_schema_history` table, and leaves every environment with the same schema. Schema changes are reviewed in pull requests like any other code.\n\n**How it works:** put the scripts in `src/main/resources/db/migration`; with the Flyway dependency, Spring Boot runs them at startup. Set `spring.jpa.hibernate.ddl-auto=validate`, so Hibernate only checks that entities and tables match.",
+          "code": "<!-- pom.xml: flyway-core, plus flyway-database-postgresql for PostgreSQL (Flyway 10+) -->\n\n-- src/main/resources/db/migration/V1__create_orders.sql\nCREATE TABLE orders (\n  id          BIGSERIAL PRIMARY KEY,\n  customer_id BIGINT NOT NULL,\n  total       NUMERIC(12,2) NOT NULL,\n  created_at  TIMESTAMP NOT NULL DEFAULT now()\n);\n\n-- V2__add_order_status.sql\nALTER TABLE orders ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'CREATED';",
+          "interview_question": "Why not use spring.jpa.hibernate.ddl-auto=update in production?",
+          "references": [
+            "https://docs.spring.io/spring-boot/how-to/data-initialization.html",
+            "https://documentation.red-gate.com/fd"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Editing a migration that has already run. Flyway stores a checksum of every applied script and refuses to start when one changes. Never change an applied migration; add a new one.",
+          "code": "-- WRONG: editing V2 after it ran\n-- startup fails: \"Migration checksum mismatch for migration version 2\"\n\n-- RIGHT: a new migration\n-- V3__make_status_indexed.sql\nCREATE INDEX idx_orders_status ON orders (status);"
+        }
+      ]
+    },
+    {
+      "subtitle": "Transactions and @Transactional",
+      "formerSubtitle": "Transações e @Transactional",
+      "formerLevel": "avancado",
+      "description": "Propagation, rollback rules and transaction length.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a method saves several things and fails halfway — sometimes everything is rolled back, sometimes not, and under load the connection pool runs dry.\n\n**Concept:** `@Transactional` on a public method of a Spring bean opens a transaction, commits at the end, and rolls back on `RuntimeException` and `Error` — not on checked exceptions, unless you add `rollbackFor`. Propagation defines what happens when one transactional method calls another: `REQUIRED` (the default) joins the existing transaction, `REQUIRES_NEW` suspends it and opens a separate one. `readOnly = true` lets Hibernate skip dirty checking.\n\n**How it works:** long transactions hold a pool connection and database locks for the whole time, which hurts concurrency — never make external HTTP calls inside one.",
+          "code": "@Service\npublic class TransferService {\n\n    @Transactional(isolation = Isolation.READ_COMMITTED, rollbackFor = InsufficientFundsException.class)\n    public void transfer(Long from, Long to, BigDecimal amount) throws InsufficientFundsException {\n        accounts.debit(from, amount);\n        accounts.credit(to, amount);\n    }\n\n    @Transactional(readOnly = true)\n    public Statement statement(Long accountId) { /* ... */ }\n}\n\n@Service\nclass AuditService {\n    @Transactional(propagation = Propagation.REQUIRES_NEW)\n    public void record(String event) { /* saved even if the caller's transaction fails */ }\n}",
+          "interview_question": "Why avoid long transactions, and when does a rollback happen?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative.html",
+            "https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/tx-propagation.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Catching an exception from an inner `@Transactional` call and carrying on. With `REQUIRED`, the inner method shares the outer transaction and marks it rollback-only when it throws, so the outer commit fails anyway. Give each unit of work its own transaction.",
+          "code": "// WRONG: one bad row poisons the shared transaction\n@Transactional\npublic void importAll(List<Row> rows) {\n    for (Row r : rows) {\n        try { rowService.importRow(r); }      // @Transactional (REQUIRED) in another bean\n        catch (RuntimeException e) { log.warn(\"Skipping row\", e); }\n    }\n}\n// UnexpectedRollbackException: Transaction silently rolled back because it has been marked as rollback-only\n\n// RIGHT: each row in its own transaction (and importAll not @Transactional)\n@Transactional(propagation = Propagation.REQUIRES_NEW)\npublic void importRow(Row r) { ... }"
+        }
+      ]
+    },
+    {
+      "subtitle": "Proxies and Self-invocation",
+      "formerSubtitle": "Proxies e Auto-invocação",
+      "formerLevel": "avancado",
+      "description": "Why @Transactional sometimes \"does not work\".",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a method has `@Transactional`, yet there is no transaction — and nothing in the logs says why.\n\n**Concept:** Spring wraps the bean in a proxy, and the transactional logic runs when a call goes through that proxy. A call like `this.method()` inside the same class goes straight to the real object and skips the proxy — the same applies to `@Cacheable`, `@Async` and `@Retryable`. Private and final methods cannot be intercepted either.\n\n**How it works:** move the annotated method to another bean, or reorganize where the transaction starts.",
+          "code": "@Service\npublic class OrderService {\n    public void processBatch(List<Order> orders) {\n        orders.forEach(this::save);          // self-invocation: does NOT go through the proxy\n    }\n\n    @Transactional\n    public void save(Order o) { /* ... */ }\n}\n\n// RIGHT: the transactional method in another bean\n@Service\npublic class BatchService {\n    private final OrderService orderService;\n    public BatchService(OrderService orderService) { this.orderService = orderService; }\n\n    public void processBatch(List<Order> orders) {\n        orders.forEach(orderService::save);  // goes through the proxy\n    }\n}",
+          "interview_question": "Why does a @Transactional method called from inside its own class not start a transaction?",
+          "references": [
+            "https://docs.spring.io/spring-framework/reference/core/aop/proxying.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`@Transactional` on a private method. The proxy cannot intercept it, so the annotation is silently ignored. Use a public method on a Spring bean, called from another bean.",
+          "code": "// WRONG: ignored\n@Transactional\nprivate void saveAll(List<Order> orders) { ... }\n\n// RIGHT\n@Transactional\npublic void saveAll(List<Order> orders) { ... }   // called from another bean"
+        }
+      ]
+    },
+    {
+      "subtitle": "JPA: N+1, Lazy and Eager",
+      "formerSubtitle": "JPA: N+1, Lazy e Eager",
+      "formerLevel": "avancado",
+      "description": "The most common performance problem with Hibernate.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a page lists 50 orders and fires 51 queries; in production, with 1,000 orders, it takes seconds.\n\n**Concept:** N+1 happens when one query loads N entities and reading a lazy relationship on each one fires an extra query. Find it by turning on SQL logging or Hibernate statistics in tests. Fix it with a fetch join, `@EntityGraph` or a DTO projection. Keep relationships LAZY by default — including `@ManyToOne`, which is EAGER unless you say otherwise.\n\n**How it works:** switching to EAGER is not a fix: it loads the relationship in every query, even where nobody needs it.",
+          "code": "public interface OrderRepository extends JpaRepository<Order, Long> {\n\n    @Query(\"select o from Order o join fetch o.items where o.customer.id = :customerId\")\n    List<Order> withItems(@Param(\"customerId\") Long customerId);\n\n    @EntityGraph(attributePaths = {\"items\", \"customer\"})\n    Optional<Order> findDetailedById(Long id);\n}\n\n# application.yml (dev/test only)\nspring.jpa.properties.hibernate.generate_statistics: true",
+          "interview_question": "How do you detect and fix the N+1 problem?",
+          "references": [
+            "https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html",
+            "https://docs.jboss.org/hibernate/orm/6.5/userguide/html_single/Hibernate_User_Guide.html#fetching"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A fetch join of a collection combined with pagination. Hibernate cannot page in SQL, so it loads every order and item and pages in memory — only a warning in the log. Page the ids first, then fetch those orders with their items.",
+          "code": "// WRONG\n@Query(\"select o from Order o join fetch o.items\")\nPage<Order> findAllWithItems(Pageable page);\n// WARN HHH90003004: firstResult/maxResults specified with collection fetch; applying in memory\n\n// RIGHT: 1) page the ids  2) fetch those orders with their items\n@Query(\"select o.id from Order o\")\nPage<Long> findIds(Pageable page);\n\n@Query(\"select o from Order o join fetch o.items where o.id in :ids\")\nList<Order> findWithItems(@Param(\"ids\") List<Long> ids);"
+        }
+      ]
+    }
+  ]
+}

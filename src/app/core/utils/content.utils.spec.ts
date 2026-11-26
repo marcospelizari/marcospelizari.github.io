@@ -1,5 +1,5 @@
 import { Subsection } from '../models/study-content.model';
-import { detectLanguage, matchesQuery } from './content.utils';
+import { detectLanguage, matchesQuery, parseRichText } from './content.utils';
 
 describe('detectLanguage', () => {
   it.each([
@@ -35,5 +35,28 @@ describe('matchesQuery', () => {
   it('searches code and explanations', () => {
     expect(matchesQuery(subsection, 'rebase')).toBe(true);
     expect(matchesQuery(subsection, 'docker')).toBe(false);
+  });
+});
+
+describe('parseRichText', () => {
+  it('splits paragraphs on blank lines', () => {
+    expect(parseRichText('Um.\n\nDois.\n  \nTrês.').length).toBe(3);
+  });
+
+  it('marks `code` and **bold** segments', () => {
+    expect(parseRichText('**Problema:** use `COMMIT` agora')).toEqual([
+      [
+        { kind: 'bold', value: 'Problema:' },
+        { kind: 'text', value: ' use ' },
+        { kind: 'code', value: 'COMMIT' },
+        { kind: 'text', value: ' agora' },
+      ],
+    ]);
+  });
+
+  it('leaves unmatched markers as text', () => {
+    expect(parseRichText('permitir /public/** e `aberto')).toEqual([
+      [{ kind: 'text', value: 'permitir /public/** e `aberto' }],
+    ]);
   });
 });

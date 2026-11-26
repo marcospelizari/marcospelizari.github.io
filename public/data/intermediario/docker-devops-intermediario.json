@@ -1,0 +1,110 @@
+{
+  "title": "Docker & DevOps",
+  "description": "Observing what runs, infrastructure as code, and building lean, secure images.",
+  "version": "Docker 26+",
+  "resumo": [
+    "Logs are events with context; metrics are numbers over time; log to standard output in containers.",
+    "Metrics: Actuator + Micrometer at `/actuator/prometheus`, scraped by Prometheus.",
+    "Infrastructure as code: review the `plan`, then `apply`; never change resources by hand.",
+    "Multi-stage builds: compile with the JDK, ship only the JAR on a JRE image; dependencies before source for caching.",
+    "Always a `.dockerignore`; never secrets in `ARG`/`ENV` — use BuildKit secret mounts.",
+    "Scan images (Trivy), pin versions, run as non-root, and sign with Cosign — pinning the signer identity."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Monitoring and Logging",
+      "formerSubtitle": "Monitoramento e Logging",
+      "formerLevel": "essencial",
+      "description": "Knowing what the system is doing in production.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** users report the application is slow before you notice, and when an error happens you have no idea where.\n\n**Concept:** logs are events — what happened, with context such as ids. Metrics are numbers over time — requests per second, latency, error rate, CPU — used for dashboards and alerts. Traces follow one request across services (covered in Observability). In Spring Boot, SLF4J with Logback writes logs to standard output, Actuator with Micrometer exposes metrics, Prometheus collects them and Grafana shows them.\n\n**How it works:** in containers, log to standard output and let the platform collect it. Expose metrics at `/actuator/prometheus`, and let Prometheus scrape them.",
+          "code": "// Logging with SLF4J\nprivate static final Logger log = LoggerFactory.getLogger(OrderService.class);\nlog.info(\"Order created orderId={} total={}\", order.id(), order.total());\n\n# prometheus.yml\nscrape_configs:\n  - job_name: 'shop-api'\n    metrics_path: /actuator/prometheus\n    static_configs:\n      - targets: ['app:8080']\n\n# application.properties (+ dependency io.micrometer:micrometer-registry-prometheus)\nmanagement.endpoints.web.exposure.include=health,prometheus",
+          "interview_question": "Why is monitoring critical, and what is the difference between logs and metrics?",
+          "references": [
+            "https://prometheus.io/docs/introduction/overview/",
+            "https://docs.spring.io/spring-boot/reference/features/logging.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`System.out.println` and string concatenation in logs. There is no level or timestamp, nothing can be filtered or turned off, and logging a whole object can leak personal data. Use a logger, placeholders and only the identifiers you need.",
+          "code": "// WRONG: no level, cannot be filtered or turned off\nSystem.out.println(\"order created \" + order);\n\n// WRONG: builds the string even when DEBUG is off, and logs the whole object\nlog.debug(\"Order: \" + order);\n\n// RIGHT\nlog.info(\"Order created orderId={}\", order.id());"
+        }
+      ]
+    },
+    {
+      "subtitle": "Infrastructure as Code",
+      "formerSubtitle": "Infraestrutura como Código (IaC)",
+      "formerLevel": "essencial",
+      "description": "Servers and networks described in versioned files.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** servers created by clicking in a cloud console: nobody knows exactly how production is configured, staging is different, and rebuilding after a disaster takes days.\n\n**Concept:** with infrastructure as code, the infrastructure is described in files kept in Git, and a tool — Terraform, OpenTofu, CloudFormation, Pulumi — creates or changes it to match. It is declarative: you describe the desired state, `plan` shows the difference from what exists, and `apply` makes the changes.\n\n**How it works:** infrastructure changes go through pull requests like application code: someone reviews the `plan` output before `apply`.",
+          "code": "# Terraform: an ECS task definition (Fargate)\nresource \"aws_ecs_task_definition\" \"app\" {\n  family                   = \"shop-api\"\n  requires_compatibilities = [\"FARGATE\"]\n  network_mode             = \"awsvpc\"\n  cpu                      = 512\n  memory                   = 1024\n  container_definitions = jsonencode([{\n    name      = \"app\"\n    image     = \"shop-api:1.4.0\"   # fixed version, never latest\n    essential = true\n  }])\n}\n\nterraform init      # download providers\nterraform plan      # show what will change — review this\nterraform apply     # make the changes",
+          "interview_question": "How does infrastructure as code improve deploying applications to the cloud?",
+          "references": [
+            "https://developer.hashicorp.com/terraform/docs",
+            "https://opentofu.org/docs/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Changing resources by hand in the console. The code no longer matches reality (\"drift\"), and the next `apply` silently undoes the change. Change the code instead, and keep the console read-only.",
+          "code": "# Someone raised memory to 2048 in the AWS console during an incident\nterraform plan\n#   ~ memory = 2048 -> 1024     # the next apply undoes the fix\n\n# RIGHT: change the code, open a PR, review the plan, apply"
+        }
+      ]
+    },
+    {
+      "subtitle": "Multi-stage Builds and Lean Images",
+      "formerSubtitle": "Multi-stage Builds e Imagens Enxutas",
+      "formerLevel": "avancado",
+      "description": "Smaller images, smaller attack surface.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the image carries the JDK, Maven and the whole source tree: 800 MB to download on every deploy, and tools an attacker could use.\n\n**Concept:** a multi-stage build uses one stage with the JDK and Maven to compile, and a final stage that copies only the JAR onto a JRE-only (or distroless) image. That removes hundreds of megabytes and the build tools. Copying `pom.xml` and downloading dependencies before the source reuses the layer cache: dependencies are downloaded again only when the pom changes.\n\n**How it works:** only the last stage becomes the image; the build stage is thrown away.",
+          "code": "FROM maven:3.9-eclipse-temurin-21 AS build\nWORKDIR /workspace\nCOPY pom.xml .\nRUN mvn -q dependency:go-offline\nCOPY src src\nRUN mvn -q -DskipTests package\n\nFROM eclipse-temurin:21-jre-alpine\nWORKDIR /app\nRUN addgroup -S app && adduser -S app -G app\nCOPY --from=build /workspace/target/*.jar app.jar\nUSER app\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-XX:MaxRAMPercentage=75\", \"-jar\", \"app.jar\"]",
+          "interview_question": "What are the practical benefits of a multi-stage build?",
+          "references": [
+            "https://docs.docker.com/build/building/multi-stage/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Forgetting a `.dockerignore`. The whole folder — `target/`, `.git`, IDE files, sometimes an `.env` — is sent to the build, which becomes slow, and secrets can end up in a layer.",
+          "code": "# WRONG: no .dockerignore -> COPY . sends .git, target/ and .env\n\n# RIGHT: .dockerignore\n.git\ntarget/\n.idea/\n*.iml\n.env"
+        }
+      ]
+    },
+    {
+      "subtitle": "Image Security",
+      "formerSubtitle": "Segurança de Imagens",
+      "formerLevel": "avancado",
+      "description": "Scanning, pinning and signing what you deploy.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a base image from two years ago carries dozens of known vulnerabilities, and nobody can prove the image in production came from your pipeline.\n\n**Concept:** scan images in CI with Trivy or Grype and fail the pipeline on critical vulnerabilities; pin base image versions and update them regularly; run as a non-root user with a read-only filesystem when possible; and sign images (Cosign) so the cluster only runs artifacts produced by your pipeline.\n\n**How it works:** refer to images by digest (`@sha256:...`) when you need to be sure they did not change; a tag can be moved.",
+          "code": "trivy image --severity CRITICAL,HIGH --exit-code 1 ghcr.io/shop/api:1.4.0\n\ncosign sign ghcr.io/shop/api@sha256:3f9a...\n\n# Pin WHO signed: a regexp of '.*' would accept any identity\ncosign verify \\\n  --certificate-identity https://github.com/shop/api/.github/workflows/release.yml@refs/heads/main \\\n  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n  ghcr.io/shop/api@sha256:3f9a...",
+          "interview_question": "How do you make sure an image going to production is safe?",
+          "references": [
+            "https://trivy.dev/",
+            "https://docs.sigstore.dev/cosign/signing/overview/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Passing secrets as `ARG` or `ENV` in the Dockerfile. They stay in the image metadata and layers, and `docker history` shows them to anyone who pulls the image. Use BuildKit secret mounts at build time, and runtime configuration for the application.",
+          "code": "# WRONG\nARG NPM_TOKEN\nRUN npm install                       # docker history shows the token\n\n# RIGHT: a secret mount — available during this RUN only, never stored\nRUN --mount=type=secret,id=npm_token \\\n    NPM_TOKEN=$(cat /run/secrets/npm_token) npm install\n# docker build --secret id=npm_token,env=NPM_TOKEN ."
+        }
+      ]
+    }
+  ]
+}

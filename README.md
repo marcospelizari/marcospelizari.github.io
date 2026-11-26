@@ -23,9 +23,9 @@ Each topic is maintained independently, making it easier to:
 ## ✅ Features
 
 - **Dashboard home page** with real totals (modules, sections, code snippets, interview questions) and study progress per topic.
-- **Two levels per topic**: Essencial and Avançado.
+- **Three levels per topic**: Essentials (intern), Intermediate (junior) and Advanced (mid-level). Each section is a short lesson — problem, concept, how it works — followed by a common-mistake card and an interview question, with a one-line summary per topic for daily review.
 - **Progress tracking**: mark any section as studied. Progress is saved in the browser's `localStorage`, so it is per browser and not synced between devices.
-- **Section filters** (Conceitos, Prática, Boas Práticas, Ferramentas) and an in-page **search** that ignores case and accents.
+- **Section filters** (Concepts, Practice, Best Practices, Tools) and an in-page **search** that ignores case and accents.
 - **Light/dark theme**, following the system preference on the first visit and remembered afterwards.
 - **Responsive layout**: fixed sidebar on desktop, hamburger menu on mobile.
 - **Syntax highlighting** (Java, YAML, Bash, SQL, Dockerfile, XML, JSON) with a copy button.
@@ -36,8 +36,9 @@ Each topic is maintained independently, making it easier to:
 .
 ├── public/
 │   ├── data/
-│   │   ├── essencial/      # Essencial level, one JSON per topic
-│   │   └── avancado/       # Avançado level, one JSON per topic
+│   │   ├── essencial/      # Essentials level, one JSON per topic
+│   │   ├── intermediario/  # Intermediate level, one JSON per topic
+│   │   └── avancado/       # Advanced level, one JSON per topic
 │   └── favicon.svg
 ├── src/
 │   ├── index.html          # applies the theme before the first paint
@@ -69,18 +70,18 @@ The application shell: header (logo, search, theme switch), sidebar (topics) and
 
 ### `src/app/features/`
 
-The pages: the dashboard home page and the topic page (with its code block component).
+The pages: the dashboard home page and the topic page (with its code block and rich-text components).
 
 ## 📚 Topics
 
-The sidebar lists every topic, grouped by area. Each topic has an Essencial and/or Avançado level.
+The sidebar lists every topic, grouped by area. Each topic has up to three levels: Essentials, Intermediate and Advanced. The content is in English; URLs keep their original slugs.
 
 | Area | Topics |
 |---|---|
-| Backend | Fundamentos Java, Orientação a Objetos, Banco de Dados, Spring Boot, API & Web Services |
-| DevOps & Infra | Controle de Versão (Git), Docker & DevOps, Kubernetes & kubectl, CI/CD, Observabilidade |
-| Arquitetura | Arquitetura de Sistemas, Performance & Otimização |
-| Qualidade | Testes Automatizados, Boas Práticas & Clean Code |
+| Backend | Java Fundamentals, Object-Oriented Programming, Databases, Spring Boot, APIs & Web Services |
+| DevOps & Infra | Version Control (Git), Docker & DevOps, Kubernetes & kubectl, CI/CD, Observability |
+| Architecture | System Architecture, Performance & Optimization |
+| Quality | Automated Testing, Application Security, Best Practices & Clean Code |
 
 > The topic list evolves as new study material is added to the project.
 
@@ -139,7 +140,7 @@ This makes the content modular and easier to maintain.
 
 To add a new topic:
 
-1. Create a new JSON file inside `public/data/essencial/` and/or `public/data/avancado/`.
+1. Create a JSON file for each level the topic has, inside `public/data/essencial/`, `public/data/intermediario/` and/or `public/data/avancado/`.
 2. Follow the existing JSON structure (see below).
 3. Register the topic in `src/app/core/data/topics.ts`, inside the right group:
 
@@ -147,7 +148,11 @@ To add a new topic:
    {
      slug: 'kubernetes',
      label: 'Kubernetes',
-     files: { essencial: 'essencial/kubernetes.json', avancado: 'avancado/kubernetes-avancado.json' },
+     files: {
+       essencial: 'essencial/kubernetes.json',
+       intermediario: 'intermediario/kubernetes-intermediario.json',
+       avancado: 'avancado/kubernetes-avancado.json',
+     },
    },
    ```
 
@@ -170,9 +175,9 @@ The topic then appears automatically in the sidebar, on the home page and in the
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
+          "title": "Explanation",
           "interview_question": "An interview question about this section?",
-          "explanation": "The explanation text.",
+          "explanation": "**Problem:** ...\n\n**Concept:** ...\n\n**How it works:** ...",
           "code": "git init",
           "references": ["https://git-scm.com/doc"]
         }
@@ -184,8 +189,10 @@ The topic then appears automatically in the sidebar, on the home page and in the
 
 - `version`, `resumo`, `code`, `interview_question` and `references` are optional.
 - `category` drives the filters. Allowed values: `conceitos`, `pratica`, `boas-praticas`, `ferramentas`.
-- The language of `code` is detected automatically. All text is shown as plain text, so `<tag>` appears literally.
-- Saved progress is keyed by topic, level and `subtitle`. Reordering sections keeps progress; renaming a `subtitle` loses that section's mark.
+- The language of `code` is detected automatically. Code is shown as plain text, so `<tag>` appears literally.
+- In `explanation` and `resumo`, a blank line starts a new paragraph, `` `code` `` renders as inline code and `**bold**` as bold. No HTML is interpreted.
+- An example titled `Explanation` shows no heading; any other title (such as `Common mistake`) is shown above its card.
+- Saved progress is keyed by topic, level and `subtitle`. Reordering sections keeps progress. When you rename a section or move it to another level, add `formerSubtitle` and/or `formerLevel` with the old values, and existing marks move to the new key.
 
 The goal is to keep each JSON focused on one major subject rather than creating a separate file for every small concept.
 

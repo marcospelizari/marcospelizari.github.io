@@ -1,139 +1,149 @@
 {
-  "title": "Banco de Dados — Avançado",
-  "description": "Desempenho, transações, concorrência e escalabilidade de bancos de dados.",
-  "version": "PostgreSQL 16",
+  "title": "Databases",
+  "description": "Isolation, deadlocks, scaling and consistency in distributed systems.",
+  "version": "PostgreSQL 16, MongoDB 7.0",
   "resumo": [
-    "Em produção, a maior parte dos problemas de performance está no banco: consultas sem índice adequado, planos de execução ruins e transações que seguram locks por tempo demais.",
-    "Ler planos de execução com EXPLAIN ANALYZE é a habilidade central: ele mostra se o banco fez varredura completa, qual índice usou e onde o tempo foi gasto.",
-    "Concorrência exige escolher o nível de isolamento e a estratégia de locking certos — otimista quando conflitos são raros, pessimista quando são frequentes e caros.",
-    "Para escalar, réplicas de leitura, particionamento e cache aliviam o banco principal; bancos NoSQL entram quando o modelo de acesso pede flexibilidade ou escala horizontal, aceitando consistência eventual."
+    "B-tree for most queries; partial indexes for the rare rows you query; INCLUDE for index-only scans; GIN for JSONB.",
+    "READ COMMITTED is PostgreSQL's default; SERIALIZABLE prevents write skew but needs retries on SQLSTATE 40001.",
+    "Deadlocks: lock in a consistent order, keep transactions short, retry the whole transaction.",
+    "Scale reads with replicas (mind the lag), partition huge tables (query with the partition key); shard last.",
+    "Distributed databases let you choose consistency per operation: `majority` / `QUORUM` for critical data.",
+    "Outbox: the event goes in the same transaction as the data; consumers must be idempotent."
   ],
   "subsections": [
     {
-      "subtitle": "Índices e Planos de Execução",
-      "description": "Medindo antes de otimizar.",
-      "category": "pratica",
+      "subtitle": "Index Types and Partial Indexes",
+      "formerSubtitle": "Tipos de Índice e Índices Parciais",
+      "description": "B-tree, GIN and indexes shaped to the query.",
+      "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Crie índices para colunas usadas em filtros, joins e ordenações frequentes, e confirme o ganho com EXPLAIN ANALYZE: Seq Scan em tabela grande indica índice ausente; Index Scan indica uso. Índices custam espaço e deixam INSERT, UPDATE e DELETE mais lentos, então remova os que não são usados (pg_stat_user_indexes). Funções sobre a coluna (lower(email)) e LIKE '%texto' impedem o uso de um índice comum.",
-          "code": "EXPLAIN ANALYZE\nSELECT * FROM pedidos p\nJOIN usuarios u ON u.id = p.usuario_id\nWHERE p.status = 'PAGO' AND p.criado_em > now() - interval '7 days';\n\n-- Índice composto: coluna de igualdade primeiro, depois a de intervalo\nCREATE INDEX idx_pedidos_status_data ON pedidos (status, criado_em);\n\n-- Índice de expressão para busca case-insensitive\nCREATE INDEX idx_usuarios_email_lower ON usuarios (lower(email));",
-          "interview_question": "Como decidir quando criar ou remover um índice?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a plain index on every column helps little: the queries filter by status and date, search JSON attributes, or only look at pending orders.\n\n**Concept:** B-tree is the default and handles equality, ranges and sorting. In a composite index the column order matters: `(status, created_at)` serves filters by status, or by status and date, but is not efficient for date alone (PostgreSQL 18 can use it through a skip scan, but a dedicated index is better). Partial indexes cover only the rows that matter (`WHERE status = 'PENDING'`) and stay small. Covering indexes (`INCLUDE`) answer a query from the index alone. GIN handles JSONB, arrays and full-text search.\n\n**How it works:** shape the index to the most frequent queries, then confirm with `EXPLAIN`.",
+          "code": "-- Partial: only orders that are not finished yet\nCREATE INDEX idx_orders_pending ON orders (created_at) WHERE status = 'PENDING';\n\n-- Covering: no trip to the table to read the total\nCREATE INDEX idx_orders_customer ON orders (customer_id) INCLUDE (total);\n\n-- GIN for JSONB queries\nCREATE INDEX idx_products_attributes ON products USING GIN (attributes);",
+          "interview_question": "What are composite, partial and covering indexes?",
           "references": [
-            "https://www.postgresql.org/docs/current/using-explain.html"
+            "https://www.postgresql.org/docs/current/indexes-types.html",
+            "https://www.postgresql.org/docs/current/indexes-partial.html",
+            "https://www.postgresql.org/docs/current/indexes-index-only-scans.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An index on a column with few distinct values, such as a boolean that is true for 95% of rows. The planner ignores it, because reading almost the whole table through the index is slower than a scan — but you still pay for it on every write. A partial index on the rare value works.",
+          "code": "-- WRONG: 95% of the rows are active\nCREATE INDEX idx_users_active ON users (active);\n\n-- RIGHT: index only the rare case you query\nCREATE INDEX idx_users_inactive ON users (id) WHERE active = false;"
         }
       ]
     },
     {
-      "subtitle": "Tipos de Índice e Índices Parciais",
-      "description": "B-tree, GIN e índices sob medida.",
+      "subtitle": "Isolation Levels",
+      "formerSubtitle": "Níveis de Isolamento",
+      "description": "Read anomalies and what preventing them costs.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "B-tree é o padrão e atende igualdade, intervalos e ordenação. Em índices compostos a ordem das colunas importa: (status, criado_em) serve para filtros por status ou por status e data, mas não é eficiente para filtrar só por data (o PostgreSQL 18 consegue usá-lo via skip scan, mas um índice próprio é melhor). Índices parciais indexam apenas as linhas que importam (WHERE ativo = true), ficando menores. Índices de cobertura (INCLUDE) permitem responder a consulta só com o índice. GIN atende JSONB, arrays e busca textual.",
-          "code": "-- Parcial: só pedidos ainda não finalizados\nCREATE INDEX idx_pedidos_pendentes ON pedidos (criado_em) WHERE status = 'PENDENTE';\n\n-- Cobertura: evita ir à tabela para buscar o total\nCREATE INDEX idx_pedidos_cliente ON pedidos (cliente_id) INCLUDE (total);\n\n-- GIN para consultas em JSONB\nCREATE INDEX idx_produtos_atributos ON produtos USING GIN (atributos);",
-          "interview_question": "O que são índices compostos, parciais e de cobertura?",
-          "references": [
-            "https://www.postgresql.org/docs/current/indexes-types.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Níveis de Isolamento",
-      "description": "Anomalias de leitura e seus custos.",
-      "category": "conceitos",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "READ COMMITTED (padrão no PostgreSQL) evita leituras sujas, mas permite leituras não repetíveis. REPEATABLE READ garante que a transação veja um snapshot estável. SERIALIZABLE faz as transações se comportarem como se rodassem uma após a outra, eliminando anomalias como write skew, ao custo de falhas de serialização que exigem retry. Use-o em invariantes críticas entre várias linhas, como \"no máximo um plantonista por turno\".",
-          "code": "BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;\nSELECT count(*) FROM plantoes WHERE turno = '2024-05-10-noite';\nINSERT INTO plantoes (medico_id, turno) VALUES (7, '2024-05-10-noite');\nCOMMIT;\n-- Em conflito: ERROR: could not serialize access... -> a aplicação refaz a transação",
-          "interview_question": "Quando usar SERIALIZABLE apesar do custo?",
+          "title": "Explanation",
+          "explanation": "**Problem:** two doctors check that nobody covers the night shift, and both sign up at the same time. Each transaction was correct on its own; together they broke the rule \"at most one per shift\".\n\n**Concept:** isolation levels decide which anomalies concurrent transactions can see. READ COMMITTED (the PostgreSQL default) prevents dirty reads but allows non-repeatable reads. REPEATABLE READ gives each transaction a stable snapshot. SERIALIZABLE makes transactions behave as if they ran one after another, preventing anomalies such as write skew (the shift example), at the cost of serialization failures that the application must retry.\n\n**How it works:** use SERIALIZABLE for critical rules that span several rows, with retry logic around the transaction. The same level name can behave differently between databases (MySQL's REPEATABLE READ is not PostgreSQL's), so check the documentation.",
+          "code": "Level              Dirty read   Non-repeatable read   Phantom / write skew\nREAD COMMITTED     no           yes                   yes\nREPEATABLE READ    no           no                    write skew possible (PostgreSQL)\nSERIALIZABLE       no           no                    no (may fail with retry)\n\nBEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;\nSELECT count(*) FROM shifts WHERE shift = '2024-05-10-night';\nINSERT INTO shifts (doctor_id, shift) VALUES (7, '2024-05-10-night');\nCOMMIT;\n-- On conflict: ERROR: could not serialize access ... -> the application retries",
+          "interview_question": "When would you use SERIALIZABLE despite its cost?",
           "references": [
             "https://www.postgresql.org/docs/current/transaction-iso.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Locking Otimista e Pessimista",
-      "description": "Evitando atualizações perdidas.",
-      "category": "pratica",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Otimista não bloqueia: uma coluna de versão é verificada no UPDATE e, se outro usuário alterou antes, a operação falha (OptimisticLockException) e a aplicação decide refazer ou avisar. Funciona bem quando conflitos são raros, como edição de cadastro. Pessimista (SELECT ... FOR UPDATE) bloqueia a linha até o fim da transação; use quando conflitos são frequentes e caros, como baixa de estoque disputada — sempre com transações curtas para evitar deadlocks.",
-          "code": "// Otimista com JPA\n@Entity\npublic class Produto {\n    @Id Long id;\n    int estoque;\n    @Version Long versao; // UPDATE ... WHERE id = ? AND versao = ?\n}\n\n// Pessimista com Spring Data\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    @Lock(LockModeType.PESSIMISTIC_WRITE)\n    @Query(\"select p from Produto p where p.id = :id\")\n    Optional<Produto> buscarParaAtualizar(@Param(\"id\") Long id);\n}",
-          "interview_question": "Quando preferir locking otimista ao pessimista?",
-          "references": [
-            "https://docs.spring.io/spring-data/jpa/reference/jpa/locking.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "SERIALIZABLE without retries. Under load some transactions fail with a serialization error, and users get a 500 for something that would have worked a moment later. Retry the whole transaction when the database reports SQLSTATE 40001.",
+          "code": "// WRONG: the failure goes straight to the user\n@Transactional(isolation = Isolation.SERIALIZABLE)\npublic void bookShift(Long doctorId, String shift) { ... }\n// \"could not serialize access due to read/write dependencies\" -> HTTP 500\n\n// RIGHT: retry the whole transaction (a few attempts, with backoff)\n// on serialization failures (SQLSTATE 40001) — never inside the failed transaction"
         }
       ]
     },
     {
       "subtitle": "Deadlocks",
-      "description": "Quando duas transações esperam uma pela outra.",
+      "description": "Two transactions waiting for each other.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Deadlock ocorre quando a transação A bloqueia a linha 1 e espera a 2, enquanto B bloqueia a 2 e espera a 1. O banco detecta e aborta uma delas. Para evitar: acesse recursos sempre na mesma ordem (por exemplo, ordenando por id), mantenha transações curtas, crie índices para que UPDATEs não bloqueiem linhas demais e trate o erro com retry.",
-          "code": "// Transferência: travar contas sempre na mesma ordem evita deadlock\n@Transactional\npublic void transferir(Long origemId, Long destinoId, BigDecimal valor) {\n    Long primeiro = Math.min(origemId, destinoId);\n    Long segundo = Math.max(origemId, destinoId);\n    Conta a = contas.buscarParaAtualizar(primeiro).orElseThrow();\n    Conta b = contas.buscarParaAtualizar(segundo).orElseThrow();\n    // debita e credita...\n}",
-          "interview_question": "Como evitar deadlocks em transações concorrentes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** under load, some transfers fail with \"deadlock detected\", and they cannot be reproduced on a developer machine.\n\n**Concept:** a deadlock happens when transaction A locks row 1 and waits for row 2, while B locks row 2 and waits for row 1. The database detects it and aborts one of them. To avoid it: always lock resources in the same order (for example, sorted by id), keep transactions short, index the columns in your `WHERE` so updates lock fewer rows, and retry the aborted transaction.\n\n**How it works:** in a transfer, lock the two accounts in id order, whichever is the source.",
+          "code": "// Transfer: always lock accounts in the same order\n@Transactional\npublic void transfer(Long fromId, Long toId, BigDecimal amount) {\n    Long first = Math.min(fromId, toId);\n    Long second = Math.max(fromId, toId);\n    Account a = accounts.findForUpdate(first).orElseThrow();\n    Account b = accounts.findForUpdate(second).orElseThrow();\n    // debit and credit...\n}",
+          "interview_question": "How do you avoid deadlocks between concurrent transactions?",
           "references": [
-            "https://www.postgresql.org/docs/current/explicit-locking.html"
+            "https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-DEADLOCKS"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Catching the deadlock and carrying on in the same transaction. In PostgreSQL the transaction is already aborted, so every following statement fails too. Retry from the start, in a new transaction.",
+          "code": "// WRONG\ntry { accounts.debit(a); } catch (DeadlockLoserDataAccessException e) { /* ignore */ }\naccounts.credit(b);\n// ERROR: current transaction is aborted, commands ignored until end of transaction block\n\n// RIGHT: let the transaction fail, then run the whole method again (a few attempts)"
         }
       ]
     },
     {
-      "subtitle": "Escalando Leituras: Réplicas e Particionamento",
-      "description": "Quando um único banco não basta.",
+      "subtitle": "Scaling Reads: Replicas and Partitioning",
+      "formerSubtitle": "Escalando Leituras: Réplicas e Particionamento",
+      "description": "When a single database is no longer enough.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Primeiro otimize consultas e índices e adicione cache. Depois, réplicas de leitura recebem cópias assíncronas do primário e atendem consultas — cuidado com o atraso de replicação (o usuário pode não ver o que acabou de gravar). Particionamento divide tabelas enormes por data ou chave, tornando consultas e manutenção mais rápidas. Sharding distribui dados entre servidores, mas complica joins e transações — é o último recurso.",
-          "code": "-- Particionamento por intervalo de data (PostgreSQL)\nCREATE TABLE eventos (\n  id BIGSERIAL,\n  criado_em TIMESTAMP NOT NULL,\n  payload JSONB\n) PARTITION BY RANGE (criado_em);\n\nCREATE TABLE eventos_2024_05 PARTITION OF eventos\n  FOR VALUES FROM ('2024-05-01') TO ('2024-06-01');",
-          "interview_question": "Como escalar um banco relacional com muitas leituras?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the primary database is at 90% CPU, mostly from reports and listings, and the events table has two billion rows.\n\n**Concept:** first optimize queries and indexes and add caching. Then: read replicas receive asynchronous copies of the primary and serve queries — mind the replication lag (the user may not see what they just saved). Partitioning splits huge tables by date or key, making queries and maintenance faster. Sharding spreads data across servers, but complicates joins and transactions — it is the last resort.\n\n**How it works:** send reports and listings to replicas, keep reads-after-writes on the primary, and partition append-heavy tables by time.",
+          "code": "-- Range partitioning by date (PostgreSQL)\nCREATE TABLE events (\n  id         BIGSERIAL,\n  created_at TIMESTAMP NOT NULL,\n  payload    JSONB\n) PARTITION BY RANGE (created_at);\n\nCREATE TABLE events_2024_05 PARTITION OF events\n  FOR VALUES FROM ('2024-05-01') TO ('2024-06-01');",
+          "interview_question": "How do you scale a relational database with a heavy read load?",
           "references": [
-            "https://www.postgresql.org/docs/current/ddl-partitioning.html"
+            "https://www.postgresql.org/docs/current/ddl-partitioning.html",
+            "https://www.postgresql.org/docs/current/high-availability.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Querying a partitioned table without the partition key. The database cannot skip partitions, so it scans all of them — slower than before partitioning.",
+          "code": "-- WRONG: no created_at filter -> every partition is scanned\nSELECT * FROM events WHERE payload->>'orderId' = '42';\n\n-- RIGHT: include the partition key so only one partition is read\nSELECT * FROM events\nWHERE created_at >= '2024-05-01' AND created_at < '2024-06-01'\n  AND payload->>'orderId' = '42';"
         }
       ]
     },
     {
-      "subtitle": "NoSQL e Consistência Eventual",
-      "description": "Escolhendo o modelo pelo padrão de acesso.",
+      "subtitle": "NoSQL and Eventual Consistency",
+      "formerSubtitle": "NoSQL e Consistência Eventual",
+      "description": "Choosing how much consistency each operation needs.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Bancos de documentos (MongoDB) favorecem agregados lidos juntos — um pedido com seus itens em um documento — e esquemas que variam. Chave-valor (Redis) atende cache e sessões com latência mínima; colunares (Cassandra) suportam escrita massiva; grafos (Neo4j), relacionamentos profundos. Muitos sistemas distribuídos aceitam consistência eventual (teorema CAP): réplicas convergem depois de um tempo, em troca de disponibilidade e escala.",
-          "code": "// MongoDB: o pedido inteiro em um documento\n{\n  \"_id\": \"pedido-123\",\n  \"cliente\": { \"id\": 7, \"nome\": \"Ana\" },\n  \"itens\": [\n    { \"sku\": \"LIV-01\", \"qtd\": 2, \"preco\": 49.9 },\n    { \"sku\": \"CAN-02\", \"qtd\": 1, \"preco\": 5.0 }\n  ],\n  \"status\": \"PAGO\"\n}",
-          "interview_question": "Quando um modelo orientado a documentos é mais adequado?",
+          "title": "Explanation",
+          "explanation": "**Problem:** in a distributed database, a payment is confirmed and then \"disappears\" for a moment, or a failover loses the last writes.\n\n**Concept:** distributed databases trade consistency for availability and latency (the CAP theorem; PACELC adds that, even without failures, lower latency means weaker consistency). Many let you choose per operation. In MongoDB, the write concern says how many nodes must confirm a write (`majority` survives a failover) and the read concern which data a read may return. In Cassandra, `QUORUM` reads and writes on a majority of replicas give read-your-writes.\n\n**How it works:** use strong settings for money and orders, and cheaper ones for data that can be slightly stale, such as counters or recommendations.",
+          "code": "// MongoDB: confirmed by a majority, so it survives a primary failover\ndb.payments.insertOne(\n  { orderId: 42, status: \"CONFIRMED\" },\n  { writeConcern: { w: \"majority\" } }\n)\ndb.payments.find({ orderId: 42 }).readConcern(\"majority\")\n\n-- Cassandra (cqlsh): read and write on a majority of replicas\nCONSISTENCY QUORUM;\nSELECT * FROM payments WHERE order_id = 42;",
+          "interview_question": "When is eventual consistency acceptable, and how do you get stronger guarantees in a NoSQL database?",
           "references": [
-            "https://www.mongodb.com/docs/manual/data-modeling/"
+            "https://www.mongodb.com/docs/manual/reference/write-concern/",
+            "https://cassandra.apache.org/doc/latest/cassandra/architecture/dynamo.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Reading from secondaries and expecting fresh data. `readPreference: secondary` spreads load, but a replica can lag behind, so a status that was just written may not be there yet. Read critical data from the primary.",
+          "code": "// WRONG: right after confirming the payment\ndb.payments.find({ orderId: 42 }).readPref(\"secondary\")   // may still show PENDING\n\n// RIGHT for data the user just changed\ndb.payments.find({ orderId: 42 }).readPref(\"primary\")"
         }
       ]
     },
     {
-      "subtitle": "Transações Distribuídas e Outbox",
-      "description": "Gravar no banco e publicar evento sem perder nada.",
+      "subtitle": "Distributed Transactions and Outbox",
+      "formerSubtitle": "Transações Distribuídas e Outbox",
+      "description": "Saving to the database and publishing an event without losing either.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Gravar no banco e publicar no Kafka são duas operações em sistemas diferentes: se uma falhar, o estado diverge (dual write). O padrão Transactional Outbox grava o evento em uma tabela outbox na mesma transação do dado de negócio; um processo separado (ou CDC com Debezium) lê a outbox e publica no broker. Consumidores devem ser idempotentes, pois a entrega é \"pelo menos uma vez\".",
-          "code": "BEGIN;\nINSERT INTO pedidos (id, cliente_id, total, status) VALUES (123, 7, 104.80, 'CRIADO');\nINSERT INTO outbox (id, agregado, tipo, payload)\n  VALUES (gen_random_uuid(), 'pedido-123', 'PedidoCriado', '{\"pedidoId\":123,\"total\":104.80}');\nCOMMIT;\n-- Um publicador lê a outbox, envia ao Kafka e marca o registro como publicado",
-          "interview_question": "Como garantir que um evento seja publicado se, e somente se, a transação for confirmada?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the order is saved, but the \"OrderCreated\" event never reaches Kafka — so stock is never reserved. Or the event is sent, and the save rolls back.\n\n**Concept:** saving to the database and publishing to Kafka are two operations on different systems; if one fails, the state diverges (a dual write). The Transactional Outbox pattern writes the event to an `outbox` table in the same transaction as the business data; a separate process (or CDC with Debezium) reads the outbox and publishes to the broker.\n\n**How it works:** delivery is at-least-once: the publisher may send an event again after a crash, so consumers must be idempotent.",
+          "code": "BEGIN;\nINSERT INTO orders (id, customer_id, total, status) VALUES (123, 7, 104.80, 'CREATED');\nINSERT INTO outbox (id, aggregate, type, payload)\n  VALUES (gen_random_uuid(), 'order-123', 'OrderCreated', '{\"orderId\":123,\"total\":104.80}');\nCOMMIT;\n-- A publisher reads the outbox, sends to Kafka and marks the row as published",
+          "interview_question": "How do you make sure an event is published if, and only if, the transaction commits?",
           "references": [
-            "https://microservices.io/patterns/data/transactional-outbox.html"
+            "https://microservices.io/patterns/data/transactional-outbox.html",
+            "https://debezium.io/documentation/reference/stable/transformations/outbox-event-router.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A consumer that is not idempotent. With at-least-once delivery the same event arrives twice — after a publisher restart, a rebalance — and the stock is reserved twice. Record processed event ids, with a unique constraint, in the same transaction as the effect.",
+          "code": "// WRONG: runs twice for a redelivered event\nvoid onOrderCreated(OrderCreated e) { stock.reserve(e.items()); }\n\n// RIGHT: INSERT into processed_events (UNIQUE event_id) in the same transaction\n@Transactional\nvoid onOrderCreated(OrderCreated e) {\n    if (!processed.register(e.eventId())) return;   // already handled\n    stock.reserve(e.items());\n}"
         }
       ]
     }
