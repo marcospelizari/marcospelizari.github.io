@@ -1,0 +1,171 @@
+{
+  "title": "Networking",
+  "description": "What happens between two services: addresses, ports, DNS, TCP, HTTP and TLS — and reading network errors.",
+  "version": "HTTP/1.1, TLS 1.3",
+  "resumo": [
+    "A request: DNS (name → IP) → TCP (connection) → TLS (encryption, certificate) → HTTP. `curl -v` shows each step.",
+    "Each failure has a signature: UnknownHost (DNS), refused (no listener), timeout (dropped), PKIX (certificate), HTTP status (the app).",
+    "127.0.0.1 is the machine itself; 0.0.0.0 means every interface. Use names, never hard-coded IPs.",
+    "DNS answers are cached for their TTL — lower it before a migration.",
+    "TCP is reliable and ordered (HTTP, databases); UDP is fast with no guarantees (DNS, streaming).",
+    "HTTP is text: request line, headers, empty line, body. No body on GET.",
+    "TLS encrypts and proves the server's identity with a CA-signed certificate — internal traffic too.",
+    "Refused = nothing listening; timeout = packets dropped. Test from where the application runs."
+  ],
+  "subsections": [
+    {
+      "subtitle": "How a Request Travels",
+      "description": "DNS, TCP, TLS and HTTP in one call.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a call to another service fails, and you cannot tell whether the problem is the name, the network, the certificate or the application.\n\n**Concept:** one HTTPS call goes through several steps: DNS turns the name into an IP address; TCP opens a connection to that IP and port (the three-way handshake); TLS negotiates encryption and checks the server's certificate; then the HTTP request and response travel inside that connection. Each step has its own failure: unknown host, connection refused or timeout, certificate error, HTTP status.\n\n**How it works:** `curl -v` shows every step, so you can see where it stops.",
+          "code": "$ curl -v https://api.example.com/health\n*   Trying 93.184.216.34:443...                     <- DNS resolved, TCP connecting\n* Connected to api.example.com (93.184.216.34) port 443\n* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384\n* Server certificate: CN=api.example.com             <- TLS done, certificate checked\n> GET /health HTTP/1.1                               <- HTTP request\n> Host: api.example.com\n< HTTP/1.1 200 OK                                    <- HTTP response\n{\"status\":\"UP\"}",
+          "interview_question": "What happens, step by step, when your service calls https://api.example.com?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Overview",
+            "https://curl.se/docs/manpage.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Treating every failure as \"the API is down\". The exception type tells you which step failed — and each one has a different fix.",
+          "code": "java.net.UnknownHostException: api-shipping       -> DNS: wrong name, or not resolvable from here\njava.net.ConnectException: Connection refused      -> TCP: nothing listening on that port\njava.net.SocketTimeoutException: Connect timed out -> TCP: firewall or wrong network\njavax.net.ssl.SSLHandshakeException: PKIX path ... -> TLS: certificate not trusted\nHTTP 503                                           -> the application answered: it is overloaded"
+        }
+      ]
+    },
+    {
+      "subtitle": "IP Addresses and Ports",
+      "description": "Where a service lives, and which door it listens on.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the application runs, but nothing can connect to it — or it starts and says \"port already in use\".\n\n**Concept:** an IP address identifies a machine (or container) on a network; a port (0–65535) identifies a program on it. `127.0.0.1` (localhost) is the machine itself; `0.0.0.0` as a listening address means \"every network interface\". Private ranges (10.x, 172.16–31.x, 192.168.x) are not reachable from the internet. Well-known ports: 22 SSH, 80 HTTP, 443 HTTPS, 5432 PostgreSQL, 6379 Redis, 9092 Kafka; 8080 is a common choice for applications.\n\n**How it works:** only one process can listen on a given IP and port at a time.",
+          "code": "server.port=8080                 # Spring Boot listens on 0.0.0.0:8080 by default\n\n$ ss -ltnp                       # what is listening, and which process\nLISTEN  0  100  *:8080      *:*   users:((\"java\",pid=4321,...))\nLISTEN  0  244  127.0.0.1:5432 *:* users:((\"postgres\",pid=812,...))   <- localhost only\n\n$ ip addr                        # this machine's addresses",
+          "interview_question": "What is the difference between 127.0.0.1 and 0.0.0.0?",
+          "references": [
+            "https://en.wikipedia.org/wiki/Port_(computer_networking)",
+            "https://www.rfc-editor.org/rfc/rfc1918"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Hard-coding IP addresses in configuration. When the database moves or a container is recreated, the IP changes and the application breaks. Use names (DNS, Kubernetes Service names, Compose service names).",
+          "code": "# WRONG\nspring.datasource.url=jdbc:postgresql://10.0.4.27:5432/shop\n\n# RIGHT: a name that keeps working when the IP changes\nspring.datasource.url=jdbc:postgresql://db.internal:5432/shop"
+        }
+      ]
+    },
+    {
+      "subtitle": "DNS",
+      "description": "Turning names into addresses.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a migration points `api.shop.com` to a new server, and for hours some users still reach the old one.\n\n**Concept:** DNS (Domain Name System) answers \"what is the address of this name?\". Common records: `A` (IPv4 address), `AAAA` (IPv6), `CNAME` (an alias to another name), `MX` (mail), `TXT` (arbitrary text, used for verification). Every answer has a TTL: how many seconds resolvers and clients may cache it. `/etc/hosts` overrides DNS on one machine.\n\n**How it works:** `dig` and `nslookup` show what a name resolves to from where you are — results can differ inside and outside a company network or a Kubernetes cluster.",
+          "code": "$ dig api.shop.com +short\n93.184.216.34\n\n$ dig api.shop.com\n;; ANSWER SECTION:\napi.shop.com.   300   IN   A   93.184.216.34     <- cached for up to 300 s\n\n$ dig www.shop.com CNAME +short\nshop.cdn-provider.net.\n\n# /etc/hosts: a local override, for testing\n127.0.0.1   api.shop.local",
+          "interview_question": "What is a DNS TTL, and why does it matter during a migration?",
+          "references": [
+            "https://www.cloudflare.com/learning/dns/what-is-dns/",
+            "https://linux.die.net/man/1/dig"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Changing a DNS record that has a long TTL and expecting the switch to be immediate. Clients keep the old answer for as long as the TTL allows — a day, if it was 86400. Lower the TTL well before the change.",
+          "code": "# WRONG: TTL 86400 (24 h) at the moment of the switch\napi.shop.com.  86400  IN  A  93.184.216.34   -> old server for up to a day\n\n# RIGHT\n# 1-2 days before: lower the TTL to 60\n# switch the record\n# after it settles: raise the TTL again"
+        }
+      ]
+    },
+    {
+      "subtitle": "TCP and UDP",
+      "description": "Reliable connections, or fast datagrams.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** why do HTTP, databases and SSH use one protocol, while DNS lookups and video calls use another?\n\n**Concept:** TCP opens a connection (a three-way handshake: SYN, SYN-ACK, ACK) and guarantees that bytes arrive complete, in order and without duplicates, retransmitting what is lost. That is what HTTP, database drivers and SSH need. UDP sends independent datagrams with no connection and no guarantees: lower latency and overhead, but messages may be lost, duplicated or reordered — acceptable for DNS queries, streaming, games and some metrics protocols.\n\n**How it works:** HTTP/3 runs over QUIC, which is built on UDP and reimplements reliability itself.",
+          "code": "TCP handshake            Client                    Server\n                           SYN          ──────────▶\n                                       ◀──────────  SYN-ACK\n                           ACK          ──────────▶\n                           (connection open: reliable, ordered byte stream)\n\nUDP                        datagram     ──────────▶   (no handshake, no acknowledgement)",
+          "interview_question": "What is the difference between TCP and UDP, and when would you use each?",
+          "references": [
+            "https://www.cloudflare.com/learning/ddos/glossary/tcp-ip/",
+            "https://www.cloudflare.com/learning/ddos/glossary/user-datagram-protocol-udp/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Sending data that must not be lost over UDP and assuming it arrives. Metrics sent to a StatsD-style collector over UDP are silently dropped under load; nothing errors, the numbers are just wrong. Use TCP (or a protocol that acknowledges) for data you cannot lose.",
+          "code": "# WRONG: billing events over UDP — drops are silent\nstatsd.increment(\"payments.charged\")     # UDP: may never arrive\n\n# RIGHT: data you cannot lose goes over a reliable channel\nkafka.send(\"payments\", event)            # TCP, acknowledged"
+        }
+      ]
+    },
+    {
+      "subtitle": "HTTP Messages on the Wire",
+      "description": "What a request and a response really look like.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a client says it sent the right request, the server says it received something else — and nobody has looked at the raw message.\n\n**Concept:** HTTP/1.1 is plain text: a request line (method, path, version), headers (`Host` is required), an empty line, and an optional body. The response has a status line, headers and a body. `Content-Type` says what the body is, `Content-Length` (or chunked encoding) how long it is. HTTP/2 sends the same information in a binary, multiplexed form, but the meaning is identical.\n\n**How it works:** see the real message with `curl -v`, or log it at the client with a debug-level HTTP logger.",
+          "code": "POST /orders HTTP/1.1                      <- request line\nHost: api.shop.com                         <- headers\nContent-Type: application/json\nAuthorization: Bearer eyJhbGciOi...\nContent-Length: 27\n                                           <- empty line\n{\"sku\":\"BOOK-01\",\"qty\":2}                  <- body\n\nHTTP/1.1 201 Created                       <- status line\nLocation: /orders/43\nContent-Type: application/json\n\n{\"id\":43,\"status\":\"CREATED\"}",
+          "interview_question": "What are the parts of an HTTP request?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Messages",
+            "https://www.rfc-editor.org/rfc/rfc9110"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Sending a body with GET. HTTP gives it no meaning, and proxies, gateways and some clients drop it silently, so the server receives no filter at all. Use query parameters for GET, or POST for complex searches.",
+          "code": "# WRONG: the body may never reach the server\nGET /orders\nContent-Type: application/json\n\n{\"status\":\"PAID\",\"from\":\"2024-05-01\"}\n\n# RIGHT\nGET /orders?status=PAID&from=2024-05-01"
+        }
+      ]
+    },
+    {
+      "subtitle": "HTTPS and TLS",
+      "description": "Encryption and proving who the server is.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** over plain HTTP, anyone on the same network — public Wi-Fi, a compromised router — can read and change passwords and tokens.\n\n**Concept:** TLS encrypts the connection and authenticates the server. The server presents a certificate that binds its name to a public key, signed by a Certificate Authority (CA) the client already trusts; the client checks the signature, the name and the expiry date, then both sides agree on session keys. HTTPS is HTTP inside TLS, on port 443. TLS 1.2 and 1.3 are the versions in use today.\n\n**How it works:** let a platform manage certificates (Let's Encrypt with cert-manager, a cloud load balancer) so renewal is automatic.",
+          "code": "$ curl -v https://api.shop.com 2>&1 | grep -E \"SSL connection|subject|expire|issuer\"\n* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384\n*  subject: CN=api.shop.com\n*  expire date: Aug  9 23:59:59 2025 GMT\n*  issuer: C=US; O=Let's Encrypt; CN=R11\n\n$ openssl s_client -connect api.shop.com:443 -servername api.shop.com </dev/null \\\n    | openssl x509 -noout -dates",
+          "interview_question": "How does TLS protect an HTTPS connection, and what does the certificate prove?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/Security/Transport_Layer_Security",
+            "https://letsencrypt.org/how-it-works/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using plain HTTP between internal services \"because it is the internal network\". Internal networks get compromised too, and then every token and password between services is readable. Encrypt internal traffic as well (TLS, or a service mesh doing mTLS).",
+          "code": "# WRONG\npayments.url=http://payments.internal:8080       # tokens travel in clear text\n\n# RIGHT\npayments.url=https://payments.internal:8443      # or mTLS through a service mesh"
+        }
+      ]
+    },
+    {
+      "subtitle": "Connection Refused vs Timeout",
+      "description": "Reading network errors to find the cause quickly.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the service cannot reach the database. Is it down, blocked, or simply wrong in the configuration?\n\n**Concept:** \"Connection refused\" means the target machine answered immediately with a reset: it is reachable, but nothing listens on that port (the service is down, on another port, or listening only on localhost). A connect timeout means no answer at all: a firewall or security group drops the packets, the route is wrong, or the address does not exist. \"Connection reset\" during a request means the other side closed the connection — often a crash, a proxy timeout or a TLS mismatch.\n\n**How it works:** test from the same place the application runs (inside the container or pod), not from your laptop.",
+          "code": "# From inside the pod / container\n$ nc -zv db.internal 5432\nConnection to db.internal 5432 port [tcp/postgresql] succeeded!   <- reachable, listening\n\n$ nc -zv db.internal 5433\nnc: connect to db.internal port 5433 (tcp) failed: Connection refused   <- nothing on that port\n\n$ nc -zv -w 3 10.9.9.9 5432\nnc: connect to 10.9.9.9 port 5432 (tcp) timed out                 <- dropped: firewall/route\n\n$ curl -sv http://api-orders:8080/actuator/health",
+          "interview_question": "What is the difference between \"connection refused\" and a connection timeout?",
+          "references": [
+            "https://linux.die.net/man/1/nc",
+            "https://kubernetes.io/docs/tasks/debug/debug-application/debug-service/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Raising the timeout to fix \"connection refused\". Nothing is listening, so waiting longer changes nothing. Find out why the port is closed: the service is down, on another port, or bound to 127.0.0.1.",
+          "code": "# WRONG\nspring.datasource.hikari.connection-timeout=60000     # still refused, just slower\n\n# RIGHT: check what is listening, from the server\n$ ss -ltnp | grep 5432\nLISTEN 0 244 127.0.0.1:5432 ...     <- bound to localhost only: fix listen_addresses"
+        }
+      ]
+    }
+  ]
+}

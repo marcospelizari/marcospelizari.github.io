@@ -1,0 +1,171 @@
+{
+  "title": "Messaging",
+  "description": "Asynchronous communication with Kafka and RabbitMQ: queues, topics, partitions, consumer groups and message design.",
+  "version": "Kafka 3.x, RabbitMQ 3.13, Spring Kafka 3",
+  "resumo": [
+    "Messaging decouples services in time, load and knowledge — for work nobody waits on.",
+    "Queue: each message to one consumer. Pub/sub: to every subscriber — one queue or consumer group per service.",
+    "Kafka: topics split into partitions; offsets mark positions; order only within a partition (the key decides it).",
+    "Plan the partition count: adding partitions later breaks per-key ordering.",
+    "Consumer groups share partitions; parallelism ≤ partitions; never share a groupId between services.",
+    "Spring Kafka: send with a key, `@KafkaListener`, `ErrorHandlingDeserializer` against poison pills.",
+    "RabbitMQ: exchange → bindings → queues; disable infinite requeue and use a dead-letter exchange.",
+    "Messages carry an id, a timestamp, the aggregate id and a schema version."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Why Messaging",
+      "description": "Decoupling services in time and in load.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** checkout calls email, invoicing, loyalty and analytics one after another. If any of them is slow or down, checkout is slow or down — and every new consumer means changing checkout.\n\n**Concept:** with messaging, a producer sends a message to a broker (Kafka, RabbitMQ) and moves on; consumers read it when they can. That decouples the services in time (a consumer can be down for a while and catch up), in load (the broker absorbs spikes) and in knowledge (the producer does not know who consumes). The cost: the flow becomes asynchronous and eventually consistent, and there is a broker to run.\n\n**How it works:** use messaging for work that does not need an immediate answer; keep a synchronous call when the caller needs the result now.",
+          "code": "Synchronous:   checkout ──▶ email ──▶ invoice ──▶ loyalty     (slowest and least available wins)\n\nMessaging:     checkout ──▶ [broker: \"OrderPlaced\"] ──▶ email\n                                                    ├─▶ invoice\n                                                    └─▶ loyalty     (each at its own pace)",
+          "interview_question": "When should two services communicate through messages instead of HTTP calls?",
+          "references": [
+            "https://microservices.io/patterns/communication-style/messaging.html",
+            "https://kafka.apache.org/documentation/#introduction"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using messaging for a request the user is waiting on. \"Check the price\" sent as a message, with the caller waiting for a reply message, adds a broker, correlation ids and timeouts to what should be a simple HTTP call.",
+          "code": "WRONG: the user waits for a reply on a response queue\n  checkout -> [price.requests] -> pricing -> [price.replies] -> checkout (correlate, time out...)\n\nRIGHT: the user needs the answer now -> HTTP (with a timeout)\n       something happened, others may react later -> a message"
+        }
+      ]
+    },
+    {
+      "subtitle": "Queues vs Topics",
+      "description": "Work distribution or event broadcast.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** two services both need to react to \"order placed\", but only one of them receives each message.\n\n**Concept:** a queue is point-to-point: each message goes to exactly one consumer, and several consumers share the work (competing consumers). Publish-subscribe sends each message to every subscriber. In RabbitMQ, producers publish to an exchange, which copies messages into the queues bound to it — one queue per subscribing service. In Kafka, a topic is a log that every consumer group reads independently; consumers inside one group share the work.\n\n**How it works:** ask: should this message be handled once (a queue / one group) or by everyone interested (pub/sub / one group per service)?",
+          "code": "RabbitMQ\n  producer ──▶ exchange \"orders\" ──▶ queue \"email.orders\"    ──▶ email service\n                                  └─▶ queue \"invoice.orders\"  ──▶ invoice service (2 instances share it)\n\nKafka\n  producer ──▶ topic \"orders\" ──▶ group \"email\"    (reads every event)\n                               └─▶ group \"invoice\"  (reads every event, independently)",
+          "interview_question": "What is the difference between a queue and a publish-subscribe topic?",
+          "references": [
+            "https://www.rabbitmq.com/tutorials/amqp-concepts",
+            "https://kafka.apache.org/documentation/#intro_concepts_and_terms"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Two different services reading from the same queue. They become competing consumers: each message goes to one of them, so each service sees only about half of the events. Give each service its own queue bound to the exchange.",
+          "code": "# WRONG: email and invoice both consume \"orders\"\nemail   ──┐\n          ├──▶ queue \"orders\"      -> each order goes to email OR invoice\ninvoice ──┘\n\n# RIGHT: one queue per service, both bound to the exchange\nexchange \"orders\" ──▶ queue \"email.orders\"\n                  └─▶ queue \"invoice.orders\""
+        }
+      ]
+    },
+    {
+      "subtitle": "Kafka Basics: Topics, Partitions and Offsets",
+      "description": "A durable, partitioned log.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need to keep events for days, let new services replay them, and process millions per minute in parallel.\n\n**Concept:** a Kafka topic is an append-only log split into partitions. Each record is appended to one partition and gets an offset — its position in that partition. Records are kept for a retention period (days, or forever with compaction), whether or not anyone has read them. The record key decides the partition (the same key always goes to the same partition), and order is guaranteed only within a partition. Partitions are what let Kafka scale: each one can be read in parallel.\n\n**How it works:** consumers keep track of the offset they have reached, so they can stop, restart and continue — or rewind to replay.",
+          "code": "topic \"orders\" (3 partitions)\n  partition 0:  [0: order-17] [1: order-42] [2: order-17] [3: order-90] ...\n  partition 1:  [0: order-8]  [1: order-23] ...\n  partition 2:  [0: order-5]  [1: order-61] [2: order-5] ...\n                                  ▲\n                         a consumer at offset 1\n\n$ kafka-topics.sh --bootstrap-server localhost:9092 --create --topic orders --partitions 6 --replication-factor 3\n$ kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic orders --from-beginning",
+          "interview_question": "What are partitions and offsets in Kafka, and what guarantees ordering?",
+          "references": [
+            "https://kafka.apache.org/documentation/#intro_concepts_and_terms",
+            "https://kafka.apache.org/documentation/#design"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Starting with too few partitions and adding more later. Adding partitions changes which partition each key maps to, so new events of an existing order can land on a different partition than its old ones — ordering per key breaks — and partitions can never be removed. Choose a count with room to grow.",
+          "code": "# WRONG: 1 partition \"for now\", 12 later\nkafka-topics.sh --alter --topic orders --partitions 12\n# order-17's next events now go to another partition -> out of order with its earlier ones\n\n# RIGHT: size for the parallelism you expect (e.g. 12) when creating the topic"
+        }
+      ]
+    },
+    {
+      "subtitle": "Consumer Groups",
+      "description": "Sharing the work of a topic.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** one consumer instance cannot keep up with the topic, so you start three more — and need them to share the work without processing the same record twice.\n\n**Concept:** consumers with the same `group.id` form a consumer group: Kafka assigns each partition to exactly one consumer of the group, so they share the work. When a consumer joins or leaves, the group rebalances and partitions are reassigned. A different group reads the whole topic again, independently, with its own offsets. The maximum parallelism of a group is the number of partitions.\n\n**How it works:** scale consumers up to the partition count; beyond that, extra consumers sit idle.",
+          "code": "topic \"orders\": 4 partitions\n\ngroup \"invoice\", 2 consumers:      group \"invoice\", 4 consumers:\n  consumer A: P0, P1                 A: P0   B: P1   C: P2   D: P3\n  consumer B: P2, P3\n\ngroup \"analytics\" (another service): reads all 4 partitions again, independently\n\n$ kafka-consumer-groups.sh --bootstrap-server localhost:9092 --describe --group invoice",
+          "interview_question": "How do consumer groups let you scale consumers, and what limits that scaling?",
+          "references": [
+            "https://kafka.apache.org/documentation/#intro_consumers",
+            "https://docs.spring.io/spring-kafka/reference/kafka/receiving-messages/listener-annotation.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Two different services using the same `groupId`. Kafka treats them as one group and splits the partitions between them, so each service processes only part of the events.",
+          "code": "// WRONG: same group in two different services\n@KafkaListener(topics = \"orders\", groupId = \"orders-consumer\")   // in email-service\n@KafkaListener(topics = \"orders\", groupId = \"orders-consumer\")   // in invoice-service\n\n// RIGHT: one group per service\n@KafkaListener(topics = \"orders\", groupId = \"email-service\")\n@KafkaListener(topics = \"orders\", groupId = \"invoice-service\")"
+        }
+      ]
+    },
+    {
+      "subtitle": "Producing and Consuming with Spring Kafka",
+      "description": "KafkaTemplate, @KafkaListener and JSON.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need to publish an event from a Spring service and consume it in another, as JSON.\n\n**Concept:** `KafkaTemplate` sends records — always with a key, so related events stay in order — and returns a `CompletableFuture` you can check. `@KafkaListener` consumes them; the container polls, deserializes, calls your method and commits the offset after it returns. Spring Boot configures producers and consumers from `spring.kafka.*` properties.\n\n**How it works:** use `ErrorHandlingDeserializer` around the JSON deserializer, so a record that cannot be parsed does not crash the consumer.",
+          "code": "# application.yml\nspring:\n  kafka:\n    bootstrap-servers: kafka:9092\n    producer:\n      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer\n    consumer:\n      group-id: invoice-service\n      auto-offset-reset: earliest\n      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer\n      properties:\n        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer\n        spring.json.trusted.packages: com.shop.events\n\n// Producer\nkafka.send(\"orders\", order.id().toString(), new OrderPlaced(order.id(), order.total()))\n     .whenComplete((result, ex) -> { if (ex != null) log.error(\"Publish failed\", ex); });\n\n// Consumer\n@KafkaListener(topics = \"orders\")\nvoid onOrderPlaced(OrderPlaced event) {\n    invoices.create(event.orderId(), event.total());\n}",
+          "interview_question": "How do you publish and consume JSON events with Spring Kafka?",
+          "references": [
+            "https://docs.spring.io/spring-kafka/reference/kafka/sending-messages.html",
+            "https://docs.spring.io/spring-boot/reference/messaging/kafka.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A plain `JsonDeserializer` and one malformed record (a \"poison pill\"). Deserialization fails before your code runs, the consumer retries the same record forever, and the partition stops moving. Wrap it in `ErrorHandlingDeserializer` (as above), so the failure reaches the error handler.",
+          "code": "# WRONG\nspring.kafka.consumer.value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer\n# log, repeated forever:\n# SerializationException: Can't deserialize data from topic [orders] ...\n\n# RIGHT: ErrorHandlingDeserializer delegating to JsonDeserializer"
+        }
+      ]
+    },
+    {
+      "subtitle": "RabbitMQ Basics",
+      "description": "Exchanges, bindings, queues and acknowledgements.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** tasks such as sending emails or generating reports must be distributed to workers, with routing by type.\n\n**Concept:** in RabbitMQ, producers publish to an exchange with a routing key; bindings decide which queues get a copy. Exchange types: `direct` (exact routing key), `topic` (patterns such as `order.*`), `fanout` (every bound queue). Consumers take messages from queues and acknowledge them; an unacknowledged message is redelivered if the consumer dies. Messages are removed once acknowledged — RabbitMQ is a queue, not a log.\n\n**How it works:** with Spring AMQP, `@RabbitListener` consumes and acknowledges automatically when the method returns without an exception.",
+          "code": "@Configuration\nclass RabbitConfig {\n    @Bean TopicExchange orders() { return new TopicExchange(\"orders\"); }\n    @Bean Queue emailQueue() { return QueueBuilder.durable(\"email.orders\").build(); }\n    @Bean Binding emailBinding() {\n        return BindingBuilder.bind(emailQueue()).to(orders()).with(\"order.*\");   // order.placed, order.cancelled\n    }\n}\n\n// Producer\nrabbit.convertAndSend(\"orders\", \"order.placed\", new OrderPlaced(order.id()));\n\n// Consumer: acknowledged when the method returns normally\n@RabbitListener(queues = \"email.orders\")\nvoid onOrder(OrderPlaced event) { emails.confirmation(event.orderId()); }",
+          "interview_question": "What are exchanges and bindings in RabbitMQ?",
+          "references": [
+            "https://www.rabbitmq.com/tutorials/amqp-concepts",
+            "https://docs.spring.io/spring-amqp/reference/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A message that always fails, requeued forever. By default Spring AMQP puts a rejected message back on the queue, so a bad message is redelivered in a tight loop, burning CPU and blocking the messages behind it. Stop requeueing and send failures to a dead-letter exchange.",
+          "code": "# WRONG (default): a failing message loops forever\n\n# RIGHT: rejected messages go to a dead-letter exchange\nspring:\n  rabbitmq:\n    listener:\n      simple:\n        default-requeue-rejected: false\n\n@Bean Queue emailQueue() {\n    return QueueBuilder.durable(\"email.orders\")\n        .deadLetterExchange(\"orders.dlx\")\n        .build();\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Designing Messages",
+      "description": "Events, commands and what to put inside.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** consumers keep asking the producer for \"one more field\", and nobody can tell a duplicate from a new event.\n\n**Concept:** an event states a fact in the past tense (`OrderPlaced`) and does not care who reacts; a command asks for something to be done (`SendInvoice`) and has one intended handler. Every message should carry a unique id (for deduplication), the time it happened, the id of the aggregate it is about, and a type or version so its schema can evolve. Keep payloads small and stable: the facts consumers need, not the whole database row.\n\n**How it works:** publish what happened in business terms, and let consumers derive what they need.",
+          "code": "public record OrderPlaced(\n    UUID eventId,            // unique: lets consumers drop duplicates\n    Instant occurredAt,\n    Long orderId,            // the aggregate — also the message key\n    Long customerId,\n    BigDecimal total,\n    int schemaVersion        // evolves with the contract\n) {}",
+          "interview_question": "What is the difference between an event and a command, and what should a message contain?",
+          "references": [
+            "https://martinfowler.com/articles/201701-event-driven.html",
+            "https://www.enterpriseintegrationpatterns.com/patterns/messaging/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Messages without an id. With at-least-once delivery the same message arrives twice, and the consumer has no way to tell a redelivery from a second, real event — so it either processes duplicates or drops real events.",
+          "code": "// WRONG: two identical messages — duplicate or two real orders?\n{\"orderId\": 42, \"total\": 99.90}\n\n// RIGHT\n{\"eventId\": \"7f3c2a10-...\", \"occurredAt\": \"2024-05-10T14:32:01Z\", \"orderId\": 42, \"total\": 99.90}"
+        }
+      ]
+    }
+  ]
+}

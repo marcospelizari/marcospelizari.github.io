@@ -1,0 +1,190 @@
+{
+  "title": "Build Tools (Maven & Gradle)",
+  "description": "How a Java project is built, tested and packaged with Maven — and the Gradle equivalents.",
+  "version": "Maven 3.9, Gradle 8",
+  "resumo": [
+    "A build tool downloads dependencies, compiles, tests and packages — the same way everywhere. Run it locally, not only in the IDE.",
+    "Coordinates: groupId, artifactId, version. `-SNAPSHOT` = in progress; releases never depend on snapshots.",
+    "Lifecycle: compile → test → package → verify → install → deploy; a phase runs all before it. `./mvnw verify` is the everyday check.",
+    "Scopes: compile (default), runtime (JDBC drivers), provided (Lombok), test (JUnit) — test libraries never in compile.",
+    "Always `./mvnw` (wrapper committed, executable).",
+    "`-Dtest=Class#method` runs one test; `-DskipTests` skips running, `-Dmaven.test.skip` skips compiling too.",
+    "Spring Boot parent manages versions — omit them; the Boot plugin builds the executable JAR.",
+    "Gradle: tasks and configurations (`implementation`, `testImplementation`); `./gradlew build` ≈ `mvn verify`."
+  ],
+  "subsections": [
+    {
+      "subtitle": "What a Build Tool Does",
+      "description": "From source code to a tested, packaged application.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** compiling by hand with `javac`, downloading JARs from websites and copying them into a `lib/` folder works for one class — not for a project with a hundred dependencies and a team.\n\n**Concept:** a build tool automates the path from source to artifact: it downloads dependencies (and their dependencies) from a repository such as Maven Central, compiles, runs the tests and packages the result (a JAR). It does it the same way on every machine and in CI. Maven describes the project in an XML file (`pom.xml`) with a fixed lifecycle; Gradle uses a script (`build.gradle.kts`) and is more flexible.\n\n**How it works:** the build file is the single source of truth: if the project builds with `./mvnw verify` on a clean machine, it builds in CI.",
+          "code": "my-api/\n├── pom.xml                      # the build definition\n├── mvnw, mvnw.cmd, .mvn/        # the Maven Wrapper\n└── src/\n    ├── main/java/...            # application code\n    ├── main/resources/...       # application.yml, templates\n    └── test/java/...            # tests\n\n$ ./mvnw verify\n[INFO] Tests run: 42, Failures: 0, Errors: 0, Skipped: 0\n[INFO] Building jar: target/my-api-1.0.0.jar\n[INFO] BUILD SUCCESS",
+          "interview_question": "What does a build tool like Maven do for a Java project?",
+          "references": [
+            "https://maven.apache.org/what-is-maven.html",
+            "https://docs.gradle.org/current/userguide/userguide.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Only ever building from the IDE. The IDE has its own compiler settings and caches, so \"it works in IntelliJ\" and fails in CI. Run the real build locally before pushing.",
+          "code": "WRONG: green in the IDE -> push -> CI fails (\"cannot find symbol\")\n\nRIGHT: before pushing\n$ ./mvnw verify"
+        }
+      ]
+    },
+    {
+      "subtitle": "The pom.xml",
+      "description": "Coordinates, packaging and properties.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** opening a `pom.xml` for the first time: dozens of tags, and no idea which ones matter.\n\n**Concept:** every Maven project is identified by its coordinates: `groupId` (the organization, like a reversed domain), `artifactId` (the project name) and `version`. `packaging` says what is produced (`jar` by default, `war`, `pom`). `properties` hold reusable values, such as the Java version. Then come `dependencies` and the `build` section with plugins.\n\n**How it works:** a version ending in `-SNAPSHOT` means \"work in progress, may change\"; a release version (`1.4.0`) must never change once published.",
+          "code": "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" ...>\n  <modelVersion>4.0.0</modelVersion>\n\n  <groupId>com.shop</groupId>            <!-- organization -->\n  <artifactId>orders-api</artifactId>    <!-- project -->\n  <version>1.4.0-SNAPSHOT</version>      <!-- in development -->\n  <packaging>jar</packaging>\n\n  <properties>\n    <java.version>21</java.version>\n    <maven.compiler.release>21</maven.compiler.release>\n  </properties>\n\n  <dependencies> ... </dependencies>\n  <build> <plugins> ... </plugins> </build>\n</project>",
+          "interview_question": "What are Maven coordinates, and what does SNAPSHOT mean?",
+          "references": [
+            "https://maven.apache.org/guides/introduction/introduction-to-the-pom.html",
+            "https://maven.apache.org/pom.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Depending on another team's `-SNAPSHOT` version in a release. A snapshot can change at any time, so the same commit builds differently tomorrow and the release is not reproducible. Depend on released versions.",
+          "code": "<!-- WRONG in a release: may change under you -->\n<dependency>\n  <groupId>com.shop</groupId>\n  <artifactId>shop-common</artifactId>\n  <version>2.1.0-SNAPSHOT</version>\n</dependency>\n\n<!-- RIGHT -->\n<version>2.1.0</version>"
+        }
+      ]
+    },
+    {
+      "subtitle": "The Maven Lifecycle",
+      "description": "Phases, goals and plugins.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** `mvn package`, `mvn install`, `mvn verify` — which one do you run, and what does each one actually do?\n\n**Concept:** Maven's default lifecycle is an ordered list of phases: `validate`, `compile`, `test`, `package`, `verify`, `install`, `deploy`. Running a phase runs every phase before it, so `mvn verify` compiles, runs unit tests, packages and runs integration tests. Plugins do the actual work by attaching goals to phases (the compiler plugin to `compile`, Surefire to `test`, the JAR plugin to `package`). `install` copies the artifact to your local repository (`~/.m2`); `deploy` uploads it to a remote one.\n\n**How it works:** for everyday work, `./mvnw verify` is the full check; `install` is only needed when another local project must use this artifact.",
+          "code": "validate -> compile -> test -> package -> verify -> install -> deploy\n              │          │         │          │          │\n         compiler   surefire     jar      failsafe   ~/.m2 repo\n\n$ ./mvnw compile          # just compile\n$ ./mvnw test             # compile + unit tests\n$ ./mvnw verify           # ... + package + integration tests (the CI command)\n$ ./mvnw clean verify     # also delete target/ first",
+          "interview_question": "What are the phases of the Maven lifecycle, and what happens when you run mvn verify?",
+          "references": [
+            "https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Running `mvn clean install` for everything, out of habit. `clean` throws away compiled classes so every build starts from zero, and `install` fills `~/.m2` with local copies that other projects may pick up instead of the real released versions. Use `verify` unless you really need either.",
+          "code": "# WRONG: the default reflex\n$ mvn clean install        # slow, and leaves stale artifacts in ~/.m2\n\n# RIGHT for day-to-day work\n$ ./mvnw verify"
+        }
+      ]
+    },
+    {
+      "subtitle": "Dependencies and Scopes",
+      "description": "Declaring libraries and when they are needed.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need PostgreSQL's JDBC driver and JUnit — but the driver should not be needed to compile, and JUnit should not end up in production.\n\n**Concept:** a dependency is declared by its coordinates; Maven downloads it and everything it depends on (transitive dependencies). The scope says when it is available. `compile` (default): everywhere, and shipped. `runtime`: not for compiling, but at runtime (JDBC drivers). `provided`: for compiling only, supplied by the environment (servlet API in an external server, Lombok). `test`: only for test code, never shipped.\n\n**How it works:** find coordinates on central.sonatype.com; with Spring Boot you usually omit the version, because the parent manages it.",
+          "code": "<dependencies>\n  <dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-web</artifactId>      <!-- compile: default -->\n  </dependency>\n  <dependency>\n    <groupId>org.postgresql</groupId>\n    <artifactId>postgresql</artifactId>\n    <scope>runtime</scope>                                 <!-- only at runtime -->\n  </dependency>\n  <dependency>\n    <groupId>org.projectlombok</groupId>\n    <artifactId>lombok</artifactId>\n    <scope>provided</scope>                                <!-- compile time only -->\n  </dependency>\n  <dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-test</artifactId>\n    <scope>test</scope>                                    <!-- tests only -->\n  </dependency>\n</dependencies>",
+          "interview_question": "What are Maven dependency scopes, and which one do you use for a test library?",
+          "references": [
+            "https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#dependency-scope"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A test library without `<scope>test</scope>`. It becomes a compile dependency: it ships inside the production JAR, and production code can accidentally import it.",
+          "code": "<!-- WRONG: JUnit and Mockito end up in the production JAR -->\n<dependency>\n  <groupId>org.junit.jupiter</groupId>\n  <artifactId>junit-jupiter</artifactId>\n</dependency>\n\n<!-- RIGHT -->\n<dependency>\n  <groupId>org.junit.jupiter</groupId>\n  <artifactId>junit-jupiter</artifactId>\n  <scope>test</scope>\n</dependency>"
+        }
+      ]
+    },
+    {
+      "subtitle": "The Maven Wrapper",
+      "description": "The same Maven version on every machine.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the build works for you and fails for a teammate, because each machine has a different Maven version installed.\n\n**Concept:** the Maven Wrapper (`mvnw` on Linux and macOS, `mvnw.cmd` on Windows, plus the `.mvn/wrapper/` folder) downloads and runs the exact Maven version written in `.mvn/wrapper/maven-wrapper.properties`. Nobody needs Maven installed, and CI uses the same version as every developer.\n\n**How it works:** commit the wrapper files and always run `./mvnw`, never a globally installed `mvn`. Spring Initializr generates the wrapper for you.",
+          "code": "$ mvn wrapper:wrapper -Dmaven=3.9.9     # add or update the wrapper (once)\n\n$ git add mvnw mvnw.cmd .mvn/\n$ ./mvnw --version\nApache Maven 3.9.9\n\n# .mvn/wrapper/maven-wrapper.properties\ndistributionUrl=https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip",
+          "interview_question": "Why use the Maven Wrapper instead of an installed Maven?",
+          "references": [
+            "https://maven.apache.org/wrapper/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Ignoring the `.mvn/` folder in `.gitignore`, or committing `mvnw` from Windows without the executable bit. On other machines the wrapper either cannot find its properties or fails with \"Permission denied\".",
+          "code": "# WRONG in .gitignore\n.mvn/\n\n# CI log\n./mvnw: Permission denied\n\n# RIGHT: commit .mvn/wrapper/ and keep mvnw executable\ngit add .mvn/wrapper/maven-wrapper.properties\ngit update-index --chmod=+x mvnw"
+        }
+      ]
+    },
+    {
+      "subtitle": "Running Tests with Maven",
+      "description": "Surefire, selecting tests and skipping them safely.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the full suite takes three minutes, and you only want to run the test you are working on.\n\n**Concept:** the Surefire plugin runs unit tests in the `test` phase (classes named `*Test`, `Test*`, `*Tests`, `*TestCase`). `-Dtest=` selects a class or a method; the report lands in `target/surefire-reports`. `-DskipTests` compiles the tests but does not run them. Integration tests (`*IT`) run with the Failsafe plugin in `verify`.\n\n**How it works:** run one test while developing, the whole suite before pushing.",
+          "code": "$ ./mvnw test -Dtest=OrderServiceTest                 # one class\n$ ./mvnw test -Dtest=OrderServiceTest#cancelsOrder    # one method\n$ ./mvnw test -Dtest='Order*Test'                     # a pattern\n$ ./mvnw verify -DskipTests                           # package without running tests\n\n# Failure details\ntarget/surefire-reports/com.shop.OrderServiceTest.txt",
+          "interview_question": "How do you run a single test class with Maven?",
+          "references": [
+            "https://maven.apache.org/surefire/maven-surefire-plugin/examples/single-test.html",
+            "https://maven.apache.org/surefire/maven-surefire-plugin/examples/skipping-tests.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `-Dmaven.test.skip=true` to speed up a build. It skips compiling the tests too, so test code that no longer compiles goes unnoticed until someone runs the full build. If you must skip, use `-DskipTests`.",
+          "code": "# WRONG: test code is not even compiled\n$ ./mvnw package -Dmaven.test.skip=true\n\n# RIGHT (when you really need to skip): tests compile, but do not run\n$ ./mvnw package -DskipTests"
+        }
+      ]
+    },
+    {
+      "subtitle": "Spring Boot with Maven",
+      "description": "The parent, starters and the executable JAR.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a Spring application needs dozens of libraries whose versions must work together, and a JAR that runs with `java -jar`.\n\n**Concept:** `spring-boot-starter-parent` sets defaults and imports Spring Boot's BOM, which manages the versions of hundreds of libraries tested together — so dependencies are declared without a version. Starters (`spring-boot-starter-web`, `-data-jpa`, `-test`) bring a coherent set of libraries. The `spring-boot-maven-plugin` repackages the JAR into an executable \"fat JAR\" with all dependencies inside, and adds `spring-boot:run`.\n\n**How it works:** upgrade Spring Boot by changing the parent version; the managed library versions move together.",
+          "code": "<parent>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-parent</artifactId>\n  <version>3.4.1</version>\n</parent>\n\n<dependencies>\n  <dependency>\n    <groupId>org.springframework.boot</groupId>\n    <artifactId>spring-boot-starter-web</artifactId>   <!-- no version: managed -->\n  </dependency>\n</dependencies>\n\n<build>\n  <plugins>\n    <plugin>\n      <groupId>org.springframework.boot</groupId>\n      <artifactId>spring-boot-maven-plugin</artifactId>\n    </plugin>\n  </plugins>\n</build>\n\n$ ./mvnw spring-boot:run\n$ ./mvnw package && java -jar target/orders-api-1.4.0.jar",
+          "interview_question": "What does spring-boot-starter-parent give a project?",
+          "references": [
+            "https://docs.spring.io/spring-boot/maven-plugin/using.html",
+            "https://docs.spring.io/spring-boot/reference/using/build-systems.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Writing your own version for a library Spring Boot already manages. You override the tested combination, and a newer Jackson or Hibernate that Spring was not built against fails at runtime. Omit the version, or override the managed property on purpose (for a CVE fix).",
+          "code": "<!-- WRONG: fights the BOM -->\n<dependency>\n  <groupId>com.fasterxml.jackson.core</groupId>\n  <artifactId>jackson-databind</artifactId>\n  <version>2.18.0</version>\n</dependency>\n\n<!-- RIGHT: no version (or override jackson-bom.version deliberately) -->\n<dependency>\n  <groupId>com.fasterxml.jackson.core</groupId>\n  <artifactId>jackson-databind</artifactId>\n</dependency>"
+        }
+      ]
+    },
+    {
+      "subtitle": "Gradle Basics",
+      "description": "The other build tool you will meet.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** your next project uses Gradle, and none of the Maven commands work.\n\n**Concept:** Gradle builds are scripts — `build.gradle.kts` (Kotlin DSL, the default for new projects) or `build.gradle` (Groovy). Work is done by tasks (`build`, `test`, `bootRun`); dependency configurations replace scopes: `implementation` (compile and runtime), `runtimeOnly`, `compileOnly`, `testImplementation`. The Gradle Wrapper (`./gradlew`) pins the version, like `mvnw`. Gradle has incremental builds and a build cache, which make it faster on large projects.\n\n**How it works:** `./gradlew build` is roughly `mvn verify`; outputs go to `build/` instead of `target/`.",
+          "code": "// build.gradle.kts\nplugins {\n    java\n    id(\"org.springframework.boot\") version \"3.4.1\"\n    id(\"io.spring.dependency-management\") version \"1.1.7\"\n}\n\njava { toolchain { languageVersion = JavaLanguageVersion.of(21) } }\n\ndependencies {\n    implementation(\"org.springframework.boot:spring-boot-starter-web\")\n    runtimeOnly(\"org.postgresql:postgresql\")\n    testImplementation(\"org.springframework.boot:spring-boot-starter-test\")\n}\n\n$ ./gradlew build          # compile, test, package   (≈ mvn verify)\n$ ./gradlew test --tests OrderServiceTest\n$ ./gradlew bootRun        # (≈ mvn spring-boot:run)",
+          "interview_question": "How do Gradle configurations such as implementation and testImplementation map to Maven scopes?",
+          "references": [
+            "https://docs.gradle.org/current/userguide/getting_started_eng.html",
+            "https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_configurations_graph"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Copying an old tutorial that uses `compile` or `testCompile`. Those configurations were removed in Gradle 7, and the build fails. Use `implementation` and `testImplementation`.",
+          "code": "// WRONG: removed in Gradle 7\ndependencies {\n    compile(\"org.springframework.boot:spring-boot-starter-web\")\n    testCompile(\"junit:junit:4.13.2\")\n}\n// Could not find method compile() for arguments ...\n\n// RIGHT\ndependencies {\n    implementation(\"org.springframework.boot:spring-boot-starter-web\")\n    testImplementation(\"org.springframework.boot:spring-boot-starter-test\")\n}"
+        }
+      ]
+    }
+  ]
+}

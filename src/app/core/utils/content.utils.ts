@@ -28,12 +28,22 @@ export function detectLanguage(code: string): string {
     }
   }
   if (/^\s*FROM\s+\S+/m.test(code) && /^\s*(RUN|COPY|CMD|ENTRYPOINT|WORKDIR)\b/m.test(code)) return 'docker';
+  if (isShell(code)) return 'bash';
   if (/^\s*<[\w:]+[\s>]/m.test(code)) return 'markup';
   if (/^\s*(SELECT|INSERT|UPDATE|DELETE|CREATE|BEGIN|SET TRANSACTION|EXPLAIN)\b/m.test(code)) return 'sql';
   if (/\b(class|interface|record|import|public|private|void|return|new)\b|^\s*@\w+|;\s*$/m.test(code)) return 'java';
   if (/^\s*-?\s*[\w.-]+:(\s|$)/m.test(code)) return 'yaml';
   if (/^\s*(git|docker|mvn|java|javac|curl|kubectl|npm)\s/m.test(code)) return 'bash';
   return 'plaintext';
+}
+
+const SHELL_START =
+  /^(\$ |#!.*\b(ba|z)?sh\b|(sudo|ls|cd|pwd|cat|less|head|tail|grep|find|cp|mv|rm|mkdir|touch|chmod|chown|ps|top|pgrep|kill|ss|ip|ssh|ssh-keygen|scp|rsync|export|echo|env|which|journalctl|nc|dig|curl|git|docker|kubectl|helm|terraform|trivy|cosign|openssl|keytool|jcmd|asprof|k6|mvn|npm|\.\/mvnw|\.\/gradlew|kafka-[\w-]+\.sh)(\s|$))/;
+
+/** Shell when the first line that is not blank or a plain comment looks like a command. */
+function isShell(code: string): boolean {
+  const first = code.split('\n').map((l) => l.trim()).find((l) => l && (!l.startsWith('#') || l.startsWith('#!')));
+  return !!first && SHELL_START.test(first);
 }
 
 /** Stable id of a section for progress tracking: survives reordering, not renaming. */

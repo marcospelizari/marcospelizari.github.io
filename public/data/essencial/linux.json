@@ -1,0 +1,238 @@
+{
+  "title": "Linux & the Terminal",
+  "description": "The commands you need on servers, containers and CI: files, search, processes, permissions, logs and SSH.",
+  "version": "bash 5",
+  "resumo": [
+    "Absolute paths start at `/`; `~` is home, `..` is up. Quote paths with spaces.",
+    "There is no trash: `rm -r` is final; never `rm -rf $VAR/` without `${VAR:?}`.",
+    "`grep -rn` for text, `find` for files; `-F` when the text has regex characters.",
+    "Pipes chain commands; `> file 2>&1` captures output and errors (in that order).",
+    "Permissions: user/group/others × rwx; `chmod +x` for scripts; never `chmod 777`.",
+    "Processes: `ps`, `top`, `ss -ltnp` for ports; `kill` (graceful) before `kill -9`.",
+    "Environment variables must be `export`ed for programs to see them.",
+    "Logs: `tail -F`, `less +F`, `journalctl -u`; look for the FIRST error.",
+    "SSH with keys; private key `chmod 600`. Scripts start with `set -euo pipefail`."
+  ],
+  "subsections": [
+    {
+      "subtitle": "The Shell and the Filesystem",
+      "description": "Moving around: paths, the home directory and hidden files.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** containers, servers and CI runners have no graphical interface — only a terminal. Without it you cannot even read a log.\n\n**Concept:** the shell (usually bash or zsh) runs commands you type. Linux has one tree of directories starting at `/`. An absolute path starts at the root (`/var/log/app.log`); a relative path starts from the current directory (`logs/app.log`). `~` is your home directory, `.` the current one and `..` the parent. Files whose names start with a dot (`.env`, `.git`) are hidden from a plain `ls`.\n\n**How it works:** press Tab to complete names, and the up arrow to repeat a command; `man <command>` or `<command> --help` explains any command.",
+          "code": "pwd                     # where am I?            /home/ana/projects\nls                      # list\nls -la                  # long format, including hidden files\ncd /var/log             # absolute path\ncd ../..                # two levels up\ncd ~                    # home directory (or just: cd)\ncd -                    # back to the previous directory",
+          "interview_question": "What is the difference between an absolute and a relative path?",
+          "references": [
+            "https://www.gnu.org/software/bash/manual/bash.html",
+            "https://man7.org/linux/man-pages/man1/ls.1.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "File names with spaces, unquoted. The shell splits them into separate arguments, so the command acts on the wrong files — or fails. Quote paths.",
+          "code": "# WRONG: \"My\" and \"Documents\" are two arguments\ncd My Documents          # cd: too many arguments\nrm My Report.pdf         # tries to delete \"My\" and \"Report.pdf\"\n\n# RIGHT\ncd \"My Documents\"\nrm \"My Report.pdf\""
+        }
+      ]
+    },
+    {
+      "subtitle": "Files and Directories",
+      "description": "Creating, copying, moving, removing and reading files.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need to copy a config file, inspect the end of a log and clean up old build output — from a terminal.\n\n**Concept:** `mkdir -p` creates directories (and missing parents); `touch` creates an empty file; `cp` copies (`-r` for directories); `mv` moves or renames; `rm` removes (`-r` for directories) — there is no trash can. To read: `cat` prints a whole file, `less` pages through it (`/` searches, `q` quits), `head` and `tail` show the first or last lines.\n\n**How it works:** use `less` for big files, never an editor that loads the whole file into memory.",
+          "code": "mkdir -p backups/2024-05       # create the path, parents included\ncp application.yml backups/    # copy a file\ncp -r config/ backups/config/  # copy a directory\nmv report.txt report-old.txt   # rename\nrm -r target/                  # remove a directory (no undo)\n\ncat application.yml            # whole file\nless app.log                   # page through it\nhead -n 20 app.log             # first 20 lines\ntail -n 50 app.log             # last 50 lines",
+          "interview_question": "How do you look at the last lines of a large log file?",
+          "references": [
+            "https://man7.org/linux/man-pages/man1/rm.1.html",
+            "https://man7.org/linux/man-pages/man1/less.1.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`rm -rf` with a variable that may be empty. If `$BUILD_DIR` is not set, `rm -rf $BUILD_DIR/` becomes `rm -rf /`. Quote the variable and make the shell stop when it is empty.",
+          "code": "# WRONG: if BUILD_DIR is empty, this targets \"/\"\nrm -rf $BUILD_DIR/\n\n# RIGHT: ${VAR:?} aborts with an error when VAR is unset or empty\nrm -rf \"${BUILD_DIR:?}/\""
+        }
+      ]
+    },
+    {
+      "subtitle": "Searching: grep and find",
+      "description": "Finding text in files and files in directories.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** somewhere in 40 log files there is the error for order 12345, and somewhere in the project there is the class that throws it.\n\n**Concept:** `grep` finds lines that match a pattern: `-r` recursive, `-n` line numbers, `-i` ignore case, `-v` invert, `-C 3` three lines of context, `-l` only file names, `-E` extended regular expressions. `find` finds files by name, type, size or age, and can run a command on each result. `ripgrep` (`rg`) is a faster grep that respects `.gitignore`, if it is installed.\n\n**How it works:** combine them: `find` to choose the files, `grep` to search inside them.",
+          "code": "grep -n \"12345\" app.log                     # lines with the order id\ngrep -rn \"OrderNotFoundException\" src/       # in the whole source tree\ngrep -i \"error\" app.log | grep -v \"retrying\" # errors, except retries\ngrep -C 3 \"NullPointerException\" app.log     # with 3 lines around\n\nfind . -name \"*.yml\"                         # files by name\nfind /var/log -name \"*.log\" -mtime -1        # logs changed in the last day\nfind target -name \"*.jar\" -size +50M         # JARs over 50 MB",
+          "interview_question": "How would you find every occurrence of an exception name in a project from the terminal?",
+          "references": [
+            "https://man7.org/linux/man-pages/man1/grep.1.html",
+            "https://man7.org/linux/man-pages/man1/find.1.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Searching for text that contains regular-expression characters. In `grep \"1.2.3\"` the dots match any character, so it also finds `1x2y3`; brackets and asterisks behave the same way. Use `-F` to search for the literal text.",
+          "code": "# WRONG: \".\" means any character\ngrep \"version 1.2.3\" app.log        # also matches \"version 1x2y3\"\ngrep \"[ERROR]\" app.log              # matches any line with E, R or O\n\n# RIGHT: fixed string\ngrep -F \"version 1.2.3\" app.log\ngrep -F \"[ERROR]\" app.log"
+        }
+      ]
+    },
+    {
+      "subtitle": "Pipes and Redirection",
+      "description": "Chaining commands and saving their output.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** \"which IP made the most requests today?\" — no single command answers it, but a chain of small ones does.\n\n**Concept:** a pipe `|` sends one command's output into the next command's input. `>` writes output to a file (overwriting), `>>` appends. Every program has standard output (1) and standard error (2): `2>&1` sends errors to the same place as normal output. Small tools combine well: `sort`, `uniq -c` (count repeated lines), `wc -l` (count lines), `cut` and `awk` (pick columns), `xargs` (turn lines into arguments).\n\n**How it works:** build the chain step by step, checking the output after each `|`.",
+          "code": "# Top 5 IPs in an access log\ncut -d' ' -f1 access.log | sort | uniq -c | sort -rn | head -5\n\ngrep -c \"ERROR\" app.log                  # count error lines\n./mvnw verify > build.log 2>&1           # output and errors to one file\n./mvnw verify 2>&1 | tee build.log       # see it and save it\nfind . -name \"*.tmp\" | xargs rm          # remove every .tmp file",
+          "interview_question": "What does 2>&1 do, and what is a pipe?",
+          "references": [
+            "https://www.gnu.org/software/bash/manual/bash.html#Redirections",
+            "https://www.gnu.org/software/bash/manual/bash.html#Pipelines"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Writing `2>&1` before the file redirection. Redirections are applied left to right, so `2>&1 > file` points errors at the terminal (where output was at that moment) and only then moves output to the file — the errors never reach the log.",
+          "code": "# WRONG: errors still go to the terminal\n./mvnw verify 2>&1 > build.log\n\n# RIGHT: first output to the file, then errors to where output goes\n./mvnw verify > build.log 2>&1"
+        }
+      ]
+    },
+    {
+      "subtitle": "Permissions",
+      "description": "Who may read, write and execute a file.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** `./deploy.sh: Permission denied`, or the application cannot write its log file.\n\n**Concept:** every file has an owner, a group and permissions for three classes — user (owner), group and others — each with read (`r`), write (`w`) and execute (`x`). `ls -l` shows them as `-rwxr-x---`. `chmod` changes them (`+x` to make a script executable, or numbers: 7 = rwx, 6 = rw, 5 = r-x, 4 = r), `chown` changes the owner. `sudo` runs one command as root; use it only when needed.\n\n**How it works:** scripts need `x` to run; for directories, `x` means \"may enter\".",
+          "code": "ls -l deploy.sh\n# -rw-r--r--  1 ana  dev  512 May 10 10:00 deploy.sh     (no x: cannot run)\n\nchmod +x deploy.sh            # add execute\n./deploy.sh\n\nchmod 640 application.yml     # owner rw, group r, others nothing\nchown app:app /var/log/shop   # the application user owns its log directory",
+          "interview_question": "What do the permissions rwxr-x--- mean?",
+          "references": [
+            "https://man7.org/linux/man-pages/man1/chmod.1.html",
+            "https://man7.org/linux/man-pages/man1/chown.1.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`chmod 777` to make \"Permission denied\" go away. Everyone on the machine can now read, change and run the file — including a secret or a script that runs as root. Give only the permission that is missing, to the user that needs it.",
+          "code": "# WRONG\nchmod -R 777 /opt/shop\n\n# RIGHT: the right owner, and only what is needed\nchown -R shop:shop /opt/shop\nchmod 750 /opt/shop/bin/start.sh"
+        }
+      ]
+    },
+    {
+      "subtitle": "Processes",
+      "description": "What is running, and how to stop it.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** port 8080 is \"already in use\", or the application is frozen and needs to be stopped.\n\n**Concept:** every running program is a process with an id (PID). `ps aux` lists processes, `top` (or `htop`) shows CPU and memory live, `pgrep -f` finds a PID by name. `kill <pid>` sends SIGTERM, which asks the program to stop gracefully (Spring Boot finishes requests and closes connections); `kill -9` sends SIGKILL, which ends it immediately. `ss -ltnp` (or `lsof -i :8080`) shows which process listens on a port.\n\n**How it works:** a command ending in `&` runs in the background; `Ctrl+C` sends SIGINT to the one in the foreground.",
+          "code": "ps aux | grep java             # Java processes\npgrep -f orders-api            # the PID of the application\ntop                            # live CPU and memory (q to quit)\n\nss -ltnp | grep 8080           # who is listening on 8080?\n# LISTEN 0 100 *:8080 *:* users:((\"java\",pid=4321,fd=45))\n\nkill 4321                      # SIGTERM: graceful stop\nkill -9 4321                   # SIGKILL: only if it does not stop",
+          "interview_question": "What is the difference between kill and kill -9?",
+          "references": [
+            "https://man7.org/linux/man-pages/man1/ps.1.html",
+            "https://man7.org/linux/man-pages/man7/signal.7.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Going straight to `kill -9`. The process gets no chance to finish requests, flush logs, release locks or close database connections, so you may lose data or leave a lock behind. Send SIGTERM first and wait a few seconds.",
+          "code": "# WRONG: the first and only attempt\nkill -9 4321\n\n# RIGHT\nkill 4321          # graceful\nsleep 10\nkill -0 4321 2>/dev/null && kill -9 4321   # only if it is still running"
+        }
+      ]
+    },
+    {
+      "subtitle": "Environment Variables",
+      "description": "Configuration that processes inherit.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the application reads `DB_PASSWORD` from the environment, and when you start it, it says the variable is missing.\n\n**Concept:** environment variables are name–value pairs that every process inherits from the one that started it. `export NAME=value` sets one for the current shell and its children; `NAME=value command` sets it for one command only. `$NAME` reads it, `env` lists them all. `PATH` is the list of directories where the shell looks for commands. Settings you want in every terminal go in `~/.bashrc` (or `~/.zshrc`).\n\n**How it works:** this is how containers and Kubernetes pass configuration to Spring Boot, which maps `SPRING_DATASOURCE_URL` to `spring.datasource.url`.",
+          "code": "export DB_PASSWORD='local-password'     # this shell and its children\necho \"$DB_PASSWORD\"\nenv | grep SPRING                         # what Spring will see\n\nSERVER_PORT=9090 ./mvnw spring-boot:run   # only for this command\n\necho \"$PATH\"                              # where commands are found\nwhich java                                # which java runs",
+          "interview_question": "How do you pass configuration to an application through environment variables?",
+          "references": [
+            "https://www.gnu.org/software/bash/manual/bash.html#Environment",
+            "https://docs.spring.io/spring-boot/reference/features/external-config.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Setting a variable without `export`. It exists in your shell, but programs you start do not inherit it, so the application still does not see it.",
+          "code": "# WRONG: a shell variable, not exported\nDB_PASSWORD='local-password'\n./mvnw spring-boot:run          # the application does not see DB_PASSWORD\n\n# RIGHT\nexport DB_PASSWORD='local-password'\n./mvnw spring-boot:run"
+        }
+      ]
+    },
+    {
+      "subtitle": "Reading Logs",
+      "description": "Following, filtering and finding the moment something broke.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the error happens \"sometimes\", and the log has two million lines.\n\n**Concept:** `tail -f` follows a file as it grows; `less +F` does the same and lets you stop (Ctrl+C) to scroll and search. `grep` with context (`-C`), time ranges and counts narrows things down. Services managed by systemd log to the journal: `journalctl -u <service>` with `-f`, `--since` and `-p err`. In containers, use `docker logs` or `kubectl logs`.\n\n**How it works:** find the first error in time, not the last: later errors are often consequences of the first one.",
+          "code": "tail -f app.log                          # follow live\ntail -f app.log | grep --line-buffered ERROR\nless +F app.log                          # follow; Ctrl+C to search, F to follow again\n\ngrep -n \"ERROR\" app.log | head -1        # the FIRST error\ngrep \"2024-05-10T14:0\" app.log           # a time window\n\njournalctl -u shop-api -f                # a systemd service\njournalctl -u shop-api --since \"1 hour ago\" -p err",
+          "interview_question": "How do you follow a log in real time and find the first error?",
+          "references": [
+            "https://man7.org/linux/man-pages/man1/tail.1.html",
+            "https://man7.org/linux/man-pages/man1/journalctl.1.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`tail -f` on a log that rotates. When the file is renamed and a new one created, `tail -f` keeps following the old one and you see nothing new. `tail -F` reopens the file by name.",
+          "code": "# WRONG: silent after the nightly rotation\ntail -f /var/log/shop/app.log\n\n# RIGHT: follows the new file after rotation\ntail -F /var/log/shop/app.log"
+        }
+      ]
+    },
+    {
+      "subtitle": "SSH and Remote Work",
+      "description": "Logging in to servers and copying files securely.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need to open a terminal on a server, or copy a file from it, without sending a password over the network.\n\n**Concept:** SSH opens an encrypted terminal on a remote machine. Key-based login uses a pair: the private key stays on your machine (never shared), and the public key goes into the server's `~/.ssh/authorized_keys`. `scp` and `rsync` copy files over SSH; `~/.ssh/config` stores host aliases so you do not retype users and ports.\n\n**How it works:** `ssh -L` forwards a local port through the connection — for example, to reach a database that only the server can see.",
+          "code": "ssh-keygen -t ed25519 -C \"ana@laptop\"     # create a key pair (once)\nssh-copy-id ana@server.example.com         # install the public key on the server\nssh ana@server.example.com                 # log in\n\nscp app.log ana@server:/tmp/               # copy a file\nrsync -avz ./dist/ ana@server:/opt/site/   # sync a directory\n\nssh -L 5432:db.internal:5432 ana@bastion   # localhost:5432 -> internal database\n\n# ~/.ssh/config\nHost staging\n  HostName 10.0.4.12\n  User ana\n  Port 2222",
+          "interview_question": "How does key-based SSH authentication work?",
+          "references": [
+            "https://man.openbsd.org/ssh",
+            "https://man.openbsd.org/ssh_config"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A private key readable by others. OpenSSH refuses to use it (\"UNPROTECTED PRIVATE KEY FILE\"), and anyone on the machine could copy it. The private key must be readable only by you.",
+          "code": "# WRONG\nchmod 644 ~/.ssh/id_ed25519\n# WARNING: UNPROTECTED PRIVATE KEY FILE! ... This private key will be ignored.\n\n# RIGHT\nchmod 700 ~/.ssh\nchmod 600 ~/.ssh/id_ed25519"
+        }
+      ]
+    },
+    {
+      "subtitle": "Shell Scripts",
+      "description": "Automating a sequence of commands safely.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the same eight commands are typed by hand before every release, and one day someone skips step five.\n\n**Concept:** a script is a file of commands, starting with a shebang (`#!/usr/bin/env bash`) and made executable with `chmod +x`. Variables are set with `NAME=value` (no spaces around `=`) and read as `\"$NAME\"` — always quoted. `$1`, `$2` are the arguments. `set -euo pipefail` makes the script stop on the first failing command, on unset variables and on failures inside pipes.\n\n**How it works:** test scripts with `bash -n script.sh` (syntax check) and ShellCheck, which catches most quoting mistakes.",
+          "code": "#!/usr/bin/env bash\nset -euo pipefail\n\nVERSION=\"${1:?usage: release.sh <version>}\"\n\necho \"Releasing $VERSION\"\n./mvnw -B verify\ngit tag -a \"v$VERSION\" -m \"Release $VERSION\"\ngit push origin \"v$VERSION\"",
+          "interview_question": "What does set -euo pipefail do at the top of a bash script?",
+          "references": [
+            "https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin",
+            "https://www.shellcheck.net/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A script without `set -e`. A failing command does not stop it: the tests fail, and the script still tags and pushes the release.",
+          "code": "#!/usr/bin/env bash\n# WRONG: no set -e\n./mvnw -B verify                 # FAILS...\ngit tag -a \"v$VERSION\" -m \"...\"  # ...and the release is tagged anyway\ngit push origin \"v$VERSION\"\n\n# RIGHT: first line after the shebang\nset -euo pipefail"
+        }
+      ]
+    }
+  ]
+}

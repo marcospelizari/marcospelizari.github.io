@@ -11,7 +11,7 @@ export const TOPIC_GROUPS: TopicGroup[] = [
     label: 'Backend',
     icon: 'coffee',
     topics: [
-    // Learning order: language -> OOP -> data -> framework -> API design
+    // Learning order: language -> OOP -> data structures -> build -> data -> framework -> API design -> messaging
       {
         slug: 'fundamentos-java',
         label: 'Java Fundamentals',
@@ -21,6 +21,16 @@ export const TOPIC_GROUPS: TopicGroup[] = [
         slug: 'orientacao-objetos',
         label: 'Object-Oriented Programming',
         files: { essencial: 'essencial/orientacao-objetos.json', intermediario: 'intermediario/orientacao-objetos-intermediario.json', avancado: 'avancado/orientacao-objetos-avancado.json' },
+      },
+      {
+        slug: 'data-structures',
+        label: 'Data Structures & Algorithms',
+        files: { essencial: 'essencial/data-structures.json', intermediario: 'intermediario/data-structures-intermediario.json' },
+      },
+      {
+        slug: 'build-tools',
+        label: 'Build Tools (Maven & Gradle)',
+        files: { essencial: 'essencial/build-tools.json', intermediario: 'intermediario/build-tools-intermediario.json' },
       },
       {
         slug: 'banco-dados',
@@ -37,13 +47,28 @@ export const TOPIC_GROUPS: TopicGroup[] = [
         label: 'APIs & Web Services',
         files: { essencial: 'essencial/api-webservices.json', intermediario: 'intermediario/api-webservices-intermediario.json', avancado: 'avancado/api-webservices-avancado.json' },
       },
+      {
+        slug: 'messaging',
+        label: 'Messaging (Kafka & RabbitMQ)',
+        files: { intermediario: 'intermediario/messaging-intermediario.json', avancado: 'avancado/messaging-avancado.json' },
+      },
     ],
   },
   {
     label: 'DevOps & Infra',
     icon: 'dns',
-    // Learning order: Git -> Docker -> Kubernetes -> CI/CD (uses all three) -> Observabilidade
+    // Learning order: Linux -> networking -> Git -> Docker -> Kubernetes -> CI/CD (uses all three) -> observability
     topics: [
+      {
+        slug: 'linux',
+        label: 'Linux & the Terminal',
+        files: { essencial: 'essencial/linux.json' },
+      },
+      {
+        slug: 'networking',
+        label: 'Networking',
+        files: { essencial: 'essencial/networking.json', intermediario: 'intermediario/networking-intermediario.json' },
+      },
       {
         slug: 'controle-versao',
         label: 'Version Control (Git)',
@@ -95,6 +120,11 @@ export const TOPIC_GROUPS: TopicGroup[] = [
         slug: 'testes',
         label: 'Automated Testing',
         files: { essencial: 'essencial/testes.json', intermediario: 'intermediario/testes-intermediario.json', avancado: 'avancado/testes-avancado.json' },
+      },
+      {
+        slug: 'debugging',
+        label: 'Debugging',
+        files: { essencial: 'essencial/debugging.json' },
       },
       {
         slug: 'seguranca',

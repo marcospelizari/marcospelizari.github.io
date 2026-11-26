@@ -1,0 +1,144 @@
+{
+  "title": "Build Tools (Maven & Gradle)",
+  "description": "Builds for real projects: modules, version management, plugins, profiles, private repositories and speed.",
+  "version": "Maven 3.9, Gradle 8",
+  "resumo": [
+    "Multi-module: a `pom` parent lists modules; the reactor orders them; `-pl x -am` builds one module and its needs. No cycles.",
+    "`dependencyManagement` sets versions, `dependencies` adds to the classpath; import BOMs with `type pom` + `scope import`.",
+    "Plugins do the work; bind goals to phases with `executions`; pin every version; `help:effective-pom` explains the build.",
+    "Maven profiles change how you build, never what each environment gets — one artifact, configured at runtime.",
+    "`settings.xml`: mirrors and credentials from environment variables — never passwords in the pom.",
+    "Faster builds: build what changed, `-T 1C`, skip unnecessary `clean`, cache `~/.m2` in CI."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Multi-Module Projects",
+      "description": "One build, several modules.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the API, a batch job and a shared domain library live in the same repository and must be built and versioned together.\n\n**Concept:** a multi-module project has a parent `pom.xml` with `packaging` `pom` that lists `modules`; each module has its own `pom.xml` that inherits from the parent. Maven's reactor works out the order from the dependencies between modules and builds them in that order. `-pl` selects modules and `-am` (\"also make\") builds what they depend on.\n\n**How it works:** modules depend on each other like any dependency, usually with `${project.version}`.",
+          "code": "shop/\n├── pom.xml              # parent: <packaging>pom</packaging>\n├── shop-domain/pom.xml\n├── shop-api/pom.xml     # depends on shop-domain\n└── shop-batch/pom.xml   # depends on shop-domain\n\n<!-- parent pom.xml -->\n<modules>\n  <module>shop-domain</module>\n  <module>shop-api</module>\n  <module>shop-batch</module>\n</modules>\n\n$ ./mvnw verify                          # everything, in dependency order\n$ ./mvnw verify -pl shop-api -am         # shop-api and what it needs",
+          "interview_question": "How does Maven decide the build order of modules in a multi-module project?",
+          "references": [
+            "https://maven.apache.org/guides/mini/guide-multiple-modules.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Two modules that depend on each other. Maven cannot choose an order and refuses to build. Move the shared code into a third module both depend on.",
+          "code": "[ERROR] The projects in the reactor contain a cyclic reference:\n        Edge between 'shop-api' and 'shop-domain' introduces a cycle\n\n# RIGHT\nshop-common   <- shared types\nshop-domain   -> shop-common\nshop-api      -> shop-domain, shop-common"
+        }
+      ]
+    },
+    {
+      "subtitle": "Dependency Management and BOMs",
+      "description": "Choosing versions in one place.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** five modules each declare their own version of Jackson, and they slowly drift apart.\n\n**Concept:** `<dependencyManagement>` declares versions (and scopes) without adding anything to the classpath; modules then declare the dependency without a version and get the managed one. A BOM (Bill of Materials) is a `pom` that only contains a `dependencyManagement` section, imported with `<type>pom</type>` and `<scope>import</scope>` — Spring Boot, Jackson and Testcontainers publish one.\n\n**How it works:** import a BOM when you cannot use its parent (for example, your company already has its own parent POM).",
+          "code": "<dependencyManagement>\n  <dependencies>\n    <!-- Import a BOM: versions of every Spring Boot-managed library -->\n    <dependency>\n      <groupId>org.springframework.boot</groupId>\n      <artifactId>spring-boot-dependencies</artifactId>\n      <version>3.4.1</version>\n      <type>pom</type>\n      <scope>import</scope>\n    </dependency>\n    <!-- Your own managed version -->\n    <dependency>\n      <groupId>com.shop</groupId>\n      <artifactId>shop-common</artifactId>\n      <version>2.1.0</version>\n    </dependency>\n  </dependencies>\n</dependencyManagement>",
+          "interview_question": "What is the difference between dependencyManagement and dependencies?",
+          "references": [
+            "https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#dependency-management"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Declaring a library only in `<dependencyManagement>` and expecting it on the classpath. Management only sets the version; the module still has to list it under `<dependencies>`.",
+          "code": "<!-- WRONG: only managed -> \"package com.shop.common does not exist\" -->\n<dependencyManagement>\n  <dependencies>\n    <dependency><groupId>com.shop</groupId><artifactId>shop-common</artifactId><version>2.1.0</version></dependency>\n  </dependencies>\n</dependencyManagement>\n\n<!-- RIGHT: also declared (no version needed) -->\n<dependencies>\n  <dependency><groupId>com.shop</groupId><artifactId>shop-common</artifactId></dependency>\n</dependencies>"
+        }
+      ]
+    },
+    {
+      "subtitle": "Plugins and Their Configuration",
+      "description": "Configuring what each build step does.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need code coverage, a minimum Java version check and generated sources — all of it is done by plugins.\n\n**Concept:** everything Maven does is done by plugins, configured in `<build><plugins>`. A plugin has goals; `<executions>` bind goals to lifecycle phases, and `<configuration>` sets parameters. `<pluginManagement>` (usually in a parent) fixes versions and default configuration without activating the plugin; modules then declare it to use it.\n\n**How it works:** `./mvnw help:effective-pom` shows the final configuration after inheritance — the fastest way to understand a confusing build.",
+          "code": "<build>\n  <plugins>\n    <plugin>\n      <groupId>org.jacoco</groupId>\n      <artifactId>jacoco-maven-plugin</artifactId>\n      <version>0.8.12</version>\n      <executions>\n        <execution>\n          <goals><goal>prepare-agent</goal></goals>       <!-- bound to initialize -->\n        </execution>\n        <execution>\n          <id>report</id>\n          <phase>verify</phase>\n          <goals><goal>report</goal></goals>\n        </execution>\n      </executions>\n    </plugin>\n  </plugins>\n</build>\n\n$ ./mvnw help:effective-pom      # the configuration after inheritance",
+          "interview_question": "How do you attach a plugin goal to a lifecycle phase?",
+          "references": [
+            "https://maven.apache.org/guides/mini/guide-configuring-plugins.html",
+            "https://maven.apache.org/plugins/maven-help-plugin/effective-pom-mojo.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A plugin without a version. Maven picks a default that changes with the Maven version, prints a warning, and the build stops being reproducible. Pin every plugin version (in `pluginManagement`).",
+          "code": "[WARNING] 'build.plugins.plugin.version' for org.apache.maven.plugins:maven-surefire-plugin is missing.\n\n<!-- RIGHT -->\n<plugin>\n  <groupId>org.apache.maven.plugins</groupId>\n  <artifactId>maven-surefire-plugin</artifactId>\n  <version>3.5.2</version>\n</plugin>"
+        }
+      ]
+    },
+    {
+      "subtitle": "Maven Profiles",
+      "description": "Conditional build configuration — and when not to use it.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** some build steps should only run sometimes: slow integration tests, a release signing step, a native image.\n\n**Concept:** a profile is a block of configuration that is activated with `-P<id>`, or automatically by a property, the JDK version, the operating system or a file. It can add plugins, dependencies and properties. Use profiles for how the project is built — for example, running slow tests or signing artifacts.\n\n**How it works:** environment-specific values (URLs, passwords) belong in the application's runtime configuration (Spring profiles, environment variables), not in Maven profiles.",
+          "code": "<profiles>\n  <profile>\n    <id>integration</id>\n    <build>\n      <plugins>\n        <plugin>\n          <groupId>org.apache.maven.plugins</groupId>\n          <artifactId>maven-failsafe-plugin</artifactId>\n          <version>3.5.2</version>\n          <executions>\n            <execution><goals><goal>integration-test</goal><goal>verify</goal></goals></execution>\n          </executions>\n        </plugin>\n      </plugins>\n    </build>\n  </profile>\n</profiles>\n\n$ ./mvnw verify -Pintegration\n$ ./mvnw help:active-profiles",
+          "interview_question": "What are Maven profiles for, and what should not go in them?",
+          "references": [
+            "https://maven.apache.org/guides/introduction/introduction-to-profiles.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "One Maven profile per environment, each producing a different JAR (`-Pdev`, `-Pprod`). The artifact deployed to production is not the one that was tested. Build one artifact and configure it at runtime.",
+          "code": "# WRONG: a different build per environment\n$ ./mvnw package -Pstaging     # tested\n$ ./mvnw package -Pprod        # deployed — never tested\n\n# RIGHT: one JAR, configured when it starts\n$ java -jar orders-api.jar --spring.profiles.active=prod"
+        }
+      ]
+    },
+    {
+      "subtitle": "Local Repository, Mirrors and settings.xml",
+      "description": "Where dependencies come from, and how to authenticate.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the company uses an internal repository (Nexus or Artifactory) that needs a login, and builds fail with \"Could not resolve dependencies\".\n\n**Concept:** Maven caches every downloaded artifact in the local repository (`~/.m2/repository`), so each version is downloaded once. Remote repositories are Maven Central plus any you declare. `~/.m2/settings.xml` holds per-user settings: credentials for servers (`<servers>`), mirrors that redirect all downloads to an internal proxy (`<mirrors>`), and proxies. A server's `id` must match the repository's `id`.\n\n**How it works:** settings can read environment variables (`${env.NEXUS_TOKEN}`), which is how CI provides credentials.",
+          "code": "<!-- ~/.m2/settings.xml -->\n<settings>\n  <mirrors>\n    <mirror>\n      <id>company-nexus</id>\n      <mirrorOf>*</mirrorOf>                         <!-- every download goes through Nexus -->\n      <url>https://nexus.company.com/repository/maven-public/</url>\n    </mirror>\n  </mirrors>\n  <servers>\n    <server>\n      <id>company-nexus</id>                         <!-- must match the mirror/repository id -->\n      <username>${env.NEXUS_USER}</username>\n      <password>${env.NEXUS_TOKEN}</password>\n    </server>\n  </servers>\n</settings>\n\n$ ./mvnw dependency:purge-local-repository -DmanualInclude=com.shop:shop-common   # drop a bad cached copy",
+          "interview_question": "Where does Maven look for dependencies, and how do you configure credentials for a private repository?",
+          "references": [
+            "https://maven.apache.org/settings.html",
+            "https://maven.apache.org/guides/mini/guide-mirror-settings.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Putting the repository password in the project's `pom.xml`, or committing a `settings.xml` with it. Everyone with access to the code has the credential, forever. Keep credentials in the user's `settings.xml`, reading environment variables.",
+          "code": "<!-- WRONG: in pom.xml, committed -->\n<repository>\n  <id>company-nexus</id>\n  <url>https://ci:S3cr3t@nexus.company.com/repository/maven-public/</url>\n</repository>\n\n<!-- RIGHT: ~/.m2/settings.xml, from the environment -->\n<password>${env.NEXUS_TOKEN}</password>"
+        }
+      ]
+    },
+    {
+      "subtitle": "Speeding Up Builds",
+      "description": "Faster feedback locally and in CI.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the build takes eight minutes, so people stop running it before pushing.\n\n**Concept:** build only what changed: `-pl module -am` in multi-module projects. Run modules in parallel with `-T 1C` (one thread per CPU core) when the plugins support it. Skip `clean` when it is not needed — incremental compilation reuses previous output. Run only the relevant tests while developing. In CI, cache `~/.m2` between runs, so dependencies are not downloaded every time.\n\n**How it works:** measure where the time goes before optimizing: often it is one slow test class or one plugin.",
+          "code": "$ ./mvnw verify -pl shop-api -am      # only the module you changed (+ what it needs)\n$ ./mvnw verify -T 1C                 # modules in parallel, 1 thread per core\n$ ./mvnw test -Dtest=OrderServiceTest # only the test you are working on\n\n# GitHub Actions: cache ~/.m2\n- uses: actions/setup-java@v4\n  with:\n    distribution: temurin\n    java-version: '21'\n    cache: maven",
+          "interview_question": "How would you make a slow Maven build faster?",
+          "references": [
+            "https://cwiki.apache.org/confluence/display/MAVEN/Parallel+builds+in+Maven+3",
+            "https://docs.github.com/en/actions/use-cases-and-examples/building-and-testing/building-and-testing-java-with-maven#caching-dependencies"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A CI pipeline without a dependency cache. Every run downloads hundreds of megabytes from the internet: slow, and it fails whenever the repository has a hiccup.",
+          "code": "# WRONG: no cache -> every CI run downloads the world\n- uses: actions/setup-java@v4\n  with: { distribution: temurin, java-version: '21' }\n\n# RIGHT\n- uses: actions/setup-java@v4\n  with: { distribution: temurin, java-version: '21', cache: maven }"
+        }
+      ]
+    }
+  ]
+}
