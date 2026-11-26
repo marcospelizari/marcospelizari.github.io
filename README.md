@@ -78,10 +78,10 @@ The sidebar lists every topic, grouped by area. Each topic has up to three level
 
 | Area | Topics |
 |---|---|
-| Backend | Java Fundamentals, Object-Oriented Programming, Databases, Spring Boot, APIs & Web Services |
-| DevOps & Infra | Version Control (Git), Docker & DevOps, Kubernetes & kubectl, CI/CD, Observability |
-| Architecture | System Architecture, Performance & Optimization |
-| Quality | Automated Testing, Application Security, Best Practices & Clean Code |
+| Backend | Java Fundamentals, Object-Oriented Programming, Data Structures & Algorithms, Build Tools (Maven & Gradle), Databases, Spring Boot, APIs & Web Services, Messaging (Kafka & RabbitMQ) |
+| DevOps & Infra | Linux & the Terminal, Networking, Version Control (Git), Docker & DevOps, Kubernetes & kubectl, CI/CD, Observability |
+| Architecture | System Architecture (including system design interviews), Performance & Optimization |
+| Quality | Automated Testing, Debugging, Application Security, Best Practices & Clean Code |
 
 > The topic list evolves as new study material is added to the project.
 

@@ -1,0 +1,147 @@
+{
+  "title": "Messaging",
+  "description": "Reliable messaging at scale: delivery guarantees, failures, ordering, offsets, schemas and lag.",
+  "version": "Kafka 3.x, Spring Kafka 3",
+  "resumo": [
+    "Design for at-least-once with idempotent consumers; Kafka's exactly-once does not cover external side effects.",
+    "Retry transient errors with backoff; send permanent ones straight to a dead-letter topic — and alert on it.",
+    "Order lives in a partition: key by aggregate id; non-blocking retry topics break ordering.",
+    "Commit offsets only after the effect is durable; never acknowledge before processing.",
+    "Evolve schemas compatibly (add optional fields); a schema registry rejects breaking changes.",
+    "Monitor consumer lag per partition — and alert on time lag, not message count."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Delivery Guarantees",
+      "description": "At-most-once, at-least-once and exactly-once.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a consumer crashes halfway through: was the message processed or not? Will it come again?\n\n**Concept:** at-most-once: commit before processing — a crash loses the message, never duplicates it. At-least-once: commit after processing — a crash means the message is processed again, never lost. This is the usual choice, and it requires idempotent consumers. Kafka also offers exactly-once semantics within Kafka: idempotent producers (the default since Kafka 3.0, with `acks=all`) plus transactions, for consume-transform-produce flows that read from and write to Kafka.\n\n**How it works:** design for at-least-once: deduplicate by event id, in the same transaction as the effect.",
+          "code": "At-most-once:   poll -> commit offset -> process        (crash after commit: message lost)\nAt-least-once:  poll -> process -> commit offset        (crash before commit: processed again)\n\n# Producer defaults since Kafka 3.0\nenable.idempotence=true     # retries do not create duplicates in the log\nacks=all                    # written to all in-sync replicas\n\n// Idempotent consumer\n@Transactional\n@KafkaListener(topics = \"orders\")\nvoid onOrderPlaced(OrderPlaced e) {\n    if (!processed.register(e.eventId())) return;     // UNIQUE(event_id)\n    invoices.create(e.orderId(), e.total());\n}",
+          "interview_question": "What is the difference between at-least-once and exactly-once delivery?",
+          "references": [
+            "https://kafka.apache.org/documentation/#semantics",
+            "https://www.confluent.io/blog/exactly-once-semantics-are-possible-heres-how-apache-kafka-does-it/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Assuming Kafka's exactly-once covers your side effects. Transactions make reading from and writing to Kafka atomic, but an email sent, an HTTP call made or a row written to another database can still happen twice. Those effects need their own idempotency.",
+          "code": "WRONG: \"we use Kafka transactions, so emails are sent exactly once\"\n       -> consumer sends the email, crashes before commit -> email sent again\n\nRIGHT: record the eventId before the side effect (or send with an idempotency key)"
+        }
+      ]
+    },
+    {
+      "subtitle": "Retries and Dead-Letter Topics",
+      "description": "Handling messages that fail.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** one message fails because the invoicing service is down for a minute; another fails because its data is invalid and always will. They need different handling.\n\n**Concept:** transient failures (timeouts, a dependency restarting) deserve retries with backoff. Permanent failures (validation, a missing field) will never succeed and must be moved aside to a dead-letter topic, where they can be inspected and replayed after a fix. In Spring Kafka, `DefaultErrorHandler` retries with a `BackOff` and then calls a recoverer such as `DeadLetterPublishingRecoverer` (by default, to `<topic>.DLT`); exceptions marked not retryable go there immediately.\n\n**How it works:** alert on the dead-letter topic: a message there is a bug or bad data that someone must look at.",
+          "code": "@Bean\nDefaultErrorHandler errorHandler(KafkaTemplate<Object, Object> template) {\n    var recoverer = new DeadLetterPublishingRecoverer(template);    // -> orders.DLT\n    var backOff = new ExponentialBackOffWithMaxRetries(4);\n    backOff.setInitialInterval(500);\n    backOff.setMultiplier(2.0);\n    var handler = new DefaultErrorHandler(recoverer, backOff);\n    handler.addNotRetryableExceptions(ValidationException.class);   // straight to the DLT\n    return handler;\n}",
+          "interview_question": "How do you deal with a message that keeps failing in a Kafka consumer?",
+          "references": [
+            "https://docs.spring.io/spring-kafka/reference/kafka/annotation-error-handling.html",
+            "https://docs.spring.io/spring-kafka/reference/retrytopic.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Retrying every exception, including permanent ones, with long blocking backoff. The consumer keeps retrying an invalid message, and every message behind it on that partition waits — one bad record stalls the whole partition.",
+          "code": "// WRONG: a validation error retried 10 times with 30 s waits -> the partition is stuck for 5 minutes\nnew DefaultErrorHandler(new FixedBackOff(30_000L, 10));\n\n// RIGHT: retry only transient errors; permanent ones go to the DLT at once\nhandler.addNotRetryableExceptions(ValidationException.class, JsonProcessingException.class);"
+        }
+      ]
+    },
+    {
+      "subtitle": "Ordering and Partition Keys",
+      "description": "Keeping related events in order while scaling.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the invoice service processed \"OrderCancelled\" before \"OrderPlaced\" and is now in an impossible state.\n\n**Concept:** Kafka only orders records within a partition, and the key decides the partition. Use the aggregate's id (the order id) as the key, so every event of one order is in one partition, in order — while different orders spread across partitions for parallelism. The idempotent producer keeps order even with retries. On the consumer side, processing one partition's records concurrently, or sending some to a retry topic, gives that order up.\n\n**How it works:** decide which events must be ordered relative to each other; that decides the key.",
+          "code": "// All events of order 42 -> same partition -> consumed in order\nkafka.send(\"orders\", \"42\", new OrderPlaced(...));\nkafka.send(\"orders\", \"42\", new OrderPaid(...));\nkafka.send(\"orders\", \"42\", new OrderCancelled(...));\n\n// Different orders spread across partitions -> parallel\nkafka.send(\"orders\", \"43\", new OrderPlaced(...));",
+          "interview_question": "How do you guarantee that events of the same entity are processed in order?",
+          "references": [
+            "https://kafka.apache.org/documentation/#intro_concepts_and_terms",
+            "https://kafka.apache.org/documentation/#producerconfigs_enable.idempotence"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Non-blocking retry topics for events that must stay ordered. A failed `OrderPlaced` goes to a retry topic while `OrderPaid` and `OrderCancelled` for the same order continue on the main topic — they are processed first, out of order.",
+          "code": "// WRONG for ordered events: the failed one is retried later, the next ones go ahead\n@RetryableTopic(attempts = \"4\")\n@KafkaListener(topics = \"orders\")\nvoid on(OrderEvent e) { ... }\n\n// RIGHT: blocking retries (DefaultErrorHandler) keep the partition in order,\n// then the DLT for what still fails"
+        }
+      ]
+    },
+    {
+      "subtitle": "Offsets and Commit Strategies",
+      "description": "Deciding when a message counts as processed.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** after a restart, the consumer either skipped messages or processed a batch again — depending on when the offsets were committed.\n\n**Concept:** a committed offset says \"everything before this was processed\" for the consumer group. Kafka's own auto-commit commits on a timer, regardless of whether processing finished. Spring Kafka disables it and lets the listener container commit: by default after the records from a poll are processed (`AckMode.BATCH`), or per record, or manually through `Acknowledgment` when you need control. `auto.offset.reset` says where a new group starts: `earliest` or `latest`.\n\n**How it works:** commit only after the effect is durable; then a crash means reprocessing, which idempotent consumers handle.",
+          "code": "# application.yml\nspring:\n  kafka:\n    consumer:\n      enable-auto-commit: false       # the container commits\n      auto-offset-reset: earliest     # a new group reads from the start\n    listener:\n      ack-mode: manual\n\n// Manual acknowledgement after the work is saved\n@KafkaListener(topics = \"orders\")\nvoid on(OrderPlaced e, Acknowledgment ack) {\n    invoices.create(e.orderId(), e.total());\n    ack.acknowledge();\n}",
+          "interview_question": "When should a Kafka consumer commit its offset?",
+          "references": [
+            "https://docs.spring.io/spring-kafka/reference/kafka/receiving-messages/message-listener-container.html#committing-offsets",
+            "https://kafka.apache.org/documentation/#consumerconfigs_enable.auto.commit"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Committing before the work is done — with Kafka's auto-commit, or by acknowledging first and handing the work to another thread. If the instance dies, the offset says \"processed\" and the message is lost.",
+          "code": "// WRONG: acknowledged, then processed asynchronously\n@KafkaListener(topics = \"orders\")\nvoid on(OrderPlaced e, Acknowledgment ack) {\n    ack.acknowledge();\n    executor.submit(() -> invoices.create(e.orderId(), e.total()));   // crash here = lost\n}\n\n// RIGHT: process, then acknowledge (as above)"
+        }
+      ]
+    },
+    {
+      "subtitle": "Schema Evolution",
+      "description": "Changing message formats without breaking consumers.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the producer renames a field, and three consumer teams find out in production.\n\n**Concept:** messages are a contract, and producers and consumers are deployed at different times, so every change must be compatible. Backward compatible: new consumers can read old messages (add optional fields with defaults). Forward compatible: old consumers can read new messages (they ignore unknown fields). Removing or renaming a field, or changing its type, breaks one side. A schema registry (with Avro or Protobuf) stores every version and rejects incompatible ones before they are published.\n\n**How it works:** for JSON without a registry, the same rules apply by convention: only add optional fields, and version the event type for breaking changes.",
+          "code": "// Avro schema, version 2: a new optional field with a default — backward compatible\n{\n  \"type\": \"record\", \"name\": \"OrderPlaced\",\n  \"fields\": [\n    {\"name\": \"orderId\",  \"type\": \"long\"},\n    {\"name\": \"total\",    \"type\": \"string\"},\n    {\"name\": \"currency\", \"type\": \"string\", \"default\": \"BRL\"}\n  ]\n}\n\n# The registry rejects an incompatible change (compatibility mode BACKWARD)\n$ curl -X PUT http://schema-registry:8081/config/orders-value -d '{\"compatibility\":\"BACKWARD\"}' \\\n       -H \"Content-Type: application/vnd.schemaregistry.v1+json\"",
+          "interview_question": "How do you evolve the format of events without breaking consumers?",
+          "references": [
+            "https://docs.confluent.io/platform/current/schema-registry/fundamentals/schema-evolution.html",
+            "https://avro.apache.org/docs/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Renaming a field in place. Old consumers no longer find it, new consumers cannot read old messages still in the topic. Add the new field, keep the old one until every consumer has moved, then remove it — or publish a new event version.",
+          "code": "// WRONG: v2 renames \"total\" to \"amount\"\n{\"orderId\": 42, \"amount\": \"99.90\"}       // old consumers: total is null\n\n// RIGHT: add, migrate consumers, remove later\n{\"orderId\": 42, \"total\": \"99.90\", \"amount\": \"99.90\"}    // transition\n// ... later: OrderPlaced v3 without \"total\""
+        }
+      ]
+    },
+    {
+      "subtitle": "Consumer Lag and Monitoring",
+      "description": "Knowing whether consumers keep up.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** emails are going out two hours late, and nothing alerted, because every service is \"up\".\n\n**Concept:** consumer lag is the distance between the newest offset in a partition and the offset the group has committed — messages written but not yet processed. Growing lag means consumers cannot keep up: they are too slow, too few, or stuck on one record. Monitor it per group and partition (from the broker, or the consumer's `records-lag-max` metric via Micrometer), together with processing time and errors.\n\n**How it works:** scale consumers up to the number of partitions, or make processing faster; a single stuck partition shows up as lag on that partition only.",
+          "code": "$ kafka-consumer-groups.sh --bootstrap-server kafka:9092 --describe --group email-service\nGROUP          TOPIC   PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG\nemail-service  orders  0          120450          120470          20\nemail-service  orders  1          98012           131900          33888    <- stuck or slow\nemail-service  orders  2          110233          110240          7",
+          "interview_question": "What is consumer lag, and how do you monitor it?",
+          "references": [
+            "https://kafka.apache.org/documentation/#basic_ops_consumer_group",
+            "https://docs.spring.io/spring-kafka/reference/kafka/micrometer.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Alerting on lag as a number of messages. 10,000 messages behind is minutes for a fast topic and days for a slow one, so the threshold is always wrong. Alert on time lag — how old the oldest unprocessed message is.",
+          "code": "# WRONG: fires at night for a harmless backlog, silent for a slow topic\nalert: lag > 10000\n\n# RIGHT: how far behind in time\nalert: consumer time lag > 5m      (e.g. from a lag exporter, or the oldest record's timestamp)"
+        }
+      ]
+    }
+  ]
+}

@@ -12,6 +12,11 @@ describe('detectLanguage', () => {
     ['// pom.xml\n<plugin>\n  <groupId>org.jacoco</groupId>\n</plugin>', 'markup'],
     ['{"level":"INFO","msg":"pedido criado"}', 'json'],
     ['PUT /v2/pedidos/123', 'plaintext'],
+    ['pwd                     # where am I?\nls -la', 'bash'],
+    ['$ curl -v https://api.example.com/health\n*   Trying 93.184.216.34:443...', 'bash'],
+    ['#!/usr/bin/env bash\nset -euo pipefail', 'bash'],
+    ['# Full tree\nmvn dependency:tree', 'bash'],
+    ['@Bean\nRestClient client() {}\n\n$ ./mvnw test', 'java'],
   ])('%s -> %s', (code, language) => {
     expect(detectLanguage(code)).toBe(language);
   });

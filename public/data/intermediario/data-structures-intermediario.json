@@ -1,0 +1,144 @@
+{
+  "title": "Data Structures & Algorithms",
+  "description": "How the collections work inside, and the algorithm patterns behind common interview problems.",
+  "version": "Java 21",
+  "resumo": [
+    "HashMap: 16 buckets, load factor 0.75, doubles on resize; buckets over 8 entries become trees. A bad hashCode makes it a list.",
+    "PriorityQueue is a min-heap: O(log n) add/poll, O(1) peek; top-k with a heap of size k. Its iteration is not sorted.",
+    "Graphs: BFS (queue) for the fewest hops, DFS (recursion/stack) for reachability and cycles — always with a visited set.",
+    "Two pointers and sliding windows turn O(n²) scans into O(n) — two pointers need sorted data.",
+    "Dynamic programming: cache overlapping subproblems (memoization) or fill a table (tabulation); no recursive computeIfAbsent.",
+    "Choose collections by their most frequent operation; `Arrays.asList` is fixed-size."
+  ],
+  "subsections": [
+    {
+      "subtitle": "HashMap Internals",
+      "description": "Buckets, collisions, resizing and treeification.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** an interview asks \"how does HashMap work inside?\" — and in production, a map with a bad key type becomes as slow as a list.\n\n**Concept:** a `HashMap` is an array of buckets (16 by default). The key's `hashCode` is mixed and reduced to a bucket index; entries that collide in one bucket form a linked list. When the map holds more than capacity × load factor (0.75) entries, it doubles the array and redistributes the entries (a resize, O(n) once, amortized). Since Java 8, a bucket with more than 8 entries turns into a red-black tree (when the table has at least 64 buckets), so the worst case for a bucket is O(log n) instead of O(n).\n\n**How it works:** pass an initial capacity when you know the size, to avoid repeated resizes.",
+          "code": "// Roughly what put() does\nint hash = key.hashCode() ^ (key.hashCode() >>> 16);   // spread the high bits\nint index = hash & (table.length - 1);                 // table length is a power of 2\n// bucket empty -> store; otherwise compare with equals() along the bucket\n\n// Sized for 10,000 entries without resizing\nMap<String, User> users = HashMap.newHashMap(10_000);  // Java 19+",
+          "interview_question": "How does a HashMap handle collisions, and what happens when it grows?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html",
+            "https://openjdk.org/jeps/180"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A `hashCode` that returns the same value for every key (or few distinct values). Every entry lands in one bucket and the map degrades to a list — or to a tree only if the keys are `Comparable`. Use `Objects.hash` over the fields that `equals` compares.",
+          "code": "// WRONG: legal, but every key collides\n@Override public int hashCode() { return 1; }\n\n// RIGHT: the same fields equals() uses\n@Override public int hashCode() { return Objects.hash(country, number); }"
+        }
+      ]
+    },
+    {
+      "subtitle": "Heaps and PriorityQueue",
+      "description": "Always the smallest (or largest) next.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** out of a million orders you need the ten largest, or a scheduler must always run the most urgent task next.\n\n**Concept:** a binary heap is a tree stored in an array where each parent is smaller than its children (a min-heap), so the smallest element is always at the top. Adding and removing the top are O(log n); peeking is O(1). Java's `PriorityQueue` is a min-heap; pass a comparator for other orders. For \"top k\" problems, keep a heap of size k: O(n log k) instead of sorting everything.\n\n**How it works:** with a min-heap of size k, the smallest of the current top k sits on top, ready to be replaced by a bigger element.",
+          "code": "// Top 10 orders by total, without sorting a million orders\nPriorityQueue<Order> top = new PriorityQueue<>(Comparator.comparing(Order::total));   // min-heap\nfor (Order o : orders) {\n    top.offer(o);\n    if (top.size() > 10) top.poll();        // drop the smallest of the 11\n}\n\n// Most urgent task first\nPriorityQueue<Task> tasks = new PriorityQueue<>(Comparator.comparingInt(Task::priority).reversed());",
+          "interview_question": "How would you find the k largest elements of a large collection efficiently?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/PriorityQueue.html",
+            "https://en.wikipedia.org/wiki/Binary_heap"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Iterating or printing a `PriorityQueue` and expecting sorted order. Only the head is guaranteed to be the smallest; the rest of the internal array is in heap order. Use `poll` repeatedly, or sort a copy.",
+          "code": "PriorityQueue<Integer> pq = new PriorityQueue<>(List.of(5, 1, 4, 2, 3));\nSystem.out.println(pq);          // [1, 2, 4, 5, 3] — heap order, not sorted\n\n// RIGHT\nwhile (!pq.isEmpty()) System.out.print(pq.poll() + \" \");   // 1 2 3 4 5"
+        }
+      ]
+    },
+    {
+      "subtitle": "Graphs: BFS and DFS",
+      "description": "Exploring connections: shortest hops and full depth.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** which services depend on this one, transitively? How many connections between two users? These are graph questions.\n\n**Concept:** a graph is a set of nodes connected by edges, usually stored as an adjacency list (`Map<Node, List<Node>>`). Breadth-first search (BFS) explores level by level with a queue and finds the shortest path in number of edges. Depth-first search (DFS) goes as deep as possible first, with recursion or a stack, and suits reachability, cycle detection and topological order. Both are O(V + E).\n\n**How it works:** both keep a set of visited nodes, so each node is processed once.",
+          "code": "Map<String, List<String>> dependsOn = Map.of(\n    \"checkout\", List.of(\"orders\", \"payments\"),\n    \"orders\",   List.of(\"stock\"),\n    \"payments\", List.of(),\n    \"stock\",    List.of());\n\n// BFS: shortest number of hops from start to target\nint hops(String start, String target) {\n    Deque<String> queue = new ArrayDeque<>(List.of(start));\n    Map<String, Integer> dist = new HashMap<>(Map.of(start, 0));\n    while (!queue.isEmpty()) {\n        String node = queue.poll();\n        if (node.equals(target)) return dist.get(node);\n        for (String next : dependsOn.getOrDefault(node, List.of())) {\n            if (dist.putIfAbsent(next, dist.get(node) + 1) == null) queue.offer(next);\n        }\n    }\n    return -1;\n}\n\nhops(\"checkout\", \"stock\");   // 2",
+          "interview_question": "What is the difference between BFS and DFS, and when do you use each?",
+          "references": [
+            "https://en.wikipedia.org/wiki/Breadth-first_search",
+            "https://en.wikipedia.org/wiki/Depth-first_search"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Traversing without a visited set. On a graph with a cycle (A depends on B, B on A), the search goes around forever — an endless loop or a `StackOverflowError`.",
+          "code": "// WRONG: no visited set — A -> B -> A -> B ...\nvoid dfs(String node) {\n    for (String next : graph.get(node)) dfs(next);\n}\n\n// RIGHT\nvoid dfs(String node, Set<String> visited) {\n    if (!visited.add(node)) return;          // already seen\n    for (String next : graph.get(node)) dfs(next, visited);\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Two Pointers and Sliding Window",
+      "description": "Linear-time patterns over arrays and strings.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** many interview problems have an obvious O(n²) answer with two nested loops — and an O(n) one with the right pattern.\n\n**Concept:** with two pointers, two indexes move through the data — from both ends toward the middle, or one behind the other — and each step discards possibilities, so the whole pass is O(n). It works when the data is sorted or the problem has an order to exploit. A sliding window keeps a range [left, right] that grows on the right and shrinks on the left, updating a running value instead of recomputing it.\n\n**How it works:** look for \"pairs in a sorted array\", \"longest/shortest subarray with...\", \"substring without repeats\".",
+          "code": "// Two pointers: does a sorted array have a pair summing to target? O(n)\nboolean hasPair(int[] sorted, int target) {\n    int lo = 0, hi = sorted.length - 1;\n    while (lo < hi) {\n        int sum = sorted[lo] + sorted[hi];\n        if (sum == target) return true;\n        if (sum < target) lo++; else hi--;\n    }\n    return false;\n}\n\n// Sliding window: longest substring without repeated characters. O(n)\nint longestUnique(String s) {\n    Map<Character, Integer> lastSeen = new HashMap<>();\n    int best = 0;\n    for (int left = 0, right = 0; right < s.length(); right++) {\n        Integer prev = lastSeen.put(s.charAt(right), right);\n        if (prev != null && prev >= left) left = prev + 1;   // shrink past the repeat\n        best = Math.max(best, right - left + 1);\n    }\n    return best;\n}",
+          "interview_question": "How would you find a pair with a given sum in a sorted array in linear time?",
+          "references": [
+            "https://www.geeksforgeeks.org/dsa/window-sliding-technique/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using the two-pointer pair search on unsorted data. Moving a pointer only discards the right candidates because the array is sorted; without that, it misses valid pairs. Sort first, or use a `HashSet` of complements.",
+          "code": "// WRONG: unsorted input -> misses the pair (3, 7)\nhasPair(new int[]{8, 3, 1, 7}, 10);      // false\n\n// RIGHT for unsorted data: O(n) with a set\nSet<Integer> seen = new HashSet<>();\nfor (int n : numbers) {\n    if (seen.contains(target - n)) return true;\n    seen.add(n);\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Dynamic Programming",
+      "description": "Solving overlapping subproblems once.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a recursive solution is correct but takes minutes for n = 50, because it recomputes the same subproblems millions of times.\n\n**Concept:** dynamic programming applies when a problem breaks into subproblems that repeat. Memoization (top-down) caches each subproblem's result the first time it is computed; tabulation (bottom-up) fills a table from the smallest cases up. Both turn exponential recursion into polynomial time — for Fibonacci, from O(2ⁿ) to O(n).\n\n**How it works:** define the subproblem, its base cases and how it is built from smaller ones; then cache or tabulate.",
+          "code": "// Fewest coins for an amount (coins = {1, 5, 10, 25}), bottom-up. O(amount × coins)\nint minCoins(int[] coins, int amount) {\n    int[] best = new int[amount + 1];\n    Arrays.fill(best, Integer.MAX_VALUE);\n    best[0] = 0;                                         // base case\n    for (int a = 1; a <= amount; a++) {\n        for (int c : coins) {\n            if (c <= a && best[a - c] != Integer.MAX_VALUE) {\n                best[a] = Math.min(best[a], best[a - c] + 1);\n            }\n        }\n    }\n    return best[amount] == Integer.MAX_VALUE ? -1 : best[amount];\n}\n\nminCoins(new int[]{1, 5, 10, 25}, 30);   // 2  (25 + 5)",
+          "interview_question": "What is dynamic programming, and what is the difference between memoization and tabulation?",
+          "references": [
+            "https://en.wikipedia.org/wiki/Dynamic_programming"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Memoizing with `HashMap.computeIfAbsent` and recursing inside the function. The recursive call modifies the map while `computeIfAbsent` is still running, and since Java 9 it throws `ConcurrentModificationException`. Check, compute, then put.",
+          "code": "// WRONG: recursive computeIfAbsent\nlong fib(int n) {\n    if (n < 2) return n;\n    return memo.computeIfAbsent(n, k -> fib(k - 1) + fib(k - 2));   // ConcurrentModificationException\n}\n\n// RIGHT\nlong fib(int n) {\n    if (n < 2) return n;\n    Long cached = memo.get(n);\n    if (cached != null) return cached;\n    long result = fib(n - 1) + fib(n - 2);\n    memo.put(n, result);\n    return result;\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Choosing the Right Collection",
+      "description": "Matching the structure to the operations you need.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** performance problems and subtle bugs often come from a collection chosen out of habit, not from the algorithm.\n\n**Concept:** pick by the operations you do most. Access by index: `ArrayList`. Lookup by key or \"contains\": `HashMap` / `HashSet`. Insertion order: `LinkedHashMap` / `LinkedHashSet`. Sorted, ranges, next-after: `TreeMap` / `TreeSet`. Both ends: `ArrayDeque`. Smallest/largest next: `PriorityQueue`. Shared between threads: `ConcurrentHashMap`, `CopyOnWriteArrayList`. Fixed values that never change: `List.of`, `Set.of`, `Map.of`.\n\n**How it works:** expose interfaces (`List`, `Map`) in method signatures, so the implementation can change without affecting callers.",
+          "code": "Operation                     ArrayList  LinkedList  HashSet/Map  TreeSet/Map  ArrayDeque\nget by index                  O(1)       O(n)        -            -            -\nadd at end / at the ends      O(1)*      O(1)        -            -            O(1)\ncontains / get by key         O(n)       O(n)        O(1)**       O(log n)     O(n)\ninsert/remove in the middle   O(n)       O(n)***     -            -            -\nsorted iteration              no         no          no           yes          no\n*  amortized   ** average   *** O(1) with an iterator already positioned",
+          "interview_question": "Which collection would you choose for frequent lookups by key, and which for keeping elements sorted?",
+          "references": [
+            "https://docs.oracle.com/javase/tutorial/collections/implementations/index.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`Arrays.asList` treated as a normal list. It is a fixed-size view over the array: `add` and `remove` throw `UnsupportedOperationException`, and writing to it changes the original array. Copy it into an `ArrayList` when you need to change the size.",
+          "code": "// WRONG\nList<String> tags = Arrays.asList(\"java\", \"sql\");\ntags.add(\"docker\");                  // UnsupportedOperationException\n\n// RIGHT\nList<String> tags = new ArrayList<>(Arrays.asList(\"java\", \"sql\"));\ntags.add(\"docker\");"
+        }
+      ]
+    }
+  ]
+}

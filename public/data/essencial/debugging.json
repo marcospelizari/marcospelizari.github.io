@@ -1,0 +1,167 @@
+{
+  "title": "Debugging",
+  "description": "Finding and fixing bugs with a method: stack traces, the debugger, logs and reproducible tests.",
+  "version": "IntelliJ IDEA, Java 21",
+  "resumo": [
+    "Stack trace: exception, message, your topmost frame — and the last `Caused by` is the root cause.",
+    "Debugger: breakpoint, Step Over (F8), Step Into (F7), Step Out (Shift+F8), Resume (F9), Evaluate.",
+    "Conditional, logging and exception breakpoints stop only when it matters; never evaluate expressions with side effects.",
+    "Reproduce a bug as a failing test, debug the test, and keep it after the fix.",
+    "Remote debugging: JDWP on port 5005 in test environments only, through a tunnel — never exposed.",
+    "Raise log levels for one package, temporarily (Actuator `loggers`); never DEBUG for everything in production.",
+    "Method: reproduce, narrow down, hypothesis, fix the root cause, keep the test — never swallow the exception."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Reading a Stack Trace",
+      "description": "Where the error happened, and why.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a wall of red text appears, and the first instinct is to copy the first line into a search engine.\n\n**Concept:** a stack trace lists the exception, its message, and the chain of method calls that led to it, most recent first. Each line is `at package.Class.method(File.java:line)`. Look for the first line that belongs to your own code — that is usually where to start. Wrapped exceptions appear as `Caused by:` blocks; the last `Caused by` is the root cause. `... 42 more` means the remaining frames are the same as in the block above.\n\n**How it works:** read three things: the exception type, the message, and your topmost frame.",
+          "code": "org.springframework.dao.DataIntegrityViolationException: could not execute statement\n    at org.springframework.orm.jpa.vendor.HibernateJpaDialect.convertHibernateAccessException(...)\n    ...\n    at com.shop.orders.OrderService.create(OrderService.java:48)        <- your code\n    at com.shop.orders.OrderController.create(OrderController.java:31)\n    ...\nCaused by: org.hibernate.exception.ConstraintViolationException: could not execute statement\n    ...\nCaused by: org.postgresql.util.PSQLException: ERROR: null value in column \"customer_id\"\n           of relation \"orders\" violates not-null constraint                         <- root cause\n    ... 87 more",
+          "interview_question": "How do you find the root cause in a long Java stack trace?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/lang/Throwable.html#printStackTrace()"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Reading only the first line. Frameworks wrap exceptions, so the top says something generic (\"could not execute statement\") while the real reason is in the last `Caused by`. Scroll to the bottom.",
+          "code": "WRONG: \"DataIntegrityViolationException — must be a database problem\"\n\nRIGHT: last Caused by -> null value in column \"customer_id\"\n       -> the request did not send customerId, and nothing validated it"
+        }
+      ]
+    },
+    {
+      "subtitle": "Debugger Basics: Breakpoints and Stepping",
+      "description": "Pausing the program and looking inside.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** adding `System.out.println` everywhere, rebuilding and running again — ten times — to see the value of one variable.\n\n**Concept:** a debugger pauses the program at a breakpoint and lets you inspect every variable, the call stack and the threads. Step Over runs the current line and stops at the next one; Step Into enters the method being called; Step Out finishes the current method and returns to the caller; Resume runs until the next breakpoint. Evaluate Expression runs any expression in the paused context.\n\n**How it works:** in IntelliJ, click the gutter to set a breakpoint and start with Debug instead of Run; the same works for tests.",
+          "code": "public BigDecimal total(Order order) {\n    BigDecimal sum = BigDecimal.ZERO;\n    for (Item item : order.items()) {                 // ● breakpoint here\n        sum = sum.add(item.price().multiply(BigDecimal.valueOf(item.quantity())));\n    }\n    return applyDiscount(sum, order.coupon());        // Step Into -> enters applyDiscount\n}\n\nIntelliJ shortcuts (default keymap):\n  F8  Step Over      F7  Step Into      Shift+F8  Step Out\n  F9  Resume         Alt+F8  Evaluate Expression",
+          "interview_question": "What is the difference between Step Over, Step Into and Step Out?",
+          "references": [
+            "https://www.jetbrains.com/help/idea/debugging-code.html",
+            "https://code.visualstudio.com/docs/java/java-debugging"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Stepping into library code line by line. Step Into on a Spring or Hibernate call can take you through hundreds of framework frames that are not your problem. Step Over library calls, or set a breakpoint in your own code and Resume.",
+          "code": "WRONG: F7, F7, F7 ... through CGLIB proxies, TransactionInterceptor, Hibernate internals\n\nRIGHT: F8 over the framework call; breakpoint in your next method; F9 to get there\n       (IntelliJ: \"Step Into\" skips configured library packages — Settings > Debugger > Stepping)"
+        }
+      ]
+    },
+    {
+      "subtitle": "Conditional Breakpoints and Watches",
+      "description": "Stopping only when it matters.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the bug happens for order 4711, and a breakpoint in the loop stops 10,000 times for the other orders.\n\n**Concept:** a conditional breakpoint stops only when an expression is true (`order.id() == 4711`). A logging breakpoint prints a message without stopping, like a temporary log line that needs no rebuild. An exception breakpoint stops wherever a given exception is thrown — even if it is caught later. Watches keep expressions visible while you step.\n\n**How it works:** exception breakpoints are often the fastest way in: stop at the moment the `NullPointerException` is created.",
+          "code": "for (Order order : orders) {\n    process(order);           // ● condition: order.id() == 4711\n}\n\nBreakpoint types (IntelliJ: right-click the breakpoint):\n  Condition:        order.id() == 4711\n  Log, no suspend:  \"processing \" + order.id() + \" total=\" + order.total()\n  Exception:        Run > View Breakpoints > + > Java Exception Breakpoints > NullPointerException",
+          "interview_question": "How do you stop in a loop only for the iteration that causes a bug?",
+          "references": [
+            "https://www.jetbrains.com/help/idea/using-breakpoints.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Watching or evaluating an expression with a side effect. The debugger really runs it: `iterator.next()` in a watch advances the iterator, and `repository.save(x)` writes to the database — the program you are debugging now behaves differently.",
+          "code": "// WRONG in a watch / Evaluate Expression\niterator.next()             // consumes an element every time the view refreshes\nqueue.poll()                // removes an item\nrepository.save(order)      // writes to the database\n\n// RIGHT: read-only expressions\niterator.hasNext()\nqueue.peek()\norder.items().size()"
+        }
+      ]
+    },
+    {
+      "subtitle": "Debugging Tests",
+      "description": "Reproduce the bug in a test, then debug the test.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the bug only shows up after logging in, adding three items, applying a coupon and paying — and reproducing it by hand takes five minutes each time.\n\n**Concept:** turn the bug into a failing test first: it reproduces the problem in seconds, and you can run it under the debugger as often as you like. Make it as small as possible — only the data and steps needed to fail. When the test passes after your fix, it stays in the suite and guards against the bug coming back.\n\n**How it works:** run a single test in debug mode (in the IDE, or `./mvnw test -Dtest=... -Dmaven.surefire.debug` and attach to port 5005).",
+          "code": "@Test\nvoid couponOnDiscountedItemNeverMakesTotalNegative() {     // reproduces the bug report\n    Order order = new Order(List.of(item(\"book\", \"10.00\").withDiscount(\"8.00\")));\n    order.applyCoupon(coupon(\"5.00\"));\n\n    assertThat(order.total()).isGreaterThanOrEqualTo(BigDecimal.ZERO);   // fails today\n}\n\n$ ./mvnw test -Dtest=OrderTest#couponOnDiscountedItemNeverMakesTotalNegative -Dmaven.surefire.debug\n# Listening for transport dt_socket at address: 5005  -> attach the IDE debugger",
+          "interview_question": "Why write a failing test before fixing a bug?",
+          "references": [
+            "https://maven.apache.org/surefire/maven-surefire-plugin/examples/debugging.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Fixing the bug without a test. It works today, a refactor next month brings it back, and nobody notices until a customer does.",
+          "code": "WRONG: fix -> manual check -> merge\n       (three months later the same bug, reported again)\n\nRIGHT: failing test -> fix -> test passes -> merge (the test stays)"
+        }
+      ]
+    },
+    {
+      "subtitle": "Remote Debugging",
+      "description": "Attaching the debugger to a running JVM.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the problem only happens in a container or a test environment, never on your machine.\n\n**Concept:** the JVM can open a debug port with the JDWP agent: `-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005`. The IDE then attaches to it (\"Remote JVM Debug\") as if the application were local. `suspend=y` makes the JVM wait for the debugger before starting — useful for bugs during startup. In Kubernetes, reach the port with `kubectl port-forward`.\n\n**How it works:** breakpoints pause real threads, so never do this on an instance that serves real users.",
+          "code": "# Start the application with a debug port\njava -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 -jar app.jar\n# Listening for transport dt_socket at address: 5005\n\n# In Docker\ndocker run -p 8080:8080 -p 5005:5005 \\\n  -e JAVA_TOOL_OPTIONS=\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005\" shop-api:1.4.0\n\n# In Kubernetes (a test environment)\nkubectl port-forward pod/api-orders-7d9f8 5005:5005\n\n# IntelliJ: Run > Edit Configurations > + > Remote JVM Debug > localhost:5005",
+          "interview_question": "How do you debug an application running in a container?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/specs/jpda/conninv.html",
+            "https://www.jetbrains.com/help/idea/tutorial-remote-debug.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Leaving the debug port open and published. JDWP has no authentication: anyone who can reach port 5005 can run arbitrary code inside the JVM. Enable it only in test environments, never expose it publicly, and reach it through a tunnel.",
+          "code": "# WRONG: debug agent in the production image, port published\nEXPOSE 8080 5005\nENV JAVA_TOOL_OPTIONS=\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005\"\n\n# RIGHT: only in a test environment, reached through port-forward or an SSH tunnel"
+        }
+      ]
+    },
+    {
+      "subtitle": "Logging for Diagnosis",
+      "description": "Turning on detail exactly where you need it.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the bug happens in production, where you cannot attach a debugger, and the logs say nothing useful.\n\n**Concept:** log levels let you add detail without changing code: `logging.level.com.shop.orders=DEBUG` turns on debug logs for one package only. With Actuator's `loggers` endpoint, you can change a level at runtime, without a restart, and set it back afterwards. Useful debug logs say what was decided and with which inputs (ids, counts, branch taken).\n\n**How it works:** in development, `logging.level.org.hibernate.SQL=DEBUG` shows every SQL statement Hibernate runs.",
+          "code": "# application.yml\nlogging:\n  level:\n    com.shop.orders: DEBUG            # only this package\n    org.hibernate.SQL: DEBUG          # every SQL statement (dev only)\n\n// A useful debug line\nlog.debug(\"Coupon {} rejected for order {}: minimum {} > subtotal {}\",\n          coupon.code(), order.id(), coupon.minimum(), order.subtotal());\n\n# Change a level at runtime (Actuator 'loggers' endpoint exposed and protected)\ncurl -X POST localhost:8080/actuator/loggers/com.shop.orders \\\n     -H \"Content-Type: application/json\" -d '{\"configuredLevel\":\"DEBUG\"}' ",
+          "interview_question": "How do you get more detail from an application in production without redeploying it?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/features/logging.html#features.logging.log-levels",
+            "https://docs.spring.io/spring-boot/api/rest/actuator/loggers.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Turning on DEBUG for everything in production and leaving it. Log volume explodes, the log bill with it, and debug lines often contain request bodies with personal data. Raise the level for one package, for a limited time, then lower it.",
+          "code": "# WRONG: in production, permanently\nlogging.level.root: DEBUG\n\n# RIGHT: one package, temporarily, then back\ncurl -X POST .../actuator/loggers/com.shop.orders -d '{\"configuredLevel\":\"DEBUG\"}'\n# ... investigate ...\ncurl -X POST .../actuator/loggers/com.shop.orders -d '{\"configuredLevel\":null}' "
+        }
+      ]
+    },
+    {
+      "subtitle": "A Method for Finding Bugs",
+      "description": "Reproduce, narrow down, prove, fix.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** hours of changing things at random until the error disappears — without knowing why it appeared, or whether it will come back.\n\n**Concept:** a reliable method: (1) reproduce the bug, ideally in a test; (2) narrow it down — the smallest input, the last version that worked (`git bisect`), the exact line; (3) form a hypothesis and test it, changing one thing at a time; (4) fix the root cause, not the symptom; (5) keep the test. Explaining the problem out loud, line by line, to a colleague (or a rubber duck) often reveals the wrong assumption.\n\n**How it works:** write down what you have ruled out: it stops you from checking the same thing twice and helps whoever helps you.",
+          "code": "1. Reproduce:  \"applying a coupon makes the total negative\" -> failing test\n2. Narrow:     only when the item already has a discount; started in v1.4.0 (git bisect)\n3. Hypothesis: the coupon is applied to the original price, not the discounted one\n4. Prove:      log both values -> confirmed\n5. Fix:        apply the coupon after item discounts, floor at zero\n6. Keep:       the failing test now passes and stays in the suite",
+          "interview_question": "How do you approach a bug you do not understand?",
+          "references": [
+            "https://jvns.ca/blog/2022/12/08/a-debugging-manifesto/",
+            "https://git-scm.com/docs/git-bisect"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Making the error disappear by catching it. The exception no longer shows up, the wrong data still goes through, and now it fails later and silently, far from the cause.",
+          "code": "// WRONG: the symptom is gone, the bug is not\ntry {\n    order.applyCoupon(coupon);\n} catch (IllegalStateException e) {\n    // ignore\n}\n\n// RIGHT: find out why applyCoupon throws, fix that, and keep a test"
+        }
+      ]
+    }
+  ]
+}

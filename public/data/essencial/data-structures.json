@@ -1,0 +1,215 @@
+{
+  "title": "Data Structures & Algorithms",
+  "description": "The structures behind Java collections, their costs, and the algorithms interviews ask about.",
+  "version": "Java 21",
+  "resumo": [
+    "Big-O: O(1) < O(log n) < O(n) < O(n log n) < O(n²). A lookup inside a loop multiplies.",
+    "ArrayList: O(1) by index and at the end, O(n) in the middle and for `contains`. The default list.",
+    "LinkedList: O(1) at the ends, O(n) by index — rarely faster than ArrayList; use ArrayDeque for both ends.",
+    "Stack (LIFO) and queue (FIFO): `ArrayDeque` with `push/pop` or `offer/poll`, never `java.util.Stack`.",
+    "HashMap / HashSet: O(1) average by key; order is not guaranteed — LinkedHashMap or TreeMap when it matters.",
+    "TreeMap / TreeSet: sorted, O(log n), with ceiling/floor navigation; the comparator defines equality.",
+    "Binary search: O(log n), only on sorted data.",
+    "Sorting is O(n log n) and stable for objects; build comparators with `Comparator.comparing`, never by subtraction.",
+    "Recursion needs a base case; each call is a stack frame — use a loop for deep or linear data."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Big-O Notation",
+      "description": "How cost grows with the size of the input.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** code that is instant with 100 records takes minutes with a million, and nobody saw it coming in code review.\n\n**Concept:** Big-O describes how the work grows as the input size n grows, ignoring constants. O(1): constant, independent of n (reading `array[i]`). O(log n): halves the problem each step (binary search). O(n): one pass over the data. O(n log n): efficient sorting. O(n²): a loop inside a loop over the same data. Space complexity measures extra memory the same way.\n\n**How it works:** count the loops over the input and what each step costs. A method call inside a loop counts too: `list.contains(x)` on an `ArrayList` is O(n), so calling it inside a loop is O(n²).",
+          "code": "// O(1): direct index access\nint first = numbers[0];\n\n// O(n): one pass\nint sum = 0;\nfor (int n : numbers) sum += n;\n\n// O(n²): every pair\nfor (int i = 0; i < numbers.length; i++)\n    for (int j = i + 1; j < numbers.length; j++)\n        if (numbers[i] + numbers[j] == target) return true;\n\n// For n = 1,000,000:  O(n) ≈ 10⁶ steps   O(n log n) ≈ 2×10⁷   O(n²) ≈ 10¹²",
+          "interview_question": "What is Big-O notation, and what is the complexity of a nested loop over the same list?",
+          "references": [
+            "https://www.bigocheatsheet.com/",
+            "https://en.wikipedia.org/wiki/Big_O_notation"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Hidden O(n²): a linear lookup inside a loop. `List.contains` scans the whole list, so checking each element of one list against another is quadratic. A `HashSet` makes each lookup O(1).",
+          "code": "// WRONG: O(n × m) — contains() scans the whole list every time\nList<String> blocked = loadBlockedEmails();          // 100,000 entries\nfor (User u : users)                                 // 100,000 users\n    if (blocked.contains(u.email())) block(u);       // 10¹⁰ comparisons\n\n// RIGHT: O(n + m)\nSet<String> blocked = new HashSet<>(loadBlockedEmails());\nfor (User u : users)\n    if (blocked.contains(u.email())) block(u);       // O(1) per lookup"
+        }
+      ]
+    },
+    {
+      "subtitle": "Arrays and ArrayList",
+      "description": "Contiguous storage: fast by index, slow in the middle.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need to keep a sequence of items, read them by position and add more as they arrive.\n\n**Concept:** an array stores elements side by side in memory, so reading by index is O(1). Its size is fixed. `ArrayList` wraps an array and grows it automatically: when it is full, it allocates a bigger one (about 1.5×) and copies the elements, so adding at the end is O(1) amortized. Inserting or removing in the middle shifts every element after it: O(n).\n\n**How it works:** `ArrayList` is the default list in Java. If you know the final size, pass it to the constructor to avoid repeated copying.",
+          "code": "List<String> items = new ArrayList<>(1_000);   // capacity known: no resizing\nitems.add(\"book\");          // O(1) amortized, at the end\nitems.get(0);               // O(1), by index\nitems.add(0, \"pen\");        // O(n): shifts every element right\nitems.remove(0);            // O(n): shifts every element left\nitems.contains(\"book\");     // O(n): scans the list",
+          "interview_question": "What are the costs of add, get and insert in the middle of an ArrayList, and why?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayList.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Calling `remove(1)` on a `List<Integer>`. It removes the element at index 1, not the value 1 — `remove(int)` is chosen over `remove(Object)`. Box the value to remove by value.",
+          "code": "List<Integer> ids = new ArrayList<>(List.of(5, 1, 7));\nids.remove(1);                     // removes index 1 -> [5, 7]  (the value 1 is gone by luck)\n\n// RIGHT: remove the value 1\nids.remove(Integer.valueOf(1));    // -> [5, 7], whatever its position"
+        }
+      ]
+    },
+    {
+      "subtitle": "Linked Lists",
+      "description": "Nodes linked by references.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you read that linked lists insert in O(1) and switch an `ArrayList` to `LinkedList` \"for performance\" — and it gets slower.\n\n**Concept:** a linked list stores each element in a node that points to the next (and, in Java's `LinkedList`, the previous). Adding or removing at either end is O(1), and so is removing through an iterator you already hold. But reaching position i means walking i nodes: `get(i)` is O(n). Nodes are scattered in memory, so iterating is also slower in practice than over an array.\n\n**How it works:** in real code, `ArrayList` is almost always faster. For adding and removing at both ends, use `ArrayDeque`.",
+          "code": "LinkedList<String> list = new LinkedList<>();\nlist.addFirst(\"a\");     // O(1)\nlist.addLast(\"z\");      // O(1)\nlist.get(500);          // O(n): walks node by node\n\n// head -> [a] <-> [b] <-> [c] <- tail",
+          "interview_question": "When is a LinkedList better than an ArrayList?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/LinkedList.html",
+            "https://en.wikipedia.org/wiki/Linked_list"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Looping over a `LinkedList` with `get(i)`. Each call walks from the start, so the loop becomes O(n²). Iterate with for-each (or an iterator).",
+          "code": "// WRONG: O(n²) — get(i) walks the list every time\nfor (int i = 0; i < list.size(); i++) {\n    process(list.get(i));\n}\n\n// RIGHT: O(n)\nfor (String item : list) {\n    process(item);\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Stacks and Queues",
+      "description": "Last in first out, and first in first out.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** undo history, matching brackets, processing tasks in arrival order — they all need items taken out in a specific order.\n\n**Concept:** a stack is LIFO (last in, first out): `push` adds on top and `pop` removes from the top. A queue is FIFO (first in, first out): `offer` adds at the end and `poll` removes from the front. All operations are O(1). In Java, `ArrayDeque` implements both through the `Deque` interface; the old `Stack` class extends the synchronized `Vector` and should not be used.\n\n**How it works:** declare the variable as `Deque<T>` and use one consistent set of methods for the role you need.",
+          "code": "// Stack (LIFO)\nDeque<String> undo = new ArrayDeque<>();\nundo.push(\"typed A\");\nundo.push(\"typed B\");\nundo.pop();                 // \"typed B\"\n\n// Queue (FIFO)\nQueue<Order> pending = new ArrayDeque<>();\npending.offer(order1);\npending.offer(order2);\npending.poll();             // order1\n\n// Classic stack use: balanced brackets\nboolean balanced(String s) {\n    Deque<Character> open = new ArrayDeque<>();\n    for (char c : s.toCharArray()) {\n        if (c == '(') open.push(c);\n        else if (c == ')' && (open.isEmpty() || open.pop() != '(')) return false;\n    }\n    return open.isEmpty();\n}",
+          "interview_question": "What is the difference between a stack and a queue, and which Java class do you use for each?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/ArrayDeque.html",
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Deque.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Mixing `Deque` methods from different roles. `push` adds to the front, but `add` adds to the end; adding with `add` and taking with `pop` makes your \"stack\" behave like a queue.",
+          "code": "// WRONG: add() goes to the END, pop() takes from the FRONT -> FIFO, not LIFO\nDeque<String> stack = new ArrayDeque<>();\nstack.add(\"first\");\nstack.add(\"second\");\nstack.pop();                // \"first\" — not what a stack should return\n\n// RIGHT: push/pop/peek for a stack\nstack.push(\"first\");\nstack.push(\"second\");\nstack.pop();                // \"second\""
+        }
+      ]
+    },
+    {
+      "subtitle": "Hash Tables: HashMap and HashSet",
+      "description": "Average O(1) lookup by key.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** finding a user by email in a list of a million users means scanning the list every time.\n\n**Concept:** a hash table computes a hash code from the key and uses it to choose a bucket in an internal array, so lookup, insert and removal are O(1) on average. Two keys can land in the same bucket (a collision); `equals` then tells them apart. That is why keys must implement `hashCode` and `equals` consistently. `HashSet` is a `HashMap` with only keys.\n\n**How it works:** use `HashMap` whenever you look things up by key and do not need order; `LinkedHashMap` keeps insertion order, and `TreeMap` keeps keys sorted.",
+          "code": "Map<String, User> byEmail = new HashMap<>();\nfor (User u : users) byEmail.put(u.email(), u);    // O(n) once\n\nUser ana = byEmail.get(\"ana@example.com\");          // O(1) average\n\nSet<String> seen = new HashSet<>();\nif (!seen.add(orderId)) {                           // add() returns false if present\n    log.warn(\"Duplicate order {}\", orderId);\n}\n\nMap<String, Integer> wordCount = new HashMap<>();\nfor (String w : words) wordCount.merge(w, 1, Integer::sum);",
+          "interview_question": "How does a HashMap find a value in O(1), and why do keys need equals and hashCode?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/HashMap.html",
+            "https://en.wikipedia.org/wiki/Hash_table"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Relying on the iteration order of a `HashMap`. The order depends on hash codes and capacity, is not guaranteed, and can change between JDK versions or as the map grows — so output and tests change \"by themselves\". Use `LinkedHashMap` (insertion order) or `TreeMap` (sorted).",
+          "code": "// WRONG: the test passes today and fails after a JDK upgrade\nMap<String, Integer> totals = new HashMap<>();\nassertEquals(\"{books=3, pens=1}\", totals.toString());\n\n// RIGHT: an ordered map when order matters\nMap<String, Integer> totals = new LinkedHashMap<>();   // or new TreeMap<>()"
+        }
+      ]
+    },
+    {
+      "subtitle": "Trees and TreeMap",
+      "description": "Sorted data with O(log n) operations.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** you need the data sorted at all times — the next appointment after 14:00, the products in a price range — not only fast lookups.\n\n**Concept:** a binary search tree keeps smaller keys on the left and larger on the right, so a search goes down one path. If the tree stays balanced, its height is about log₂ n, and search, insert and delete are O(log n). Java's `TreeMap` and `TreeSet` are red-black trees (self-balancing) and keep keys sorted, with navigation methods such as `floorKey`, `ceilingKey`, `headMap` and `subMap`.\n\n**How it works:** the keys must be `Comparable`, or you pass a `Comparator` to the constructor.",
+          "code": "TreeMap<LocalTime, String> agenda = new TreeMap<>();\nagenda.put(LocalTime.of(9, 0), \"stand-up\");\nagenda.put(LocalTime.of(14, 30), \"review\");\nagenda.put(LocalTime.of(16, 0), \"1:1\");\n\nagenda.ceilingKey(LocalTime.of(14, 0));     // 14:30 — next at or after 14:00\nagenda.headMap(LocalTime.of(12, 0));        // everything before noon\nagenda.firstKey();                          // 09:00\n\n//          14:30\n//         /     \\\n//     09:00     16:00        height ≈ log₂ n",
+          "interview_question": "When would you use a TreeMap instead of a HashMap?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/TreeMap.html",
+            "https://en.wikipedia.org/wiki/Red%E2%80%93black_tree"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A `Comparator` that compares only part of the object. `TreeSet` considers two elements equal when the comparator returns 0, so two different people with the same name silently become one.",
+          "code": "// WRONG: compares only the name -> Ana Silva and Ana Souza collapse into one\nSet<Person> people = new TreeSet<>(Comparator.comparing(Person::firstName));\n\n// RIGHT: break ties until the order is consistent with equals\nSet<Person> people = new TreeSet<>(Comparator.comparing(Person::firstName)\n                                             .thenComparing(Person::lastName)\n                                             .thenComparing(Person::id));"
+        }
+      ]
+    },
+    {
+      "subtitle": "Searching: Linear and Binary Search",
+      "description": "Finding an element in O(n) or O(log n).",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** checking whether a value exists in a sorted list of a million entries by looking at every one.\n\n**Concept:** linear search checks each element in turn: O(n), and it works on any list. Binary search needs a sorted list: look at the middle, discard the half that cannot contain the value, repeat — O(log n), about 20 steps for a million elements. In Java, `Collections.binarySearch` and `Arrays.binarySearch` do it; they return the index, or a negative number if the value is absent.\n\n**How it works:** sort once (O(n log n)) when you will search many times; for a single search, linear is cheaper.",
+          "code": "// Binary search by hand\nint binarySearch(int[] sorted, int target) {\n    int lo = 0, hi = sorted.length - 1;\n    while (lo <= hi) {\n        int mid = lo + (hi - lo) / 2;          // avoids int overflow of (lo + hi)\n        if (sorted[mid] == target) return mid;\n        if (sorted[mid] < target) lo = mid + 1;\n        else hi = mid - 1;\n    }\n    return -1;\n}\n\nint[] prices = {10, 20, 35, 50, 80};\nArrays.binarySearch(prices, 50);   // 3\nArrays.binarySearch(prices, 40);   // negative: not found",
+          "interview_question": "How does binary search work, and what does it require?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Arrays.html#binarySearch(int%5B%5D,int)",
+            "https://en.wikipedia.org/wiki/Binary_search"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Binary search on an unsorted list. It does not fail — it silently returns a wrong answer, usually \"not found\" for a value that is there.",
+          "code": "List<Integer> ids = new ArrayList<>(List.of(42, 7, 19, 3));\nCollections.binarySearch(ids, 19);    // undefined: may return a negative number\n\n// RIGHT: sort first (or use a HashSet if you only need \"contains\")\nCollections.sort(ids);                // [3, 7, 19, 42]\nCollections.binarySearch(ids, 19);    // 2"
+        }
+      ]
+    },
+    {
+      "subtitle": "Sorting",
+      "description": "O(n log n) sorting and comparators.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** orders must be listed by date, then by total; customers by name, ignoring case.\n\n**Concept:** efficient general-purpose sorts are O(n log n). Java sorts objects with TimSort, which is stable — elements that compare equal keep their original order — and fast on data that is already partly sorted. You rarely write a sort yourself: you write a `Comparator` that says how two elements compare, and call `List.sort` or `Stream.sorted`.\n\n**How it works:** build comparators with `Comparator.comparing`, `thenComparing` and `reversed()`; they read like the business rule.",
+          "code": "orders.sort(Comparator.comparing(Order::createdAt)\n                      .thenComparing(Order::total, Comparator.reverseOrder()));\n\ncustomers.sort(Comparator.comparing(Customer::name, String.CASE_INSENSITIVE_ORDER));\n\nList<Product> cheapestFirst = products.stream()\n    .sorted(Comparator.comparing(Product::price))\n    .toList();",
+          "interview_question": "What is the complexity of sorting in Java, and what does \"stable\" mean?",
+          "references": [
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/List.html#sort(java.util.Comparator)",
+            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Comparator.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A comparator written as a subtraction. `a.age() - b.age()` overflows for large or negative values and returns the wrong sign, so the sort silently breaks. Use `Integer.compare` or `Comparator.comparingInt`.",
+          "code": "// WRONG: overflows (e.g. Integer.MIN_VALUE - 1)\npeople.sort((a, b) -> a.score() - b.score());\n\n// RIGHT\npeople.sort(Comparator.comparingInt(Person::score));\npeople.sort((a, b) -> Integer.compare(a.score(), b.score()));"
+        }
+      ]
+    },
+    {
+      "subtitle": "Recursion",
+      "description": "A function that solves a problem by calling itself.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** some problems are naturally nested: categories inside categories, folders inside folders, a JSON tree.\n\n**Concept:** a recursive method solves a small case directly (the base case) and reduces every other case to a smaller version of the same problem. Each call takes a frame on the thread's stack until it returns, so the depth of the recursion costs memory, and without a base case it never stops (`StackOverflowError`).\n\n**How it works:** write the base case first, make sure every call moves toward it, and prefer a loop when the depth can be large.",
+          "code": "// Total of a category and all its subcategories\nBigDecimal total(Category c) {\n    BigDecimal sum = c.ownTotal();                 // the work at this level\n    for (Category child : c.children()) {\n        sum = sum.add(total(child));               // a smaller version of the problem\n    }\n    return sum;                                    // a leaf has no children: base case\n}\n\nint factorial(int n) {\n    if (n <= 1) return 1;                          // base case\n    return n * factorial(n - 1);                   // moves toward the base case\n}",
+          "interview_question": "What are the parts of a recursive function, and what can go wrong with deep recursion?",
+          "references": [
+            "https://docs.oracle.com/javase/specs/jvms/se21/html/jvms-2.html#jvms-2.5.2",
+            "https://en.wikipedia.org/wiki/Recursion_(computer_science)"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Recursing over long linear data, one call per element. A list of 100,000 nodes means 100,000 stack frames, and the thread's stack overflows. Java does not optimize tail calls — use a loop.",
+          "code": "// WRONG: one stack frame per node -> StackOverflowError on long lists\nint length(Node node) {\n    return node == null ? 0 : 1 + length(node.next);\n}\n\n// RIGHT: iterative, constant stack\nint length(Node node) {\n    int count = 0;\n    for (Node n = node; n != null; n = n.next) count++;\n    return count;\n}"
+        }
+      ]
+    }
+  ]
+}

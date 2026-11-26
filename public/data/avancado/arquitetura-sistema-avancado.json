@@ -5,7 +5,10 @@
     "Sagas replace a distributed transaction with local steps and compensations — business actions, idempotent.",
     "Kafka: durable, partitioned log; order only within a partition — key by aggregate id; consumers idempotent.",
     "Bounded contexts: one model per context, each owning its data; no shared canonical model library.",
-    "BFF: one backend per client type, aggregating and formatting — business rules stay in the services."
+    "BFF: one backend per client type, aggregating and formatting — business rules stay in the services.",
+    "System design interviews: requirements, estimates, API, data model, diagram, deep dives, trade-offs — in that order.",
+    "Estimate peaks, not averages: ~86,400 s per day; design for 5–10× the average.",
+    "Every choice has a cost; name what you accept in exchange, tied to a requirement."
   ],
   "subsections": [
     {
@@ -96,6 +99,116 @@
           "title": "Common mistake",
           "explanation": "Business rules in the BFFs. The discount rule is implemented in the mobile BFF and again in the web BFF, and after a few changes the two apps show different prices. Rules belong in the services; BFFs only aggregate and format.",
           "code": "WRONG: Mobile BFF and Web BFF both calculate the discount\n       -> the same cart costs different amounts on each app\n\nRIGHT: the pricing service calculates; both BFFs just display its result"
+        }
+      ]
+    },
+    {
+      "subtitle": "A Method for System Design Interviews",
+      "description": "A repeatable structure for open design questions.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** \"Design an order system\" — 45 minutes, a whiteboard, and the temptation to start drawing Kafka and Kubernetes in the first minute.\n\n**Concept:** interviewers look at how you reason, not at a perfect answer. A structure that works: (1) clarify functional requirements and what is out of scope; (2) non-functional requirements — scale, latency, availability, consistency; (3) rough estimates (traffic, storage); (4) the API; (5) the data model; (6) a high-level diagram; (7) deep dives on the hardest parts; (8) trade-offs, bottlenecks and what you would change at 10× scale.\n\n**How it works:** say your assumptions out loud and check them with the interviewer; a reasoned trade-off beats a buzzword.",
+          "code": "1. Requirements      \"Place orders, pay, track status. Out of scope: catalog search.\"\n2. Non-functional    \"5k orders/min at peak, p99 < 500 ms, never charge twice.\"\n3. Estimates         QPS, storage per year, read/write ratio\n4. API               POST /orders, POST /orders/{id}/payment, GET /orders/{id}\n5. Data model        orders, order_items, payments (+ outbox)\n6. High level        client -> gateway -> order service -> DB; events -> stock, email\n7. Deep dive         idempotent payment, stock reservation, failure of the payment provider\n8. Trade-offs        sync payment vs async; SQL vs NoSQL; what breaks first at 10x",
+          "interview_question": "How do you structure your answer to a system design question?",
+          "references": [
+            "https://github.com/donnemartin/system-design-primer",
+            "https://www.hellointerview.com/learn/system-design/in-a-hurry/delivery"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Jumping to technology before the requirements. Proposing Cassandra, Kafka and microservices for a system whose scale and consistency needs nobody has asked about — the interviewer cannot tell whether you can design, only that you know names.",
+          "code": "WRONG: minute 1 — \"We use microservices with Kafka and Cassandra\"\n\nRIGHT: minute 1 — \"How many orders per day? Is paying twice acceptable? Who are the users?\"\n       minute 15 — \"Given 5k orders/min and strict payment consistency, PostgreSQL with ...\""
+        }
+      ]
+    },
+    {
+      "subtitle": "Back-of-the-Envelope Estimates",
+      "description": "Sizing a system with rough numbers.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** is one database enough? Do you need a cache? Without numbers, every answer is a guess.\n\n**Concept:** rough estimates turn requirements into sizes: requests per second, storage per year, bandwidth. Useful facts: a day has about 86,400 seconds (≈ 10⁵), so 1 million requests a day is about 12 per second on average; plan for peaks of 2–10× the average. Multiply records per day by record size and retention for storage. Order of magnitude is what matters — 10 or 10,000 per second lead to very different designs.\n\n**How it works:** round aggressively and state the assumptions, so the interviewer can follow and correct them.",
+          "code": "Assumptions: 2 M orders/day, peak = 5x average, order ≈ 2 KB, kept 5 years\n\nWrites:   2,000,000 / 86,400 ≈ 23 orders/s average   -> ~120/s at peak\nReads:    10 status checks per order -> ~1,200 reads/s at peak\nStorage:  2 M × 2 KB = 4 GB/day -> ~1.5 TB/year -> ~7 TB in 5 years\n\nConclusion: one PostgreSQL primary handles the writes; add read replicas or a cache\nfor status reads; partition the orders table by month.",
+          "interview_question": "How would you estimate the load and storage of a system in an interview?",
+          "references": [
+            "https://github.com/donnemartin/system-design-primer#back-of-the-envelope-calculations",
+            "https://gist.github.com/jboner/2841832"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Sizing for the daily average. Traffic is not spread evenly — Black Friday, lunchtime, the minute a campaign email goes out — so a system sized for 23 orders/s falls over at the peak. Estimate the peak and design for it.",
+          "code": "WRONG: \"23 orders per second — a small server is enough\"\n\nRIGHT: average 23/s, peak 5-10x -> 120-230/s\n       plus headroom for retries and growth -> design for ~500/s"
+        }
+      ]
+    },
+    {
+      "subtitle": "Designing a URL Shortener",
+      "description": "A classic interview problem, end to end.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** turn long URLs into short links like `sho.rt/aZ3k9`, redirect fast, and handle far more reads than writes.\n\n**Concept:** requirements: create a short code for a URL, redirect from the code, optional expiry; reads outnumber writes by 100× or more. The code can come from a counter encoded in base62 (`[0-9a-zA-Z]`, 7 characters ≈ 3.5 trillion codes) or a random id with a uniqueness check. Store `code → url` in a key-value table; redirects are a lookup by primary key, cached heavily (Redis, CDN). Use 302 if you want to count every click (browsers do not cache it); 301 lets browsers cache the redirect.\n\n**How it works:** the read path is a cache in front of a key-value lookup; the interesting parts are id generation without collisions and analytics without slowing redirects.",
+          "code": "POST /links   {\"url\": \"https://shop.com/products/123?utm=...\"}  -> 201 {\"code\": \"aZ3k9\"}\nGET  /aZ3k9   -> 302 Location: https://shop.com/products/123?utm=...\n\nString base62(long n) {\n    String chars = \"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ\";\n    StringBuilder sb = new StringBuilder();\n    do { sb.append(chars.charAt((int) (n % 62))); n /= 62; } while (n > 0);\n    return sb.reverse().toString();\n}\n\nclient -> CDN/cache (hit: redirect) -> service -> key-value store (code -> url)\n                                            └─> click events -> queue -> analytics",
+          "interview_question": "How would you design a URL shortener?",
+          "references": [
+            "https://github.com/donnemartin/system-design-primer/blob/master/solutions/system_design/pastebin/README.md",
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Redirections"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Sequential codes from a plain counter, exposed as they are. Anyone can enumerate `aZ3k9`, `aZ3ka`, `aZ3kb` and read every link — including private ones — and competitors can count your volume. Use random ids, or scramble the counter before encoding.",
+          "code": "WRONG: code = base62(nextCounter())   -> 1, 2, 3 ... aZ3k9, aZ3ka (guessable)\n\nRIGHT: code = base62(randomLong())     + uniqueness check on insert\n       (or a counter passed through a reversible permutation, then base62)"
+        }
+      ]
+    },
+    {
+      "subtitle": "Designing an Order System",
+      "description": "Checkout with payments, stock and notifications.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** customers place orders, pay with a card, stock must not be oversold, and nobody must ever be charged twice.\n\n**Concept:** core flow: the order service creates the order (PENDING) and reserves stock; payment is charged with an idempotency key; on success the order becomes PAID and an `OrderPaid` event is published through an outbox; email, invoicing and shipping react to it. If payment fails, a compensation releases the reservation (a saga). Stock uses an atomic decrement (`UPDATE ... SET stock = stock - 1 WHERE stock > 0`) or a reservation table with expiry. Order data is relational and needs transactions: PostgreSQL.\n\n**How it works:** the deep dives an interviewer expects: idempotency on retries, what happens when the payment provider times out, and how events are published reliably.",
+          "code": "client ─▶ API gateway ─▶ order service ──▶ PostgreSQL (orders, items, reservations, outbox)\n                              │   ▲\n                              │   └── payment provider (idempotency key = order id)\n                              ▼\n                    outbox publisher ─▶ Kafka \"orders\" ─▶ email, invoicing, shipping\n\nPOST /orders                      Idempotency-Key: <uuid>    -> 201 PENDING\nPOST /orders/{id}/payment         Idempotency-Key: <uuid>    -> 200 PAID | 402 declined\nGET  /orders/{id}                                            -> status",
+          "interview_question": "How would you design a checkout that never oversells stock and never charges twice?",
+          "references": [
+            "https://microservices.io/patterns/data/saga.html",
+            "https://microservices.io/patterns/data/transactional-outbox.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Treating a payment timeout as a failure. The provider may have charged the card; cancelling the order and letting the customer retry charges them twice. On timeout, mark the payment as unknown and confirm its status with the provider (by idempotency key) before deciding.",
+          "code": "// WRONG\ntry { gateway.charge(order, key); }\ncatch (SocketTimeoutException e) { order.cancel(); }     // the charge may have succeeded\n\n// RIGHT\ncatch (SocketTimeoutException e) {\n    order.markPaymentPending();                          // status unknown\n    reconciler.checkLater(order.id(), key);              // ask the provider, then decide\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Trade-offs to Discuss",
+      "description": "The decisions behind every design.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a design that names the right components but never says what it gives up sounds memorized.\n\n**Concept:** every choice trades something: strong consistency costs availability and latency during failures (CAP/PACELC); synchronous calls are simpler but couple availability, asynchronous events decouple but add eventual consistency; SQL gives transactions and joins, NoSQL gives flexible schemas and horizontal scale; a cache cuts latency but adds staleness; microservices give independent deploys at the cost of operations; more replicas give availability at the cost of money. Name the choice, the reason, and what you accept in exchange.\n\n**How it works:** tie each trade-off to a requirement you gathered at the start (\"payments need strong consistency, so...\").",
+          "code": "Decision                     Chosen               Because                    Accepting\nOrder + payment storage      PostgreSQL           transactions, joins        vertical write scaling\nNotifications                async via Kafka      checkout must not wait     emails seconds late\nOrder status reads           Redis cache, 30 s    10x more reads than writes status up to 30 s stale\nService split                modular monolith     team of 6                  one deploy unit",
+          "interview_question": "What trade-offs would you discuss when choosing between synchronous and asynchronous communication?",
+          "references": [
+            "https://www.cs.umd.edu/~abadi/papers/abadi-pacelc.pdf",
+            "https://martinfowler.com/articles/microservice-trade-offs.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Presenting a choice as having no downside. \"We will cache everything\" or \"microservices are more scalable\" without the cost tells the interviewer you have not operated such a system.",
+          "code": "WRONG: \"We add a cache, so it's fast.\"\n\nRIGHT: \"A 30-second cache on order status cuts database reads by ~90%.\n        Users may see a status up to 30 s old, so after payment we read from the primary.\""
         }
       ]
     }
