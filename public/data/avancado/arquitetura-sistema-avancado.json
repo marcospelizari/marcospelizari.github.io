@@ -49,7 +49,7 @@
         {
           "title": "Explicação",
           "explanation": "Em uma fila, cada mensagem é entregue a um consumidor e removida após o processamento — ideal para distribuir tarefas. No Kafka, eventos ficam em um log durável e particionado; vários grupos de consumidores leem o mesmo evento de forma independente e podem reprocessar o histórico. A ordem é garantida apenas dentro de uma partição (use a chave do agregado como chave da mensagem). Como a entrega é \"pelo menos uma vez\", consumidores precisam ser idempotentes.",
-          "code": "@Component\nclass EstoqueListener {\n    @KafkaListener(topics = \"pedidos.criados\", groupId = \"estoque\")\n    void aoCriarPedido(PedidoCriado evento) {\n        if (processados.existsById(evento.eventoId())) return; // idempotência\n        estoque.reservar(evento.itens());\n        processados.save(new EventoProcessado(evento.eventoId()));\n    }\n}",
+          "code": "@Component\nclass EstoqueListener {\n    @Transactional\n    @KafkaListener(topics = \"pedidos.criados\", groupId = \"estoque\")\n    void aoCriarPedido(PedidoCriado evento) {\n        // INSERT com UNIQUE(evento_id) na mesma transação da reserva:\n        // uma reentrega concorrente falha na constraint em vez de reservar 2x\n        if (!processados.registrar(evento.eventoId())) return; // já processado\n        estoque.reservar(evento.itens());\n    }\n}",
           "interview_question": "Qual a diferença entre uma fila (RabbitMQ) e um log de eventos (Kafka)?",
           "references": [
             "https://kafka.apache.org/documentation/#introduction",

@@ -3,11 +3,12 @@
   "description": "Dependências de terceiros (3PP), CVEs, injeção de SQL e proteção de dados em aplicações Java.",
   "version": "Java 21, Spring Boot 3.x, Maven 3.9",
   "resumo": [
-    "Segurança de aplicações é o trabalho diário de impedir que o código exponha dados ou aceite ações que não deveria. Para um desenvolvedor, isso aparece em três frentes: o código que você escreve (consultas, validações, logs), as bibliotecas que você usa (dependências de terceiros, ou 3PP) e os segredos que a aplicação precisa (senhas, tokens).",
-    "Quase toda aplicação Java usa dezenas de bibliotecas que você não escreveu, e cada uma traz outras (dependências transitivas). Quando alguém descobre uma falha em uma delas, ela recebe um identificador público, a CVE, e uma nota de gravidade, o CVSS. Manter essas bibliotecas atualizadas é o que se chama de hardening de dependências.",
-    "O ciclo de uma atualização de 3PP é: o scanner (OWASP Dependency-Check, Dependabot, Trivy) aponta a CVE; você descobre de onde vem a biblioteca com mvn dependency:tree; escolhe a versão corrigida; atualiza o pom.xml; roda os testes para garantir que nada quebrou; e abre um Pull Request explicando a CVE corrigida.",
-    "No código, o risco mais conhecido é a injeção de SQL: montar uma consulta concatenando texto vindo do usuário. A defesa é sempre usar parâmetros (PreparedStatement, parâmetros nomeados no JPA). Outro risco comum é a exposição de dados: devolver entidades inteiras na API, escrever dados pessoais em logs ou mostrar stack traces ao cliente.",
-    "Em entrevistas e no dia a dia, o que mais conta é o hábito: validar toda entrada externa, nunca confiar no cliente, nunca colocar segredos no repositório e tratar alertas de segurança do pipeline como prioridade, não como ruído."
+    "3PP = componente de terceiros; CVE = falha pública conhecida; CVSS = gravidade de 0 a 10.",
+    "A maioria das CVEs vem de dependências transitivas: `mvn dependency:tree -Dincludes=...` mostra quem traz.",
+    "Corrigir: primeiro subir o parent ou BOM; senão, sobrescrever a versão. Rode os testes e cite a CVE no PR.",
+    "Scanners no CI (Dependency-Check, Dependabot, Trivy) em todo PR e em execução agendada.",
+    "SQL sempre parametrizado; respostas por DTO; logs sem dados pessoais; erro genérico para o cliente.",
+    "Segredo commitado é segredo vazado: troque (rotacione) primeiro, limpe o histórico depois."
   ],
   "subsections": [
     {

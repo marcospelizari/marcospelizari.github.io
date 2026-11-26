@@ -33,7 +33,7 @@
         {
           "title": "Explicação",
           "explanation": "Escaneie imagens no CI com ferramentas como Trivy ou Grype e falhe o pipeline em vulnerabilidades críticas; fixe versões de imagens base e atualize-as regularmente; rode como não root com sistema de arquivos somente leitura quando possível; e assine as imagens (Cosign) para garantir que o cluster só execute artefatos produzidos pelo seu pipeline. Nunca passe segredos como ARG ou ENV no Dockerfile.",
-          "code": "trivy image --severity CRITICAL,HIGH --exit-code 1 ghcr.io/loja/api:1.4.0\n\ncosign sign ghcr.io/loja/api@sha256:3f9a...\ncosign verify --certificate-identity-regexp '.*' \\\n  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n  ghcr.io/loja/api@sha256:3f9a...",
+          "code": "trivy image --severity CRITICAL,HIGH --exit-code 1 ghcr.io/loja/api:1.4.0\n\ncosign sign ghcr.io/loja/api@sha256:3f9a...\n\n# Fixe QUEM assinou: um regexp '.*' aceitaria qualquer identidade\ncosign verify \\\n  --certificate-identity https://github.com/loja/api/.github/workflows/release.yml@refs/heads/main \\\n  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n  ghcr.io/loja/api@sha256:3f9a...",
           "interview_question": "Como garantir que uma imagem enviada para produção é segura?",
           "references": [
             "https://github.com/aquasecurity/trivy",
@@ -116,7 +116,7 @@
         {
           "title": "Explicação",
           "explanation": "Terraform descreve a infraestrutura de forma declarativa; terraform plan mostra o que vai mudar antes do apply, permitindo revisar mudanças de infra em Pull Requests. O state mapeia o código aos recursos reais: deve ficar em um backend remoto (S3, GCS) com lock para evitar applies simultâneos, e pode conter segredos, então precisa de acesso restrito e criptografia. Módulos reutilizáveis evitam copiar e colar entre ambientes.",
-          "code": "terraform {\n  backend \"s3\" {\n    bucket         = \"loja-terraform-state\"\n    key            = \"producao/api.tfstate\"\n    region         = \"us-east-1\"\n    dynamodb_table = \"terraform-locks\"\n    encrypt        = true\n  }\n}\n\nmodule \"banco\" {\n  source         = \"./modules/postgres\"\n  ambiente       = \"producao\"\n  instance_class = \"db.t4g.medium\"\n}",
+          "code": "terraform {\n  backend \"s3\" {\n    bucket         = \"loja-terraform-state\"\n    key            = \"producao/api.tfstate\"\n    region         = \"us-east-1\"\n    use_lockfile   = true   # lock nativo no S3 (Terraform 1.11+; dynamodb_table está deprecado)\n    encrypt        = true\n  }\n}\n\nmodule \"banco\" {\n  source         = \"./modules/postgres\"\n  ambiente       = \"producao\"\n  instance_class = \"db.t4g.medium\"\n}",
           "interview_question": "Por que o state do Terraform precisa de cuidado especial?",
           "references": [
             "https://developer.hashicorp.com/terraform/language/state"
@@ -132,7 +132,7 @@
         {
           "title": "Explicação",
           "explanation": "Secrets do Kubernetes são apenas codificados em Base64 e, por padrão, armazenados sem criptografia no etcd; também não devem ser versionados em texto puro no Git. Em produção, use um cofre (HashiCorp Vault, AWS Secrets Manager) integrado ao cluster via External Secrets Operator, habilite criptografia em repouso, restrinja acesso com RBAC e faça rotação periódica das credenciais.",
-          "code": "apiVersion: external-secrets.io/v1beta1\nkind: ExternalSecret\nmetadata:\n  name: api-secrets\nspec:\n  refreshInterval: 1h\n  secretStoreRef: { name: aws-secrets-manager, kind: ClusterSecretStore }\n  target: { name: api-secrets }\n  data:\n    - secretKey: SPRING_DATASOURCE_PASSWORD\n      remoteRef: { key: producao/api, property: db_password }",
+          "code": "apiVersion: external-secrets.io/v1\nkind: ExternalSecret\nmetadata:\n  name: api-secrets\nspec:\n  refreshInterval: 1h\n  secretStoreRef: { name: aws-secrets-manager, kind: ClusterSecretStore }\n  target: { name: api-secrets }\n  data:\n    - secretKey: SPRING_DATASOURCE_PASSWORD\n      remoteRef: { key: producao/api, property: db_password }",
           "interview_question": "Por que Secrets do Kubernetes sozinhos não são suficientes?",
           "references": [
             "https://kubernetes.io/docs/concepts/configuration/secret/",

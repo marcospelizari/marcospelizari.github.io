@@ -32,7 +32,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "B-tree é o padrão e atende igualdade, intervalos e ordenação. Em índices compostos a ordem das colunas importa: (status, criado_em) serve para filtros por status ou por status e data, mas não só por data. Índices parciais indexam apenas as linhas que importam (WHERE ativo = true), ficando menores. Índices de cobertura (INCLUDE) permitem responder a consulta só com o índice. GIN atende JSONB, arrays e busca textual.",
+          "explanation": "B-tree é o padrão e atende igualdade, intervalos e ordenação. Em índices compostos a ordem das colunas importa: (status, criado_em) serve para filtros por status ou por status e data, mas não é eficiente para filtrar só por data (o PostgreSQL 18 consegue usá-lo via skip scan, mas um índice próprio é melhor). Índices parciais indexam apenas as linhas que importam (WHERE ativo = true), ficando menores. Índices de cobertura (INCLUDE) permitem responder a consulta só com o índice. GIN atende JSONB, arrays e busca textual.",
           "code": "-- Parcial: só pedidos ainda não finalizados\nCREATE INDEX idx_pedidos_pendentes ON pedidos (criado_em) WHERE status = 'PENDENTE';\n\n-- Cobertura: evita ir à tabela para buscar o total\nCREATE INDEX idx_pedidos_cliente ON pedidos (cliente_id) INCLUDE (total);\n\n-- GIN para consultas em JSONB\nCREATE INDEX idx_produtos_atributos ON produtos USING GIN (atributos);",
           "interview_question": "O que são índices compostos, parciais e de cobertura?",
           "references": [

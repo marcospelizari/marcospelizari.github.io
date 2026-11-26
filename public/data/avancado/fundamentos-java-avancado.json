@@ -32,8 +32,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "A JVM usa coleta geracional: a maioria dos objetos morre jovem, então a geração jovem é coletada com frequência e baixo custo, e os sobreviventes são promovidos. G1 (padrão) divide o heap em regiões e busca pausas previsíveis; ZGC mantém pausas abaixo de milissegundos mesmo em heaps grandes, ao custo de um pouco de throughput. Antes de ajustar flags, meça: logs de GC e métricas de pausa mostram se o problema é realmente o coletor.",
-          "code": "# Heap fixo evita redimensionamentos; logs de GC para análise\njava -XX:+UseG1GC -Xms512m -Xmx512m -Xlog:gc*:file=gc.log -jar app.jar\n\n# Baixa latência com ZGC geracional (Java 21)\njava -XX:+UseZGC -XX:+ZGenerational -Xmx4g -jar app.jar\n\n# Em containers, prefira percentual da memória do container\njava -XX:MaxRAMPercentage=75 -jar app.jar",
+          "explanation": "A JVM usa coleta geracional: a maioria dos objetos morre jovem, então a geração jovem é coletada com frequência e baixo custo, e os sobreviventes são promovidos. G1 (padrão) divide o heap em regiões e busca pausas previsíveis; ZGC mantém pausas abaixo de milissegundos mesmo em heaps grandes, ao custo de um pouco de throughput. Antes de ajustar flags, meça: logs de GC e métricas de pausa mostram se o problema é realmente o coletor. Em containers, a JVM só escolhe o G1 se enxergar pelo menos 2 CPUs e cerca de 1792 MB; abaixo disso usa o SerialGC sem avisar — defina o coletor explicitamente.",
+          "code": "# Heap fixo evita redimensionamentos; logs de GC para análise\njava -XX:+UseG1GC -Xms512m -Xmx512m -Xlog:gc*:file=gc.log -jar app.jar\n\n# Baixa latência com ZGC geracional (Java 21; do 23 em diante já é o padrão e a flag sobra)\njava -XX:+UseZGC -XX:+ZGenerational -Xmx4g -jar app.jar\n\n# Em containers, prefira percentual da memória do container\njava -XX:MaxRAMPercentage=75 -jar app.jar",
           "interview_question": "Como o Garbage Collector pode impactar latência e throughput?",
           "references": [
             "https://docs.oracle.com/en/java/javase/21/gctuning/garbage-first-g1-garbage-collector1.html"

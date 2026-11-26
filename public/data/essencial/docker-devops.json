@@ -3,19 +3,13 @@
   "description": "Conceitos básicos e práticas modernas de containers e DevOps, com exemplos para aplicações Spring Boot.",
   "version": "Docker 26.x, Kubernetes 1.31",
   "resumo": [
-    "Docker e DevOps são como uma mala pronta para viagem e um maestro orquestrando a sinfonia: Docker empacota aplicações com suas dependências em containers, garantindo consistência entre ambientes como desenvolvimento, teste e produção, enquanto DevOps une desenvolvimento e operações para acelerar entregas com automação, colaboração e monitoramento, sendo fundamentais para sistemas como um e-commerce que precisa de deploy rápido e confiável.",
-    "O Docker funciona como uma caixa mágica: cria imagens imutáveis que contêm o código e as dependências de uma aplicação, como uma app Spring Boot, e instancias essas imagens em containers executáveis, permitindo que múltiplas instâncias rodem de forma isolada e consistente, ideal para júniores testarem localmente antes de subir para produção em um ambiente de microserviços.",
-    "Docker Compose atua como um plano de voo coordenado: gerencia múltiplos containers, como uma app Spring Boot junto com um banco de dados PostgreSQL, através de um arquivo YAML, facilitando testes locais e simulações de ambientes completos, o que é perfeito para desenvolvedores que precisam replicar um sistema de e-commerce com várias camadas em suas máquinas.",
-    "A cultura DevOps é como uma equipe afinada: combina práticas como Integração Contínua (CI) e Entrega Contínua (CD) para automatizar builds, testes e deploys, promovendo colaboração entre times de desenvolvimento e operações, sendo essencial em cenários onde um sistema de reservas precisa de atualizações frequentes sem interrupções.",
-    "CI/CD é o coração pulsante dessa orquestração: CI executa testes automaticamente a cada commit, garantindo qualidade imediata, enquanto CD automatiza a entrega ou implantação em produção, reduzindo erros humanos e acelerando releases, como em um pipeline que empacota uma app Spring Boot e a deploya em um servidor após validação.",
-    "Kubernetes entra como o maestro principal: orquestra containers em clusters, gerenciando escalabilidade, disponibilidade e deploys automáticos através de pods, que são unidades mínimas contendo containers, sendo ideal para escalar um serviço de chat em tempo real que precisa suportar milhares de usuários simultâneos.",
-    "A mensageria, como Kafka ou RabbitMQ, funciona como um correio eficiente: permite comunicação assíncrona entre microserviços, enviando e recebendo mensagens para processar tarefas como atualizações de estoque em um e-commerce, garantindo que os serviços permaneçam desacoplados e resilientes.",
-    "Monitoramento e logging são os olhos e ouvidos do sistema: ferramentas como Prometheus coletam métricas de performance, enquanto o ELK Stack rastreia eventos e erros, sendo cruciais para diagnosticar problemas em produção, como falhas em um serviço de pagamento, e manter a observabilidade em arquiteturas complexas.",
-    "Infraestrutura como Código (IaC) é como um blueprint digital: usa ferramentas como Terraform para definir servidores, redes e containers em código, assegurando consistência e repetibilidade na implantação de ambientes, como configurar um cluster Kubernetes para uma app Spring Boot em cloud.",
-    "Em cenários reais, Docker empacota apps para deploy contínuo, Kubernetes escala serviços em produção, e mensageria suporta integrações assíncronas, enquanto monitoramento e IaC garantem visibilidade e automação, sendo amplamente adotados em empresas que operam sistemas distribuídos como plataformas de streaming.",
-    "Para júniores, pratique criando uma imagem Docker com um Dockerfile simples, configure um Docker Compose com app e banco, e explore CI/CD com GitHub Actions, começando com projetos pequenos como uma API de usuários antes de mergulhar em Kubernetes ou mensageria.",
-    "Cuidado com a sobrecarga de containers, que pode consumir recursos se mal gerenciada, valide pipelines CI/CD para evitar deploys quebrados, e documente configurações IaC para facilitar a colaboração, especialmente em times que lidam com múltiplos ambientes.",
-    "Combine Docker com Kubernetes para escalabilidade, use mensageria para desacoplamento, e integre monitoramento com logs centralizados, adotando boas práticas como versionamento de imagens e automação de testes para suportar a evolução de sistemas em produção."
+    "Imagem é o pacote imutável (código + runtime); container é a imagem em execução.",
+    "Dockerfile: base enxuta com versão fixa (`eclipse-temurin:21-jre`), usuário não root e nenhum segredo.",
+    "Container é efêmero: dados do banco ficam em volume.",
+    "`docker compose up` sobe app + banco; os containers se encontram pelo nome do serviço (`db:5432`).",
+    "Depurar: `docker ps -a`, `docker logs`, `docker exec`, `docker inspect`.",
+    "DevOps: dev e ops juntos, com CI/CD, monitoramento e infraestrutura como código (Terraform).",
+    "Métricas: Actuator + Micrometer em `/actuator/prometheus`, coletadas pelo Prometheus."
   ],
   "subsections": [
     {
@@ -41,8 +35,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Criar uma imagem Docker para uma app Java envolve escrever um Dockerfile que copia o JAR e define a execução com OpenJDK, construindo com 'docker build' e rodando com 'docker run', permitindo deploy consistente.",
-          "code": "# Dockerfile para Spring Boot\nFROM openjdk:21\nCOPY target/app.jar app.jar\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n# Comandos\n docker build -t minha-app .\n docker run -d minha-app",
+          "explanation": "Criar uma imagem Docker para uma app Java envolve escrever um Dockerfile que copia o JAR e define a execução com uma imagem de JRE, como eclipse-temurin (a imagem oficial openjdk foi descontinuada), construindo com 'docker build' e rodando com 'docker run', permitindo deploy consistente.",
+          "code": "# Dockerfile para Spring Boot\nFROM eclipse-temurin:21-jre\nCOPY target/app.jar app.jar\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n\n# Comandos\ndocker build -t minha-app:1.0 .\ndocker run -d minha-app:1.0",
           "interview_question": "Como criar uma imagem Docker para uma aplicação Java?",
           "references": [
             "https://docs.docker.com/engine/reference/builder/"
@@ -57,8 +51,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Docker Compose ajuda no desenvolvimento local ao gerenciar uma app Spring Boot com um banco PostgreSQL em um único comando 'docker-compose up', simulando um ambiente completo e facilitando testes de integração.",
-          "code": "# docker-compose.yml\nversion: '3.8'\nservices:\n  app:\n    image: minha-app\n    ports:\n      - \"8080:8080\"\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_USER: user\n      POSTGRES_PASSWORD: pass\n# Inicia com: docker-compose up",
+          "explanation": "Docker Compose ajuda no desenvolvimento local ao gerenciar uma app Spring Boot com um banco PostgreSQL em um único comando 'docker compose up', simulando um ambiente completo e facilitando testes de integração.",
+          "code": "# compose.yaml (a chave \"version\" é obsoleta)\nservices:\n  app:\n    image: minha-app:1.0\n    ports:\n      - \"8080:8080\"\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_USER: user\n      POSTGRES_PASSWORD: pass\n# Inicia com: docker compose up",
           "interview_question": "Como o Docker Compose ajuda no desenvolvimento local de uma app Spring Boot?",
           "references": [
             "https://docs.docker.com/compose/"
@@ -117,7 +111,7 @@
         {
           "title": "Explicação",
           "explanation": "Monitoramento é crítico em microserviços para rastrear métricas como latência, enquanto logging ajuda a diagnosticar erros, como falhas em uma app Spring Boot, garantindo visibilidade em sistemas distribuídos.",
-          "code": "# Configuração Prometheus (prometheus.yml)\nscrape_configs:\n  - job_name: 'spring-app'\n    static_configs:\n    - targets: ['app:8080']\n# Habilita actuator no Spring Boot\nmanagement.endpoints.web.exposure.include=health,metrics",
+          "code": "# prometheus.yml\nscrape_configs:\n  - job_name: 'spring-app'\n    metrics_path: /actuator/prometheus\n    static_configs:\n      - targets: ['app:8080']\n\n# application.properties (+ dependência io.micrometer:micrometer-registry-prometheus)\nmanagement.endpoints.web.exposure.include=health,prometheus",
           "interview_question": "Por que monitoramento é crítico em arquiteturas de microserviços?",
           "references": [
             "https://prometheus.io/docs/introduction/overview/"
@@ -133,7 +127,7 @@
         {
           "title": "Explicação",
           "explanation": "IaC melhora a implantação em cloud ao definir recursos como containers em código com Terraform, assegurando que ambientes sejam replicados consistentemente, como um cluster para uma app Spring Boot.",
-          "code": "# Terraform para criar um container ECS\nresource \"aws_ecs_task_definition\" \"app\" {\n  family = \"spring-app\"\n  container_definitions = jsonencode([{\n    name = \"app\"\n    image = \"minha-app:latest\"\n  }])\n}",
+          "code": "# Terraform: task definition do ECS (Fargate)\nresource \"aws_ecs_task_definition\" \"app\" {\n  family                   = \"spring-app\"\n  requires_compatibilities = [\"FARGATE\"]\n  network_mode             = \"awsvpc\"\n  cpu                      = 512\n  memory                   = 1024\n  container_definitions = jsonencode([{\n    name      = \"app\"\n    image     = \"minha-app:1.4.0\"   # versão fixa, nunca latest\n    essential = true\n  }])\n}",
           "interview_question": "Como o IaC melhora a implantação de aplicações em cloud?",
           "references": [
             "https://www.terraform.io/docs"
@@ -148,8 +142,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Containers são efêmeros: ao remover o container, o que foi gravado em seu sistema de arquivos se perde. Volumes gerenciados pelo Docker guardam dados fora do ciclo de vida do container (ideal para bancos). Redes definidas pelo usuário permitem que containers se encontrem pelo nome do serviço — a aplicação acessa o banco em \"db:5432\", não em localhost.",
-          "code": "# docker-compose.yml\nservices:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: secret\n    volumes:\n      - dados-pg:/var/lib/postgresql/data\n  app:\n    image: minha-api:1.0\n    environment:\n      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres\n    depends_on:\n      - db\n\nvolumes:\n  dados-pg:",
+          "explanation": "Containers são efêmeros: ao remover o container, o que foi gravado em seu sistema de arquivos se perde. Volumes gerenciados pelo Docker guardam dados fora do ciclo de vida do container (ideal para bancos). Redes definidas pelo usuário permitem que containers se encontrem pelo nome do serviço — a aplicação acessa o banco em \"db:5432\", não em localhost. depends_on sozinho só ordena a inicialização; com healthcheck e condition: service_healthy a aplicação espera o banco aceitar conexões.",
+          "code": "# compose.yaml\nservices:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: secret\n    volumes:\n      - dados-pg:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U postgres\"]\n      interval: 5s\n      retries: 10\n  app:\n    image: minha-api:1.0\n    environment:\n      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres\n    depends_on:\n      db:\n        condition: service_healthy   # espera o banco ficar pronto\n\nvolumes:\n  dados-pg:",
           "interview_question": "Como persistir dados de um banco rodando em container?",
           "references": [
             "https://docs.docker.com/engine/storage/volumes/",
