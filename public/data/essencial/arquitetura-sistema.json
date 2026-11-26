@@ -3,19 +3,14 @@
   "description": "Conceitos básicos e modernos de design de software, com exemplos práticos para iniciantes.",
   "version": "Spring Boot 3.3.x",
   "resumo": [
-    "Arquitetura de sistemas é como o projeto de uma casa bem planejada: define a estrutura, a organização e a interação dos componentes de um software, guiando decisões para garantir escalabilidade, manutenibilidade, desempenho e testabilidade, sendo essencial em projetos grandes como um e-commerce onde o crescimento e a complexidade demandam um design sólido desde o início.",
-    "A arquitetura monolítica é como uma casa única e compacta: todos os componentes — interface, lógica de negócio e persistência — estão reunidos em um único projeto, o que facilita o desenvolvimento e a implantação inicial para sistemas pequenos, como um aplicativo de reservas simples, mas pode se tornar difícil de escalar ou manter quando o sistema cresce e exige atualizações frequentes.",
-    "Por outro lado, a arquitetura de microserviços é como uma rede de ilhas interconectadas: divide a aplicação em serviços independentes que se comunicam via APIs, como REST, cada um com seu próprio banco de dados e deploy separado, sendo ideal para times distribuídos ou sistemas complexos como um e-commerce com serviços de catálogo, pedidos e pagamentos, embora traga desafios de coordenação.",
-    "A separação em camadas funciona como andares distintos na casa: organiza as responsabilidades em apresentação (controladores), negócio (serviços) e persistência (repositorios), promovendo modularidade e testabilidade, permitindo que júniores modifiquem uma camada, como a lógica de negócios, sem afetar a interface em um sistema de gestão.",
-    "Padrões arquiteturais são como blueprints testados: o MVC (Model-View-Controller) estrutura o código em camadas lógicas, o Domain-Driven Design (DDD) foca em modelar o domínio do negócio, e a arquitetura orientada a eventos usa mensagens assíncronas para comunicação, sendo úteis em cenários como um sistema de notificações que reage a eventos de pedido.",
-    "A API Gateway atua como um porteiro central: roteia requisições para microserviços, agregando chamadas, autenticando usuários e balanceando carga, como no Spring Cloud Gateway, sendo crucial em arquiteturas distribuídas para simplificar o acesso a serviços como autenticação e catálogo em um ambiente de microserviços.",
-    "O padrão CQRS (Command Query Responsibility Segregation) é como dividir o trabalho em equipes especializadas: separa operações de escrita (comandos) e leitura (consultas), permitindo otimizações como bancos diferentes para cada caso, o que melhora a escalabilidade em sistemas de alta demanda, como plataformas de streaming.",
-    "A Clean Architecture é como uma fortaleza centrada no núcleo: organiza o código em camadas concêntricas, com o domínio (regras de negócio) no centro e a infraestrutura (banco, API) na borda, promovendo testabilidade e independência de frameworks, ideal para júniores que desejam criar sistemas duráveis e adaptáveis.",
-    "Em cenários reais, monolitos são comuns em startups com equipes pequenas e requisitos simples, enquanto microserviços dominam em empresas grandes com times distribuídos, como uma plataforma de entregas que precisa escalar serviços de rastreamento e pagamento independentemente, destacando a importância de escolher a arquitetura certa.",
-    "Para júniores, pratique estruturando um projeto Spring Boot em camadas, experimente um monolito simples com controlador e repositório, e simule microserviços com dois serviços comunicando-se via REST, começando com exemplos como um sistema de cadastro antes de explorar padrões mais avançados.",
-    "Cuidado com a complexidade dos microserviços, que exige gestão de deploy, monitoramento e comunicação entre serviços; em monolitos, evite acoplamento excessivo entre camadas, e sempre documente a arquitetura para facilitar a manutenção em equipe.",
-    "Combine padrões como MVC com microserviços, use API Gateway para centralizar rotas, e adote Clean Architecture para manter o domínio isolado, integrando boas práticas como versionamento de APIs e logs centralizados para suportar a evolução do sistema.",
-    "Em entrevistas, destaque a diferença entre monolitos e microserviços com exemplos práticos, explique como camadas e CQRS melhoram escalabilidade, e demonstre conhecimento em API Gateway ou Clean Architecture, mostrando uma visão holística do design de software."
+    "Monolito: um deploy, simples para começar. Microserviços: deploys independentes, pagando com rede, consistência eventual e monitoramento.",
+    "Camadas: controller (HTTP), service (regra), repository (dados).",
+    "Clean Architecture e hexagonal: domínio no centro, sem depender de framework nem de banco.",
+    "Chamada síncrona (REST) acopla a disponibilidade; mensageria (Kafka, RabbitMQ) desacopla e absorve picos.",
+    "Escalar na horizontal exige serviços stateless: sessão e arquivos fora da instância (Redis, S3).",
+    "Cache: TTL, invalidação na escrita, e nunca para dado crítico como saldo.",
+    "API Gateway concentra roteamento, autenticação e rate limiting.",
+    "CQRS separa o modelo de escrita do de leitura; bancos separados são opcionais."
   ],
   "subsections": [
     {
@@ -89,8 +84,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "MVC no Spring Boot separa controle (controladores), modelo (dados) e visualização (respostas), sendo aplicado em APIs REST, enquanto DDD modela o domínio, como um sistema de vendas, e eventos suportam assincronia.",
-          "code": "// MVC no Spring Boot\n@RestController\npublic class UserController { // Controller\n  @GetMapping(\"/users\")\n  public List<User> getAll() { ... } // Model\n}\n// Event-Driven (exemplo pseudo-código)\n@EventListener\npublic void handleOrderCreated(OrderCreatedEvent event) { ... }",
+          "explanation": "MVC organiza a apresentação: o controller recebe a requisição, o model são os dados e a view é a resposta (em APIs REST, o JSON). Não é o mesmo que arquitetura em camadas (controller, service, repository), embora sejam usados juntos. DDD modela o domínio, como um sistema de vendas, e eventos suportam comunicação assíncrona.",
+          "code": "// MVC no Spring Boot\npublic record User(Long id, String nome) {}   // Model\n\n@RestController                               // Controller\npublic class UserController {\n  @GetMapping(\"/users\")\n  public List<User> getAll() { ... }          // View: JSON gerado pelo Jackson\n}\n\n// Event-Driven (exemplo pseudo-código)\n@EventListener\npublic void handleOrderCreated(OrderCreatedEvent event) { ... }",
           "interview_question": "Como o padrão MVC se aplica em aplicações Spring Boot?",
           "references": [
             "https://www.martinfowler.com/eaaCatalog/"
@@ -106,7 +101,7 @@
         {
           "title": "Explicação",
           "explanation": "O papel de uma API Gateway é centralizar rotas, autenticar e balancear carga, como no Spring Cloud Gateway, facilitando o acesso a microserviços em um sistema de e-commerce com serviços de usuários e pedidos.",
-          "code": "# Configuração em application.yml (Spring Cloud Gateway)\ngateway:\n  routes:\n  - id: user-service\n    uri: http://user-service:8080\n    predicates:\n    - Path=/users/**",
+          "code": "# application.yml (Spring Cloud Gateway)\nspring:\n  cloud:\n    gateway:\n      routes:\n        - id: user-service\n          uri: http://user-service:8080\n          predicates:\n            - Path=/users/**",
           "interview_question": "Qual o papel de uma API Gateway em arquiteturas de microserviços?",
           "references": [
             "https://spring.io/projects/spring-cloud-gateway"
@@ -121,8 +116,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "CQRS melhora escalabilidade ao otimizar escrita e leitura separadamente, como usar um banco para comandos de criação de usuários e outro para consultas rápidas, reduzindo latência em sistemas de alta demanda.",
-          "code": "// Comando (escrita)\npublic class CreateUserCommand {\n  String nome;\n  String email;\n}\n// Consulta (leitura)\npublic class UserQuery {\n  List<User> findByName(String name);\n}",
+          "explanation": "CQRS separa o modelo de escrita (comandos) do modelo de leitura (consultas), permitindo otimizar cada um: escrita normalizada e validada, leitura desnormalizada e rápida. Bancos separados são opcionais: dá para começar com o mesmo banco e modelos diferentes, e só separar quando a carga de leitura exigir.",
+          "code": "// Comando (escrita)\npublic record CreateUserCommand(String nome, String email) {}\n\n// Consulta (leitura): interface, implementada por quem lê do modelo de leitura\npublic interface UserQuery {\n  List<UserView> findByName(String name);\n}",
           "interview_question": "Como o CQRS pode melhorar a escalabilidade de um sistema?",
           "references": [
             "https://martinfowler.com/bliki/CQRS.html"
@@ -154,7 +149,7 @@
         {
           "title": "Explicação",
           "explanation": "Na comunicação síncrona (REST, gRPC) quem chama espera a resposta: é simples, mas acopla a disponibilidade dos serviços — se o estoque cai, o checkout cai junto. Na assíncrona, um serviço publica um evento em um broker (Kafka, RabbitMQ) e segue em frente; consumidores processam no seu ritmo. Use assíncrono para tarefas que não precisam de resposta imediata (e-mails, notas fiscais, atualização de estoque) e para absorver picos de carga.",
-          "code": "// Síncrono: o checkout depende do serviço de e-mail estar no ar\nemailClient.enviarConfirmacao(pedido);\n\n// Assíncrono: publica um evento e segue\n@Service\nclass PedidoService {\n    private final KafkaTemplate<String, PedidoCriado> kafka;\n\n    void finalizar(Pedido pedido) {\n        repository.save(pedido);\n        kafka.send(\"pedidos.criados\", pedido.id().toString(), PedidoCriado.from(pedido));\n    }\n}",
+          "code": "// Síncrono: o checkout depende do serviço de e-mail estar no ar\nemailClient.enviarConfirmacao(pedido);\n\n// Assíncrono: publica um evento e segue\n@Service\nclass PedidoService {\n    private final KafkaTemplate<String, PedidoCriado> kafka;\n\n    void finalizar(Pedido pedido) {\n        repository.save(pedido);\n        kafka.send(\"pedidos.criados\", pedido.id().toString(), PedidoCriado.from(pedido));\n        // Atenção: se o send falhar depois do save, o evento se perde (dual write).\n        // Em produção, use o padrão Outbox (ver Banco de Dados, avançado).\n    }\n}",
           "interview_question": "Quando usar mensageria em vez de chamadas HTTP entre serviços?",
           "references": [
             "https://microservices.io/patterns/communication-style/messaging.html"
@@ -186,7 +181,7 @@
         {
           "title": "Explicação",
           "explanation": "Cache guarda resultados caros em memória (local, como Caffeine, ou distribuída, como Redis). O principal risco é servir dados desatualizados; por isso defina TTL e invalide ao alterar o dado (@CacheEvict). Use cache para leituras frequentes e dados que mudam pouco — catálogo, configurações —, nunca para saldo bancário. Em múltiplas instâncias, cache local diverge entre elas: prefira cache distribuído quando a consistência importa.",
-          "code": "@Service\npublic class ProdutoService {\n    @Cacheable(value = \"produtos\", key = \"#id\")\n    public ProdutoResponse buscar(Long id) {\n        return ProdutoResponse.from(repository.findById(id).orElseThrow());\n    }\n\n    @CacheEvict(value = \"produtos\", key = \"#id\")\n    public void atualizarPreco(Long id, BigDecimal preco) {\n        repository.atualizarPreco(id, preco);\n    }\n}",
+          "code": "@Configuration\n@EnableCaching // sem isso, @Cacheable e @CacheEvict são ignorados\nclass CacheConfig {}\n\n@Service\npublic class ProdutoService {\n    @Cacheable(value = \"produtos\", key = \"#id\")\n    public ProdutoResponse buscar(Long id) {\n        return ProdutoResponse.from(repository.findById(id).orElseThrow());\n    }\n\n    @CacheEvict(value = \"produtos\", key = \"#id\")\n    public void atualizarPreco(Long id, BigDecimal preco) {\n        repository.atualizarPreco(id, preco);\n    }\n}",
           "interview_question": "Quais os riscos de usar cache e como invalidá-lo?",
           "references": [
             "https://docs.spring.io/spring-boot/reference/io/caching.html"

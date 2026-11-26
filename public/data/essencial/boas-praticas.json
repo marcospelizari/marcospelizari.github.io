@@ -18,7 +18,7 @@
         {
           "title": "Explicação",
           "explanation": "Use nomes descritivos, siga padrões como MVC (Model-View-Controller), documente com JavaDoc e organize em camadas (controller, service, repository). Isso facilita colaboração e manutenção.",
-          "code": "/**\n * Lista produtos por categoria.\n * @param categoria Categoria desejada\n * @return Lista de produtos\n */\n@GetMapping(\"/produtos\")\npublic List<Produto> listarPorCategoria(@RequestParam String categoria) {\n    return service.findByCategoria(categoria);\n}",
+          "code": "/**\n * Lista produtos por categoria.\n * @param categoria Categoria desejada\n * @return Produtos da categoria (DTO, não a entidade)\n */\n@GetMapping(\"/produtos\")\npublic List<ProdutoResponse> listarPorCategoria(@RequestParam String categoria) {\n    return service.listarPorCategoria(categoria);\n}",
           "interview_question": "Como você organiza o código em um projeto backend?"
         }
       ]
@@ -31,8 +31,8 @@
         {
           "title": "Explicação",
           "explanation": "Siga o SRP (Single Responsibility Principle) para classes com uma função e o DRY (Don't Repeat Yourself) para evitar duplicação. Promove código reutilizável e fácil de testar.",
-          "code": "public double aplicarDesconto(double valor, double percentual) {\n    return valor * (1 - percentual / 100);\n}",
-          "interview_question": "O que é o princípio SOLID e como você o aplica?"
+          "code": "// Dinheiro: BigDecimal, nunca double (0.1 + 0.2 != 0.3 em double)\npublic BigDecimal aplicarDesconto(BigDecimal valor, BigDecimal percentual) {\n    BigDecimal fator = BigDecimal.ONE.subtract(percentual.movePointLeft(2));\n    return valor.multiply(fator).setScale(2, RoundingMode.HALF_EVEN);\n}",
+          "interview_question": "O que são SRP e DRY e como você os aplica?"
         }
       ]
     },
@@ -70,7 +70,7 @@
         {
           "title": "Explicação",
           "explanation": "Faça commits pequenos com mensagens claras, use branches (ex.: feature/nova-api), revise PRs (Pull Requests) e use .gitignore. Facilita colaboração em projetos distribuídos.",
-          "code": "git commit -m \"Adiciona endpoint /produtos\"\ngit push origin feature/nova-api",
+          "code": "git commit -m \"feat(produtos): adiciona endpoint /produtos\"\ngit push origin feature/nova-api",
           "interview_question": "Como você organiza commits em um projeto em equipe?"
         }
       ]
@@ -82,7 +82,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Métodos ágeis entregam software em ciclos curtos, recebendo feedback a cada entrega em vez de planejar tudo no início. No Scrum, o trabalho acontece em sprints de 1 a 4 semanas. Os papéis são o Product Owner, que prioriza o backlog; o Scrum Master, que remove impedimentos e cuida do processo; e os Developers, que constroem. Os eventos são a Sprint Planning (o que entra na sprint), a Daily (15 minutos: o que fiz, o que vou fazer, o que me impede), a Sprint Review (mostrar o que foi entregue) e a Retrospectiva (como melhorar o processo). Uma tarefa só está pronta quando atende à Definition of Done do time, que costuma incluir testes, code review aprovado e pipeline verde. Kanban é a alternativa sem sprints: um fluxo contínuo com limite de tarefas em andamento.",
+          "explanation": "Métodos ágeis entregam software em ciclos curtos, recebendo feedback a cada entrega em vez de planejar tudo no início. No Scrum, o trabalho acontece em sprints de 1 a 4 semanas. Os papéis são o Product Owner, que prioriza o backlog; o Scrum Master, que remove impedimentos e cuida do processo; e os Developers, que constroem. Os eventos são a Sprint Planning (o que entra na sprint), a Daily (15 minutos para o time inspecionar o progresso rumo à meta da sprint; o formato \"o que fiz, o que vou fazer, o que me impede\" é comum, mas não é regra do Scrum Guide desde 2020), a Sprint Review (mostrar o que foi entregue) e a Retrospectiva (como melhorar o processo). Uma tarefa só está pronta quando atende à Definition of Done do time, que costuma incluir testes, code review aprovado e pipeline verde. Kanban é a alternativa sem sprints: um fluxo contínuo com limite de tarefas em andamento.",
           "code": "Exemplo de Daily:\nOntem: terminei a atualização do jackson-databind e abri o PR.\nHoje: vou corrigir os comentários do review e começar os testes Karate do endpoint de pedidos.\nImpedimento: preciso de acesso ao ambiente de QA.\n\nDefinition of Done (exemplo):\n[ ] Código revisado e aprovado\n[ ] Testes unitários e de API passando\n[ ] Sem CVE alta ou crítica nova no scan\n[ ] Pipeline verde\n[ ] Critérios de aceite da história atendidos",
           "interview_question": "Quais são os eventos do Scrum e qual o objetivo de cada um?",
           "references": [
@@ -99,8 +99,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Use cache, assincronismo (@Async), imagens leves no Docker e pipelines CI/CD (Continuous Integration/Continuous Deployment). Monitorar com Prometheus garante sistemas escaláveis.",
-          "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: mvn clean package",
+          "explanation": "Use cache, assincronismo (@Async), imagens leves no Docker e pipelines CI/CD (Continuous Integration/Continuous Delivery). Monitorar com Prometheus garante sistemas escaláveis.",
+          "code": "name: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4          # sem isso, não há código no runner\n      - uses: actions/setup-java@v4\n        with: { distribution: temurin, java-version: '21', cache: maven }\n      - run: ./mvnw -B verify",
           "interview_question": "Quais práticas DevOps você aplicaria para otimizar deploys?"
         }
       ]
@@ -170,7 +170,7 @@
         {
           "title": "Explicação",
           "explanation": "O OWASP Top 10 lista os riscos mais críticos em aplicações web. Entre eles: controle de acesso quebrado (verifique se o usuário pode acessar aquele recurso, não só se está logado), injeção (use consultas parametrizadas), falhas criptográficas (HTTPS e hash de senhas com BCrypt) e componentes vulneráveis (mantenha dependências atualizadas e escaneie-as no CI). Segredos ficam em variáveis de ambiente ou cofres, nunca no repositório.",
-          "code": "// Controle de acesso: o pedido pertence ao usuário autenticado?\n@GetMapping(\"/pedidos/{id}\")\nPedidoResponse buscar(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {\n    Pedido pedido = service.buscar(id);\n    if (!pedido.clienteId().equals(jwt.getSubject())) {\n        throw new AccessDeniedException(\"Pedido de outro cliente\");\n    }\n    return PedidoResponse.from(pedido);\n}\n\n// Hash de senha\nString hash = new BCryptPasswordEncoder().encode(senha);",
+          "code": "// Controle de acesso: busca já filtrada pelo dono do pedido\n@GetMapping(\"/pedidos/{id}\")\nPedidoResponse buscar(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {\n    // pedido de outro cliente = 404 (não revela que ele existe)\n    Pedido pedido = repository.findByIdAndClienteId(id, jwt.getSubject())\n        .orElseThrow(() -> new PedidoNaoEncontradoException(id));\n    return PedidoResponse.from(pedido);\n}\n\n// Hash de senha\nString hash = new BCryptPasswordEncoder().encode(senha);",
           "interview_question": "Cite riscos do OWASP Top 10 e como mitigá-los em uma API Java.",
           "references": [
             "https://owasp.org/www-project-top-ten/"

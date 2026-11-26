@@ -3,27 +3,15 @@
   "description": "Conceitos principais da linguagem e pontos comuns em entrevistas, atualizados para Java 21 (LTS).",
   "version": "Java 21",
   "resumo": [
-    "Java é como um tradutor universal que conecta desenvolvedores a diversas plataformas: uma linguagem robusta amplamente usada no backend, especialmente em sistemas como e-commerce ou bancos, graças à JVM (Java Virtual Machine), que executa o bytecode gerado pelo compilador em qualquer sistema operacional — Windows, Linux ou Mac — sem necessidade de adaptações, tornando-a ideal para projetos multiplataforma que exigem portabilidade.",
-    "A JVM funciona como um intérprete habilidoso: traduz o bytecode, criado ao compilar o código com `javac`, para a máquina específica onde roda, garantindo que uma aplicação escrita uma vez funcione em qualquer lugar, uma vantagem crucial para júniores que começam em ambientes heterogêneos, como equipes distribuídas trabalhando em sistemas de gestão que precisam ser consistentes em diferentes servidores.",
-    "O JRE (Java Runtime Environment) é como um kit básico de sobrevivência: inclui a JVM e bibliotecas essenciais para rodar aplicações Java, sendo suficiente para usuários finais que apenas executam programas, enquanto o JDK (Java Development Kit) adiciona ferramentas como o compilador `javac`, o debugger e outras utilidades, equipando desenvolvedores para escrever, compilar e depurar código, como ao construir uma API de cadastro de clientes.",
-    "Os controladores de acesso são como portas de segurança em uma casa: `public` permite acesso irrestrito a qualquer classe, `protected` limita o acesso a classes no mesmo pacote ou subclasses, `default` (sem modificador) restringe ao pacote, e `private` confina o acesso à própria classe, promovendo encapsulamento ao esconder detalhes internos, como atributos de uma classe `Usuario`, e sendo essencial para júniores entenderem hierarquias e modularidade.",
-    "As estruturas de controle são o mapa que guia o fluxo do programa: `if/else` toma decisões simples, `switch` (incluindo o `switch expression` do Java 17) lida com múltiplas opções de forma concisa, e loops como `for` e `while` repetem tarefas, como processar uma lista de pedidos em um e-commerce, com o `switch expression` retornando valores diretos (ex.: `case 1 -> \"Sim\"`) para tornar o código mais limpo e menos propenso a erros.",
-    "Os tipos primitivos e wrappers são como ferramentas básicas e avançadas: `int`, `double` e outros tipos primitivos armazenam valores de forma eficiente, enquanto wrappers como `Integer` e `Double` são objetos com métodos úteis, como `parseInt` para conversão, e o `var` (Java 10) infere tipos automaticamente (ex.: `var x = 5`), mas exige cuidado com tipos complexos para manter a legibilidade em manipulações de dados.",
-    "O tratamento de exceções é como um plano de contingência: o `try/catch` captura erros como arquivos inexistentes ou divisões por zero, enquanto o `try-with-resources` (Java 7) fecha automaticamente recursos como conexões de banco, evitando vazamentos de memória, sendo uma prática essencial em sistemas bancários que lidam com transações sensíveis.",
-    "As coleções são como armários organizados: `List` armazena sequências ordenadas, `Map` associa chaves a valores, e a Stream API (Java 8) processa esses dados com lambdas (ex.: `lista.stream().filter(n -> n > 0)`), melhorando eficiência e legibilidade em cenários como filtrar produtos ativos em um catálogo online.",
-    "Arrays são como caixas fixas: armazenam dados com tamanho definido, como `int[] nums = {1, 2, 3}`, oferecendo performance superior a `ArrayList` quando o tamanho é conhecido, como uma lista de preços fixa, mas exigem cuidado ao manipular dados que podem crescer dinamicamente.",
-    "Os métodos são como receitas reutilizáveis: definem blocos de código com varargs (`...`) para aceitar múltiplos argumentos (ex.: `soma(int... nums)`), e sobrecarga permite versões diferentes do mesmo método com parâmetros distintos, facilitando tarefas como calcular descontos variados em um sistema de vendas.",
-    "Os operadores são os ingredientes da lógica: seguem uma precedência (multiplicação antes da soma), e o uso de parênteses, como `(a + b) * c`, evita ambiguidades, garantindo cálculos corretos em expressões complexas, como fórmulas financeiras em uma aplicação de investimentos.",
-    "A herança é como uma árvore genealógica: permite que classes como `Cachorro` herdem de `Animal`, reutilizando código, enquanto classes sealed (Java 17) com `permits` limitam quais classes podem estender, como tipos de transações em um sistema financeiro, oferecendo controle sobre a hierarquia.",
-    "Interfaces são como contratos assinados: definem métodos que classes devem implementar, podendo incluir `default methods` (Java 8) com comportamento padrão, como um método `log()` em uma interface de serviços, promovendo flexibilidade e polimorfismo em designs de software.",
-    "Enums são como categorias fixas: representam conjuntos constantes, como `enum Dia { SEGUNDA, TERCA }`, sendo úteis para estados como dias da semana ou status de pedidos, garantindo segurança de tipo e evitando valores inválidos em um sistema de agendamento.",
-    "O `Optional` (Java 8) é como um filtro de segurança: encapsula valores que podem ser nulos, evitando `NullPointerException`, com métodos como `orElse()` para valores padrão (ex.: `Optional.ofNullable(nome).orElse(\"Desconhecido\")`), melhorando a robustez ao buscar dados como nomes de clientes.",
-    "Lambdas e a Stream API são como assistentes inteligentes: lambdas simplificam código com expressões como `n -> n * 2`, e a Stream API processa coleções em paralelo (ex.: `lista.stream().map(n -> n * 2)`), otimizando performance em grandes conjuntos, como relatórios de vendas mensais.",
-    "A palavra-chave `static` é como um recurso compartilhado: vincula variáveis ou métodos à classe, como a constante `Math.PI`, sendo útil para utilitários, mas seu uso excessivo pode dificultar testes ao criar dependência de estado global, exigindo moderação em lógicas dinâmicas.",
-    "O gerenciamento de memória com o Garbage Collector é como uma equipe de limpeza: libera automaticamente memória de objetos não utilizados, mas entender como ele funciona ajuda a evitar vazamentos, como ao manter referências desnecessárias em um sistema de cache.",
-    "Para júniores, pratique criando uma classe com atributos `private`, métodos com varargs, e use `try-with-resources` para arquivos, explorando `Optional` e streams em um projeto simples como uma calculadora ou cadastro, testando com JUnit para solidificar os conceitos.",
-    "Em cenários reais, aplique herança em hierarquias de produtos, use interfaces para contratos de serviços, e otimize performance com arrays em dados fixos, como um sistema bancário que processa transações em grande escala com segurança e eficiência.",
-    "Cuidados incluem evitar `static` em lógica mutável, validar entradas com exceções, e usar enums para estados definidos, testando regularmente com ferramentas como JUnit e configurando logs para depuração em produção."
+    "A JVM executa o bytecode gerado pelo `javac`: o mesmo `.class` roda em qualquer sistema. O JDK traz compilador e ferramentas; desde o Java 11 não existe JRE separado.",
+    "Primitivos (`int`, `double`) guardam valores; wrappers (`Integer`) são objetos e podem ser null. Compare objetos com `equals`, não com `==`.",
+    "`String` é imutável: concatenar em loop cria objetos novos — use `StringBuilder`.",
+    "Visibilidade: `private` (classe), sem modificador (pacote), `protected` (pacote + subclasses), `public` (todos).",
+    "Checked exceptions exigem `try/catch` ou `throws`; unchecked (`RuntimeException`) indicam erro de programação ou regra violada. `try-with-resources` fecha arquivos e conexões.",
+    "Sobrescreveu `equals`, sobrescreva `hashCode` — senão `HashMap` e `HashSet` falham.",
+    "`List` é a coleção padrão (`List.of()` é imutável); streams são declarativos e sequenciais, e `parallelStream()` raramente compensa em apps web.",
+    "Datas com `java.time` (`LocalDate`, `Instant`), nunca `Date` ou `Calendar`.",
+    "Java moderno: `var` (10), switch expression (14), text blocks (15), records (16), sealed classes (17)."
   ],
   "subsections": [
     {
@@ -49,7 +37,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "O `switch expression` (Java 17) melhora o código ao retornar valores diretamente, eliminando `break` e reduzindo repetição, como em `switch (dia) { case 1 -> \"Segunda\" }`, sendo mais conciso e seguro para decisões complexas.",
+          "explanation": "O `switch expression` (padrão desde o Java 14) melhora o código ao retornar valores diretamente, eliminando `break` e reduzindo repetição, como em `switch (dia) { case 1 -> \"Segunda\" }`, sendo mais conciso e seguro para decisões complexas.",
           "code": "var numero = 2;\nString resultado = switch (numero) {\n    case 1 -> \"Um\";\n    case 2 -> \"Dois\";\n    default -> \"Outro\";\n};",
           "interview_question": "Como o switch expression melhora o código em relação ao switch tradicional?",
           "references": [
@@ -113,7 +101,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Text Blocks (Java 15) melhoram legibilidade em strings multilinhas, como \"\"\" Olá\nMundo \"\"\" sem escapes manuais, sendo ideais para HTML ou mensagens de erro, enquanto `StringBuilder` otimiza concatenações em loops.",
+          "explanation": "Strings são imutáveis: cada concatenação cria um objeto novo, então em loops use `StringBuilder`. Text Blocks (Java 15) facilitam strings multilinha, como JSON, SQL ou HTML, sem \\n nem aspas escapadas; as aspas triplas de abertura precisam ser seguidas de uma quebra de linha.",
           "code": "String s = \"Oi\";\nString multi = \"\"\"\n    Olá,\n    Mundo!\n    \"\"\";\nStringBuilder sb = new StringBuilder().append(\"teste\");",
           "interview_question": "Qual a vantagem de usar Text Blocks para strings multilinhas?",
           "references": [
@@ -129,7 +117,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "`try-with-resources` gerencia recursos como arquivos ou conexões, fechando-os automaticamente, como em `try (BufferedReader br = new BufferedReader(...))`, sendo crucial para evitar vazamentos em sistemas que lidam com I/O intensivo.",
+          "explanation": "`try-with-resources` gerencia recursos como arquivos ou conexões, fechando-os automaticamente, como em `try (BufferedReader br = new BufferedReader(...))`, sendo crucial para evitar vazamento de recursos (arquivos e conexões que ficam abertos) em sistemas que lidam com I/O intensivo.",
           "code": "try (var reader = new BufferedReader(new FileReader(\"file.txt\"))) {\n  String line = reader.readLine();\n} catch (IOException e) {\n  System.out.println(\"Erro: \" + e.getMessage());\n}",
           "interview_question": "O que é try-with-resources e quando usá-lo?",
           "references": [
@@ -161,9 +149,9 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Arrays são preferíveis a `ArrayList` em cenários de performance com tamanho fixo, como `int[] nums = {1, 2, 3}`, devido ao menor overhead, sendo ideais para dados como uma tabela de preços estática em um sistema.",
+          "explanation": "Arrays têm tamanho fixo e acesso por índice. No código de negócio, `List` é o padrão, porque cresce e tem uma API rica. `int[]` só tem vantagem real em grandes volumes de números: `ArrayList<Integer>` guarda objetos (boxing), não primitivos.",
           "code": "int[] nums = {1, 2, 3};\nfor(var n : nums) {\n  System.out.println(n);\n}",
-          "interview_question": "Por que usar arrays em vez de ArrayList em cenários de performance?",
+          "interview_question": "Quando um array é melhor que um ArrayList?",
           "references": [
             "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Arrays.html"
           ]
@@ -241,9 +229,9 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "A Stream API melhora legibilidade com operações como `filter()` e `map()`, e eficiência com processamento paralelo, como `lista.stream().parallel().map(n -> n * 2)`, sendo ideal para grandes conjuntos de dados como relatórios financeiros.",
+          "explanation": "A Stream API melhora a legibilidade com operações declarativas como `filter()`, `map()` e `collect()`. Por padrão o stream é sequencial. `parallelStream()` só compensa com muitos dados, trabalho CPU-bound e sem estado compartilhado — em APIs web, quase nunca.",
           "code": "var lista = List.of(1, 2, 3, 4);\nlista.stream()\n     .filter(n -> n % 2 == 0)\n     .forEach(System.out::println); // 2, 4",
-          "interview_question": "Como a Stream API melhora a legibilidade e eficiência do código?",
+          "interview_question": "Como a Stream API melhora a legibilidade do código, e quando usar parallelStream?",
           "references": [
             "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/Stream.html"
           ]

@@ -32,8 +32,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Use fetch join ou @EntityGraph quando precisar dos relacionamentos, projeções em DTO para listagens e paginação sempre. Para escritas em massa, ative o batching do Hibernate em vez de salvar item a item. Confirme cada mudança com o log de SQL e EXPLAIN ANALYZE: menos consultas e planos com índice são o objetivo.",
-          "code": "@Repository\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    @Query(\"SELECT p FROM Produto p JOIN FETCH p.categoria WHERE p.categoria.nome = :categoria\")\n    List<Produto> findByCategoria(@Param(\"categoria\") String categoria);\n}\n\n# application.yml: inserts e updates em lote\nspring.jpa.properties.hibernate.jdbc.batch_size: 50\nspring.jpa.properties.hibernate.order_inserts: true",
+          "explanation": "Use fetch join ou @EntityGraph quando precisar dos relacionamentos, projeções em DTO para listagens e paginação sempre. Para escritas em massa, ative o batching do Hibernate em vez de salvar item a item — ele só agrupa INSERTs quando o id usa SEQUENCE; com GenerationType.IDENTITY o batch de insert fica desligado. Confirme cada mudança com o log de SQL e EXPLAIN ANALYZE: menos consultas e planos com índice são o objetivo.",
+          "code": "@Repository\npublic interface ProdutoRepository extends JpaRepository<Produto, Long> {\n    @Query(\"SELECT p FROM Produto p JOIN FETCH p.categoria WHERE p.categoria.nome = :categoria\")\n    List<Produto> findByCategoria(@Param(\"categoria\") String categoria);\n}\n\n# application.yml: inserts e updates em lote (inserts só com id por SEQUENCE, não IDENTITY)\nspring.jpa.properties.hibernate.jdbc.batch_size: 50\nspring.jpa.properties.hibernate.order_inserts: true",
           "interview_question": "Como você evitaria o problema N+1 em consultas JPA?",
           "references": [
             "https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html"

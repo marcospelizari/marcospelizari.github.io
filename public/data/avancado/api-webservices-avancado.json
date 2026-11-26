@@ -31,8 +31,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "O cliente envia um Idempotency-Key único por operação; o servidor grava a chave com o resultado e, se a mesma chave chegar de novo (retry após timeout), devolve a resposta original em vez de processar outra vez. A chave deve ser armazenada com restrição de unicidade para resistir a requisições concorrentes e ter tempo de expiração.",
-          "code": "@PostMapping(\"/pagamentos\")\nResponseEntity<PagamentoResponse> pagar(@RequestHeader(\"Idempotency-Key\") String chave,\n                                        @Valid @RequestBody PagamentoRequest req) {\n    return idempotencia.buscar(chave)\n        .map(ResponseEntity::ok)\n        .orElseGet(() -> {\n            PagamentoResponse resp = service.pagar(req);\n            idempotencia.salvar(chave, resp); // UNIQUE(chave) no banco\n            return ResponseEntity.status(HttpStatus.CREATED).body(resp);\n        });\n}",
+          "explanation": "O cliente envia um Idempotency-Key único por operação. O servidor reserva a chave ANTES de processar (INSERT com restrição de unicidade): só quem conseguiu reservar executa a cobrança. Se a mesma chave chegar de novo (retry após timeout ou requisição simultânea), devolve a resposta original, com o mesmo status, ou 409 enquanto a primeira ainda processa. A chave tem tempo de expiração.",
+          "code": "@PostMapping(\"/pagamentos\")\nResponseEntity<PagamentoResponse> pagar(@RequestHeader(\"Idempotency-Key\") String chave,\n                                        @Valid @RequestBody PagamentoRequest req) {\n    // 1. Reserva a chave antes de cobrar: INSERT com UNIQUE(chave)\n    if (!idempotencia.reservar(chave)) {\n        return idempotencia.respostaSalva(chave)\n            .map(resp -> ResponseEntity.status(HttpStatus.CREATED).body(resp))     // mesmo status\n            .orElseGet(() -> ResponseEntity.status(HttpStatus.CONFLICT).build());  // ainda processando\n    }\n    // 2. Só quem reservou a chave processa\n    PagamentoResponse resp = service.pagar(req);\n    idempotencia.concluir(chave, resp);\n    return ResponseEntity.status(HttpStatus.CREATED).body(resp);\n}",
           "interview_question": "Como tornar um POST de pagamento seguro contra repetições?",
           "references": [
             "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/"
@@ -65,7 +65,7 @@
         {
           "title": "Explicação",
           "explanation": "gRPC usa Protocol Buffers (binário, compacto e fortemente tipado) sobre HTTP/2, com multiplexação e streaming unário, de servidor, de cliente ou bidirecional. O contrato .proto gera clientes e servidores em várias linguagens. É ótimo para comunicação interna entre serviços com alto volume; para navegadores e APIs públicas, REST/JSON continua mais acessível.",
-          "code": "// pedido.proto\nsyntax = \"proto3\";\n\nservice PedidoService {\n  rpc Buscar (BuscarPedidoRequest) returns (Pedido);\n  rpc AcompanharStatus (BuscarPedidoRequest) returns (stream StatusAtualizado);\n}\n\nmessage BuscarPedidoRequest { int64 id = 1; }\nmessage Pedido { int64 id = 1; string status = 2; double total = 3; }\nmessage StatusAtualizado { string status = 1; }",
+          "code": "// pedido.proto\nsyntax = \"proto3\";\n\nservice PedidoService {\n  rpc Buscar (BuscarPedidoRequest) returns (Pedido);\n  rpc AcompanharStatus (BuscarPedidoRequest) returns (stream StatusAtualizado);\n}\n\nmessage BuscarPedidoRequest { int64 id = 1; }\nmessage Pedido { int64 id = 1; string status = 2; int64 total_centavos = 3; } // dinheiro: nunca double\nmessage StatusAtualizado { string status = 1; }",
           "interview_question": "Quando preferir gRPC a REST?",
           "references": [
             "https://grpc.io/docs/what-is-grpc/introduction/"
@@ -98,7 +98,7 @@
         {
           "title": "Explicação",
           "explanation": "Rate limiting limita requisições por cliente (por chave de API, usuário ou IP) em uma janela de tempo, normalmente com token bucket; ao exceder, responda 429 Too Many Requests com Retry-After. Aplique-o no API Gateway ou com bibliotecas como Bucket4j, combinado com limites de tamanho de payload, paginação obrigatória e timeouts.",
-          "code": "HTTP/1.1 429 Too Many Requests\nRetry-After: 30\nRateLimit-Limit: 100\nRateLimit-Remaining: 0\nRateLimit-Reset: 30\n\n# Spring Cloud Gateway: limite por usuário com Redis\nspring.cloud.gateway.routes[0].filters[0]: >\n  RequestRateLimiter=redis-rate-limiter.replenishRate=10,redis-rate-limiter.burstCapacity=20",
+          "code": "HTTP/1.1 429 Too Many Requests\nRetry-After: 30\nRateLimit-Limit: 100\nRateLimit-Remaining: 0\nRateLimit-Reset: 30\n\n# Spring Cloud Gateway: limite por usuário com Redis\nspring:\n  cloud:\n    gateway:\n      routes:\n        - id: api\n          uri: http://api-pedidos:8080\n          predicates: [\"Path=/api/**\"]\n          filters:\n            - name: RequestRateLimiter\n              args:\n                redis-rate-limiter.replenishRate: 10\n                redis-rate-limiter.burstCapacity: 20\n                key-resolver: \"#{@usuarioKeyResolver}\"   # bean KeyResolver que extrai o usuário",
           "interview_question": "Como proteger uma API pública contra abuso e picos de tráfego?",
           "references": [
             "https://owasp.org/API-Security/editions/2023/en/0xa4-unrestricted-resource-consumption/"
@@ -130,7 +130,7 @@
         {
           "title": "Explicação",
           "explanation": "No code-first, o springdoc-openapi gera a especificação a partir dos controllers e anotações — rápido para começar. No contract-first, o arquivo OpenAPI é escrito e revisado antes, e o openapi-generator gera interfaces e clientes, permitindo que times de front e back trabalhem em paralelo. Em ambos, valide no CI se mudanças no contrato são compatíveis com versões anteriores.",
-          "code": "<!-- pom.xml -->\n<dependency>\n  <groupId>org.springdoc</groupId>\n  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>\n  <version>2.6.0</version>\n</dependency>\n<!-- Swagger UI em /swagger-ui.html e especificação em /v3/api-docs -->",
+          "code": "<!-- pom.xml -->\n<dependency>\n  <groupId>org.springdoc</groupId>\n  <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>\n  <version>2.6.0</version>\n</dependency>\n<!-- springdoc 2.x para Spring Boot 3 -->\n<!-- Swagger UI em /swagger-ui.html e especificação em /v3/api-docs -->",
           "interview_question": "Qual a diferença entre abordagens code-first e contract-first com OpenAPI?",
           "references": [
             "https://springdoc.org/",

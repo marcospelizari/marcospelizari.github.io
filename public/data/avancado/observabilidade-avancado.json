@@ -16,7 +16,7 @@
         {
           "title": "Explicação",
           "explanation": "Logs em JSON têm campos consistentes (timestamp, nível, serviço, traceId, pedidoId) que ferramentas como Elasticsearch, Loki ou CloudWatch indexam e filtram — \"todos os erros do pedido 123 em todos os serviços\" vira uma consulta. Texto livre exige regex frágeis. O Spring Boot 3.4+ suporta logs estruturados nativamente; controle a verbosidade, pois logs custam armazenamento.",
-          "code": "# application.yml (Spring Boot 3.4+)\nlogging:\n  structured:\n    format:\n      console: ecs\n\n// Saída (uma linha por evento)\n{\"@timestamp\":\"2024-05-10T14:32:01.120Z\",\"log.level\":\"INFO\",\"service.name\":\"api-pedidos\",\n \"trace.id\":\"4bf92f3577b34da6\",\"message\":\"Pedido criado\",\"pedidoId\":123}",
+          "code": "# application.yml (Spring Boot 3.4+)\nlogging:\n  structured:\n    format:\n      console: ecs\n\n// Saída (uma linha por evento)\n{\"@timestamp\":\"2024-05-10T14:32:01.120Z\",\"log.level\":\"INFO\",\"service.name\":\"api-pedidos\",\n \"trace.id\":\"4bf92f3577b34da6a3ce929d0e0e4736\",\"message\":\"Pedido criado\",\"pedidoId\":123}",
           "interview_question": "Por que preferir logs estruturados a texto livre?",
           "references": [
             "https://docs.spring.io/spring-boot/reference/features/logging.html#features.logging.structured"
@@ -47,8 +47,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Os sinais de ouro: latência (p95/p99, não média), tráfego (requisições por segundo), erros (taxa de 5xx) e saturação (CPU, pool de conexões, filas). Some métricas de negócio, como pedidos criados e pagamentos recusados. O Micrometer expõe tudo em /actuator/prometheus; o Prometheus coleta e o Grafana exibe. Evite tags de alta cardinalidade (userId, pedidoId) — cada valor cria uma nova série temporal.",
-          "code": "@Service\npublic class PedidoService {\n    private final Counter pedidosCriados;\n    private final Timer tempoCheckout;\n\n    public PedidoService(MeterRegistry registry) {\n        this.pedidosCriados = Counter.builder(\"pedidos.criados\")\n            .tag(\"canal\", \"web\").register(registry);\n        this.tempoCheckout = Timer.builder(\"checkout.duracao\")\n            .publishPercentiles(0.95, 0.99).register(registry);\n    }\n\n    public void finalizar(Pedido p) {\n        tempoCheckout.record(() -> processar(p));\n        pedidosCriados.increment();\n    }\n}",
+          "explanation": "Os sinais de ouro: latência (p95/p99, não média), tráfego (requisições por segundo), erros (taxa de 5xx) e saturação (CPU, pool de conexões, filas). Some métricas de negócio, como pedidos criados e pagamentos recusados. O Micrometer expõe tudo em /actuator/prometheus; o Prometheus coleta e o Grafana exibe. Evite tags de alta cardinalidade (userId, pedidoId) — cada valor cria uma nova série temporal. Para latência, publique histogramas e calcule p95/p99 no Prometheus com histogram_quantile: percentis calculados em cada instância não podem ser combinados entre réplicas.",
+          "code": "@Service\npublic class PedidoService {\n    private final Counter pedidosCriados;\n    private final Timer tempoCheckout;\n\n    public PedidoService(MeterRegistry registry) {\n        this.pedidosCriados = Counter.builder(\"pedidos.criados\")\n            .tag(\"canal\", \"web\").register(registry);\n        this.tempoCheckout = Timer.builder(\"checkout.duracao\")\n            .publishPercentileHistogram()   // agregável entre réplicas (histogram_quantile)\n            .register(registry);\n    }\n\n    public void finalizar(Pedido p) {\n        tempoCheckout.record(() -> processar(p));\n        pedidosCriados.increment();\n    }\n}",
           "interview_question": "Quais métricas você definiria para uma API crítica?",
           "references": [
             "https://docs.micrometer.io/micrometer/reference/",
@@ -98,7 +98,7 @@
         {
           "title": "Explicação",
           "explanation": "SLI é o indicador medido (ex.: % de requisições com sucesso abaixo de 300 ms). SLO é a meta interna para esse indicador (99,9% em 30 dias). SLA é o compromisso contratual com o cliente, com penalidades — normalmente mais frouxo que o SLO. O error budget é o quanto se pode falhar (0,1% ≈ 43 minutos por mês): sobrando orçamento, o time acelera entregas; estourado, prioriza estabilidade.",
-          "code": "SLI:  requisições com status < 500 e latência < 300ms / total de requisições\nSLO:  99,9% em janela móvel de 30 dias\nError budget: 0,1% de 30 dias ≈ 43 min de indisponibilidade\n\n# PromQL: disponibilidade nos últimos 30 dias\nsum(rate(http_server_requests_seconds_count{status!~\"5..\"}[30d]))\n  / sum(rate(http_server_requests_seconds_count[30d]))",
+          "code": "SLI:  requisições com status < 500 e latência < 300ms / total de requisições\nSLO:  99,9% em janela móvel de 30 dias\nError budget: 0,1% de 30 dias ≈ 43 min de indisponibilidade\n\n# PromQL: sem 5xx E abaixo de 300 ms nos últimos 30 dias\n# (exige o bucket de 300 ms: management.metrics.distribution.slo.http.server.requests=300ms)\nsum(rate(http_server_requests_seconds_bucket{le=\"0.3\", status!~\"5..\"}[30d]))\n  / sum(rate(http_server_requests_seconds_count[30d]))\n# Em produção, pré-calcule com recording rules: rate em 30d direto é caro",
           "interview_question": "Qual a diferença entre SLI, SLO e SLA?",
           "references": [
             "https://sre.google/sre-book/service-level-objectives/"

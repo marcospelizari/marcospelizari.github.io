@@ -3,21 +3,15 @@
   "description": "Conceitos essenciais para trabalhar com bancos relacionais e NoSQL, atualizados para práticas modernas.",
   "version": "SQL ANSI, MongoDB 7.0",
   "resumo": [
-    "Bancos de dados são a espinha dorsal de aplicações, armazenando dados como usuários, pedidos ou transações de forma estruturada e acessível, sendo indispensáveis para desenvolvedores backend. Pense neles como um arquivo organizado que mantém tudo no lugar para sistemas como e-commerce ou redes sociais.",
-    "O modelo relacional organiza informações em tabelas, como gavetas de um armário, com colunas e linhas, usando chaves primárias para identificar registros únicos e chaves estrangeiras para conectar tabelas, como clientes e seus pedidos em um sistema de vendas.",
-    "SQL é a linguagem que abre as portas desse armário: permite criar tabelas, inserir dados, consultar com SELECT e atualizar com UPDATE, sendo uma habilidade básica que todo júnior deve dominar para manipular bancos como MySQL ou PostgreSQL.",
-    "Normalização é como arrumar o armário para evitar bagunça: divide dados em tabelas separadas, seguindo formas como 1NF (atomicidade), 2NF (dependência total) e 3NF (sem transitividade), garantindo consistência e reduzindo redundâncias em projetos reais.",
-    "Transações são como uma corrente forte: garantem que operações complexas, como transferências bancárias, sejam atômicas, seguindo as propriedades ACID (Atomicidade, Consistência, Isolamento, Durabilidade) para evitar erros ou perdas de dados.",
-    "Joins são as pontes entre as gavetas: combinam dados de múltiplas tabelas, como INNER JOIN para matches diretos e LEFT JOIN para incluir tudo da esquerda, sendo essenciais para gerar relatórios ou análises em sistemas como um painel de vendas.",
-    "Índices são como guias rápidos no armário: otimizam consultas em colunas frequentemente pesquisadas, acelerando buscas, mas podem desacelerar inserções, exigindo equilíbrio ao projetar um banco para performance em aplicações dinâmicas.",
-    "Bancos NoSQL, como MongoDB ou Redis, são como caixas flexíveis: oferecem estrutura para dados não estruturados ou escalabilidade horizontal, ideais para aplicações dinâmicas como redes sociais ou big data, onde a rigidez relacional não se aplica.",
-    "ORMs como JPA/Hibernate são tradutores automáticos: mapeiam objetos Java para tabelas com anotações como @Entity, simplificando o acesso a dados e reduzindo a necessidade de SQL manual, uma ponte prática para júniores integrando código e banco.",
-    "Segurança é o cadeado do armário: SQL Injection pode comprometer sistemas se entradas não forem validadas, e o uso de prepared statements é uma prática essencial para proteger aplicações contra ataques maliciosos.",
-    "Como júnior, pratique SQL básico (SELECT, JOIN) e explore ferramentas como MySQL ou MongoDB com exemplos simples, como um cadastro de usuários, além de estudar integração com Java usando Spring Data para projetos reais.",
-    "Em cenários reais, use transações para transferências bancárias, índices para buscas rápidas em logs, e NoSQL para dados variados como perfis de redes sociais. Esses conceitos garantem eficiência e escalabilidade em qualquer sistema.",
-    "Cuidado com o excesso de índices, que podem sobrecarregar inserções, e valide sempre entradas para evitar SQL Injection. Teste consultas em ambientes isolados antes de aplicar em produção, especialmente em bancos críticos.",
-    "Combine bancos relacionais e NoSQL conforme a necessidade: use SQL para dados estruturados como inventário e MongoDB para logs flexíveis. Em entrevistas, destaque como transações e normalização garantem consistência e performance.",
-    "Dominar esses conceitos prepara para desafios de backend, focando em consistência, performance e segurança, que são prioridades em qualquer ambiente de desenvolvimento, desde startups até grandes corporações."
+    "Modelo relacional: tabelas ligadas por chave primária (identifica a linha) e chave estrangeira (garante a referência).",
+    "Normalização (1NF, 2NF, 3NF) elimina redundância; na 3NF nenhuma coluna depende de outra que não seja a chave.",
+    "Transação é tudo ou nada: débito e crédito juntos, COMMIT ou ROLLBACK (ACID).",
+    "INNER JOIN traz só as correspondências; LEFT JOIN traz tudo da esquerda, com null à direita.",
+    "WHERE filtra linhas; HAVING filtra grupos depois do GROUP BY.",
+    "Índice acelera a leitura e deixa INSERT, UPDATE e DELETE mais lentos.",
+    "SQL Injection: nunca concatene entrada do usuário; use parâmetros (`?` ou `:nome`).",
+    "NoSQL: documento (MongoDB), chave-valor (Redis), colunar (Cassandra), grafo (Neo4j) — escolha pelo padrão de acesso.",
+    "Pool de conexões (HikariCP) reaproveita conexões; mantenha pequeno e meça."
   ],
   "subsections": [
     {
@@ -56,8 +50,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "A terceira forma normal (3NF) elimina dependências transitivas, separando dados como endereços de usuários, reduzindo redundância e inconsistências, embora possa exigir joins mais complexos.",
-          "code": "CREATE TABLE Endereco (\n  id SERIAL PRIMARY KEY,\n  usuario_id INT REFERENCES Usuario(id),\n  rua VARCHAR(100)\n  -- Separa endereços para evitar redundância\n);",
+          "explanation": "1NF: cada coluna guarda um valor atômico (nada de lista em uma coluna). 2NF: com chave composta, cada coluna depende da chave inteira. 3NF: nenhuma coluna depende de outra coluna que não seja a chave (dependência transitiva) — por exemplo, a cidade depende do CEP, não do usuário. Normalizar reduz redundância e inconsistências, ao custo de mais joins.",
+          "code": "-- Antes: cidade depende do cep, não do id (viola a 3NF)\n-- usuario(id, nome, cep, cidade)\n\n-- Depois (3NF)\nCREATE TABLE cep (\n  cep    CHAR(8) PRIMARY KEY,\n  cidade VARCHAR(100) NOT NULL\n);\nCREATE TABLE usuario (\n  id   SERIAL PRIMARY KEY,\n  nome VARCHAR(100) NOT NULL,\n  cep  CHAR(8) REFERENCES cep(cep)\n);",
           "interview_question": "O que é a terceira forma normal (3NF) e por que aplicá-la?"
         }
       ]
@@ -70,7 +64,7 @@
         {
           "title": "Explicação",
           "explanation": "Transações evitam inconsistências em transferências bancárias garantindo que todas as operações (ex.: debitar e creditar) sejam concluídas ou revertidas com COMMIT/ROLLBACK, seguindo ACID.",
-          "code": "BEGIN;\nINSERT INTO conta (id, saldo) VALUES (1, 100);\nUPDATE conta SET saldo = saldo - 50 WHERE id = 1;\nCOMMIT;\n-- Garante atomicidade",
+          "code": "BEGIN;\nUPDATE conta SET saldo = saldo - 50 WHERE id = 1; -- débito\nUPDATE conta SET saldo = saldo + 50 WHERE id = 2; -- crédito\nCOMMIT;\n-- Se algo falhar antes do COMMIT, ROLLBACK desfaz as duas operações",
           "interview_question": "Como transações evitam inconsistências em transferências bancárias?"
         }
       ]
@@ -95,9 +89,9 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Índices aceleram SELECTs em colunas indexadas, mas desaceleram INSERTs ao atualizar estruturas, exigindo um equilíbrio entre performance de leitura e escrita em bancos ativos.",
+          "explanation": "Índices aceleram SELECTs em colunas indexadas, mas deixam INSERT, UPDATE e DELETE mais lentos, porque cada índice também precisa ser atualizado. Crie índices para filtros e joins frequentes, não para todas as colunas.",
           "code": "CREATE INDEX idx_nome ON usuarios(nome);\n-- Acelera busca por nome",
-          "interview_question": "Qual o impacto de índices no desempenho de INSERTs?"
+          "interview_question": "Qual o impacto de índices no desempenho das escritas?"
         }
       ]
     },
@@ -108,9 +102,9 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "ACID garante transações rigorosas em relacionais, enquanto BASE prioriza disponibilidade e consistência eventual em NoSQL, sendo uma escolha para escalabilidade em cenários como redes sociais.",
-          "code": "BEGIN;\n-- Operações ACID\nCOMMIT;\n-- Exemplo NoSQL (BASE): Eventual consistency",
-          "interview_question": "Por que bancos NoSQL usam BASE em vez de ACID?"
+          "explanation": "ACID (Atomicidade, Consistência, Isolamento, Durabilidade) é o padrão dos bancos relacionais. BASE (Basically Available, Soft state, Eventual consistency) descreve sistemas distribuídos que priorizam disponibilidade e aceitam que réplicas fiquem desatualizadas por um tempo. Não é regra de todo NoSQL: o MongoDB, por exemplo, tem transações ACID multi-documento desde a versão 4.0.",
+          "code": "-- ACID: tudo ou nada, visível para os outros só após o COMMIT\nBEGIN;\nUPDATE conta SET saldo = saldo - 50 WHERE id = 1;\nUPDATE conta SET saldo = saldo + 50 WHERE id = 2;\nCOMMIT;\n\n-- BASE (consistência eventual): a escrita vai para o nó A;\n-- uma leitura logo depois no nó B pode ainda ver o valor antigo\n-- até a replicação terminar.",
+          "interview_question": "Qual a diferença entre ACID e BASE?"
         }
       ]
     },
@@ -138,7 +132,7 @@
         {
           "title": "Explicação",
           "explanation": "ORM como JPA mapeia objetos Java para tabelas, permitindo operações como persist() sem SQL manual, reduzindo boilerplate e facilitando integração com Spring Data em projetos Java.",
-          "code": "import jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class Usuario {\n  @Id\n  private Long id;\n  private String nome;\n\n  public Long getId() { return id; }\n  public void setId(Long id) { this.id = id; }\n  public String getNome() { return nome; }\n  public void setNome(String nome) { this.nome = nome; }\n}\n// Exemplo de uso\nEntityManager em = ...;\nem.persist(new Usuario(1L, \"João\"));",
+          "code": "import jakarta.persistence.Entity;\nimport jakarta.persistence.Id;\n\n@Entity\npublic class Usuario {\n  @Id\n  private Long id;\n  private String nome;\n\n  protected Usuario() {} // JPA exige construtor sem argumentos\n  public Usuario(Long id, String nome) { this.id = id; this.nome = nome; }\n\n  public Long getId() { return id; }\n  public String getNome() { return nome; }\n}\n// Exemplo de uso\nEntityManager em = ...;\nem.persist(new Usuario(1L, \"João\"));",
           "interview_question": "Como um ORM como JPA simplifica o acesso a bancos?",
           "references": [
             "https://hibernate.org/orm/documentation/"

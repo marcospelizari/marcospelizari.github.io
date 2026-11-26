@@ -48,7 +48,7 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "O reflog registra localmente cada movimento do HEAD (commits, checkouts, resets, rebases) por cerca de 90 dias. Encontre o estado anterior e volte para ele com reset ou crie uma branch a partir dele. Funciona também para recuperar uma branch apagada antes do push. Só não ajuda com mudanças que nunca foram commitadas.",
+          "explanation": "O reflog registra localmente cada movimento do HEAD (commits, checkouts, resets, rebases) por padrão 90 dias para entradas alcançáveis e 30 dias para commits que ficaram inalcançáveis, como os perdidos em um reset — não demore para recuperar. Encontre o estado anterior e volte para ele com reset ou crie uma branch a partir dele. Funciona também para recuperar uma branch apagada antes do push. Só não ajuda com mudanças que nunca foram commitadas.",
           "code": "git reflog\n# 3f9a2b1 HEAD@{0}: reset: moving to HEAD~3\n# c7d8e9f HEAD@{1}: commit: feat: relatório de vendas\n\ngit reset --hard HEAD@{1}                 # volta ao estado anterior\ngit switch -c recuperada c7d8e9f          # ou cria uma branch a partir dele",
           "interview_question": "Como recuperar commits após um git reset --hard acidental?",
           "references": [
@@ -80,8 +80,8 @@
       "examples": [
         {
           "title": "Explicação",
-          "explanation": "Integre com frequência (branches curtas), mantenha commits pequenos e atualize sua branch com a main regularmente. O estilo diff3/zdiff3 mostra também a versão ancestral, deixando claro o que cada lado mudou. git rerere memoriza resoluções para reaplicá-las em conflitos repetidos. Depois de resolver, rode os testes: um merge sem conflito textual ainda pode quebrar a lógica.",
-          "code": "git config --global merge.conflictstyle zdiff3\ngit config --global rerere.enabled true\n\ngit merge origin/main\ngit checkout --ours  caminho/arquivo   # mantém a sua versão\ngit checkout --theirs caminho/arquivo  # mantém a versão recebida\ngit add caminho/arquivo && git commit",
+          "explanation": "Integre com frequência (branches curtas), mantenha commits pequenos e atualize sua branch com a main regularmente. O estilo diff3/zdiff3 mostra também a versão ancestral, deixando claro o que cada lado mudou. git rerere memoriza resoluções para reaplicá-las em conflitos repetidos. Depois de resolver, rode os testes: um merge sem conflito textual ainda pode quebrar a lógica. Atenção: durante um rebase, --ours e --theirs se invertem (ours é a branch sobre a qual você está aplicando, normalmente a main).",
+          "code": "git config --global merge.conflictstyle zdiff3\ngit config --global rerere.enabled true\n\ngit merge origin/main\ngit checkout --ours  caminho/arquivo   # no merge: mantém a sua versão (no rebase é o contrário)\ngit checkout --theirs caminho/arquivo  # mantém a versão recebida\ngit add caminho/arquivo && git commit",
           "interview_question": "Que práticas reduzem e facilitam conflitos de merge?",
           "references": [
             "https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging"
