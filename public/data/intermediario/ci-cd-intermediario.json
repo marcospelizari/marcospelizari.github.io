@@ -1,0 +1,130 @@
+{
+  "title": "CI/CD",
+  "description": "Secrets, environments, and scaling pipelines across many repositories and combinations.",
+  "version": "GitHub Actions",
+  "resumo": [
+    "Secrets in GitHub Secrets or OIDC, passed as env vars to the step that needs them, never printed.",
+    "Build once, promote the same image to every environment.",
+    "Reusable workflows (`workflow_call`) for one standard pipeline — pinned to a version, never `@main`.",
+    "Matrix builds test combinations in parallel; add a summary job to require in branch protection.",
+    "Feature flags separate deploy from release — and must be removed after the rollout."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Secrets in the Pipeline",
+      "formerSubtitle": "Segredos no Pipeline",
+      "formerLevel": "essencial",
+      "description": "Using credentials without exposing them.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the pipeline needs a registry password, a Sonar token and cloud credentials. Written in the YAML, they end up in Git and in the logs.\n\n**Concept:** credentials live in GitHub Secrets (per repository or per environment) and are read as `${{ secrets.NAME }}`; GitHub masks their values in the logs. Give the `GITHUB_TOKEN` only the permissions each job needs with `permissions`. For the cloud, prefer OIDC: the workflow exchanges a short-lived token for temporary credentials, with no long-lived keys stored anywhere.\n\n**How it works:** pass secrets as environment variables to the step that needs them, and nowhere else.",
+          "code": "permissions:\n  contents: read\n  id-token: write   # required for OIDC\n\nsteps:\n  - uses: aws-actions/configure-aws-credentials@v4\n    with:\n      role-to-assume: arn:aws:iam::123456789012:role/deploy-api\n      aws-region: us-east-1\n  - name: Sonar analysis\n    env:\n      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}\n    run: ./mvnw -B sonar:sonar",
+          "interview_question": "How do you use credentials in a pipeline without exposing them?",
+          "references": [
+            "https://docs.github.com/en/actions/security-for-github-actions/security-guides/using-secrets-in-github-actions",
+            "https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/about-security-hardening-with-openid-connect"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Printing a secret, trusting the masking. GitHub masks the exact value, but a transformed value — Base64, split, URL-encoded — is printed in clear. Never print secrets.",
+          "code": "# WRONG\n- run: echo \"${{ secrets.SONAR_TOKEN }}\" | base64     # the encoded value is NOT masked\n\n# RIGHT: hand it to the tool as an environment variable, never print it\n- env:\n    SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}\n  run: ./mvnw -B sonar:sonar"
+        }
+      ]
+    },
+    {
+      "subtitle": "Environments and Promotion",
+      "formerSubtitle": "Ambientes e Promoção",
+      "formerLevel": "essencial",
+      "description": "Dev, staging and production with the same artifact.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** it worked in staging and broke in production — and production was built from a different compilation.\n\n**Concept:** rebuilding for each environment can produce different binaries (updated dependencies, another compiler), which invalidates the tests done in staging. Build once and promote the same image, changing only the configuration (environment variables, profiles). GitHub Environments add protection rules, such as required reviewers before production.\n\n**How it works:** the production job deploys the image tagged with the same commit SHA that passed staging.",
+          "code": "deploy-production:\n  needs: deploy-staging\n  runs-on: ubuntu-latest\n  environment:\n    name: production              # requires approval, configured in the repository\n    url: https://api.shop.com\n  steps:\n    - run: ./deploy.sh ghcr.io/${{ github.repository }}:${{ github.sha }}",
+          "interview_question": "Why promote the same artifact between environments instead of rebuilding?",
+          "references": [
+            "https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-deployments/managing-environments-for-deployment"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A separate build per environment. The image in production was never tested; what passed staging was a different binary.",
+          "code": "# WRONG\ndeploy-staging:     ./mvnw package && docker build -t api:staging .\ndeploy-production:  ./mvnw package && docker build -t api:prod .\n\n# RIGHT: one build, the same tag everywhere\nbuild:              docker build -t api:${{ github.sha }} .\ndeploy-staging:     deploy api:${{ github.sha }}\ndeploy-production:  deploy api:${{ github.sha }}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Reusable Pipelines",
+      "formerSubtitle": "Pipelines Reutilizáveis",
+      "formerLevel": "avancado",
+      "description": "One standard pipeline for many repositories.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** thirty services each have their own copy of the pipeline; a security fix means thirty pull requests, and half of them drift.\n\n**Concept:** in GitHub Actions, reusable workflows (`workflow_call`) let a central repository define the standard pipeline — Maven build, tests, image, scan — and each service just calls it with parameters. Composite actions bundle sequences of steps. An improvement then reaches every service at once, with the version pinned by tag.\n\n**How it works:** services pin a version (`@v3`) and upgrade deliberately; the central repository follows semantic versioning.",
+          "code": "# Central repository: .github/workflows/java-service.yml\non:\n  workflow_call:\n    inputs:\n      java-version: { type: string, default: '21' }\n\n# In each service: .github/workflows/ci.yml\njobs:\n  pipeline:\n    uses: shop/pipelines/.github/workflows/java-service.yml@v3\n    with:\n      java-version: '21'\n    secrets: inherit",
+          "interview_question": "How do you avoid duplicating the same pipeline across dozens of repositories?",
+          "references": [
+            "https://docs.github.com/en/actions/sharing-automations/reusing-workflows"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Calling the shared workflow from `@main`. Every change in the central repository instantly reaches every service — one mistake breaks thirty pipelines at once. Pin a released version.",
+          "code": "# WRONG\nuses: shop/pipelines/.github/workflows/java-service.yml@main\n\n# RIGHT\nuses: shop/pipelines/.github/workflows/java-service.yml@v3"
+        }
+      ]
+    },
+    {
+      "subtitle": "Matrix Builds and Parallelism",
+      "formerSubtitle": "Matrix Builds e Paralelismo",
+      "formerLevel": "avancado",
+      "description": "Testing many combinations at once.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a library must work on Java 17 and 21, on Linux and Windows, and testing each combination one after the other takes an hour.\n\n**Concept:** a matrix runs the same job for every combination of parameters — JDK versions, operating systems, databases — in parallel. It is useful for libraries that support several versions, or to split a big test suite into shards. `fail-fast` cancels the other combinations when one fails.\n\n**How it works:** keep the matrix to the combinations you really support; each one costs runner minutes.",
+          "code": "jobs:\n  test:\n    runs-on: ${{ matrix.os }}\n    strategy:\n      fail-fast: true\n      matrix:\n        os: [ubuntu-latest, windows-latest]\n        java: ['17', '21']\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-java@v4\n        with:\n          distribution: temurin\n          java-version: ${{ matrix.java }}\n          cache: maven\n      - run: ./mvnw -B verify",
+          "interview_question": "What is a matrix strategy for?",
+          "references": [
+            "https://docs.github.com/en/actions/writing-workflows/choosing-what-your-workflow-does/running-variations-of-jobs-in-a-workflow"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Requiring the matrix job by its plain name in branch protection. Each combination is reported as a separate check (`test (ubuntu-latest, 17)`), so the required \"test\" check never appears and the PR waits forever — or nothing is required at all. Require each combination, or add one summary job that `needs` the matrix.",
+          "code": "# RIGHT: one stable check to require in branch protection\n  all-tests:\n    needs: test\n    runs-on: ubuntu-latest\n    if: always()\n    steps:\n      - run: test \"${{ needs.test.result }}\" = \"success\""
+        }
+      ]
+    },
+    {
+      "subtitle": "Feature Flags",
+      "formerLevel": "avancado",
+      "description": "Separating deploy from release.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** an unfinished feature blocks the merge for weeks, and when it finally goes out there is no quick way to turn it off.\n\n**Concept:** a feature flag decides at runtime whether a feature is on. The code goes to production switched off (deploy) and is turned on later, for everyone or for a percentage of users (release). That enables trunk-based development, A/B tests, and kill switches that disable a broken feature without a new deploy.\n\n**How it works:** remove a flag once the feature is fully released; every flag left behind is a branch in the code to maintain and test.",
+          "code": "@Service\npublic class CheckoutService {\n    private final FeatureFlags flags;\n\n    public Result complete(Order order, User user) {\n        if (flags.isEnabled(\"new-shipping-calculation\", user)) {\n            return newFlow(order);\n        }\n        return currentFlow(order);\n    }\n}",
+          "interview_question": "How do feature flags let you deploy unfinished code safely?",
+          "references": [
+            "https://martinfowler.com/articles/feature-toggles.html",
+            "https://openfeature.dev/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Flags that are never removed. A year later the code has dozens of `if (flag)` branches, nobody knows which combinations are tested, and turning an old flag off breaks something.",
+          "code": "// WRONG: released 9 months ago, still in the code\nif (flags.isEnabled(\"new-shipping-calculation\", user)) { ... } else { ... }\n\n// RIGHT: after 100% rollout, delete the flag and the old branch\nreturn newFlow(order);"
+        }
+      ]
+    }
+  ]
+}

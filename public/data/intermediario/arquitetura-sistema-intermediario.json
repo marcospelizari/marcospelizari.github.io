@@ -1,0 +1,201 @@
+{
+  "title": "System Architecture",
+  "description": "Patterns for larger systems: gateways, CQRS, clean and hexagonal architecture, resilience and decisions.",
+  "version": "Spring Boot 3",
+  "resumo": [
+    "Pick a pattern because it solves a problem you have; MVC organizes presentation, layers organize the application.",
+    "API Gateway: routing, auth, rate limiting and TLS — never business rules.",
+    "CQRS separates write and read models; separate databases are optional and bring lag.",
+    "Clean/hexagonal: the domain at the center; ports speak domain types, adapters implement them.",
+    "Resilience: timeouts everywhere, retries with backoff in one layer only, circuit breakers and bulkheads.",
+    "Modular monolith: modules with public APIs and events; reference other modules by id, never by JPA relation.",
+    "ADRs record decisions with context; supersede them instead of editing."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Architectural Patterns",
+      "formerSubtitle": "Padrões Arquiteturais",
+      "formerLevel": "essencial",
+      "description": "Named solutions to recurring structural problems.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** recurring structural problems already have names and known trade-offs. Knowing them saves reinventing them and makes design discussions shorter.\n\n**Concept:** common patterns: MVC organizes the presentation (controller, model, view — in a REST API the view is the JSON); layered architecture organizes the whole application; hexagonal and clean architecture put the domain at the center; event-driven architecture has components react to events; microservices split the system into services; CQRS separates writes from reads. MVC is not the same as layers, although they are used together.\n\n**How it works:** pick a pattern because it solves a problem you have, and know what it costs.",
+          "code": "// MVC in Spring Boot\npublic record User(Long id, String name) {}   // Model\n\n@RestController                               // Controller\npublic class UserController {\n  @GetMapping(\"/users\")\n  public List<User> getAll() { ... }          // View: the JSON produced by Jackson\n}\n\n// Event-driven: react to something that happened\n@EventListener\npublic void onOrderCreated(OrderCreatedEvent event) { ... }",
+          "interview_question": "How does the MVC pattern apply to Spring Boot applications?",
+          "references": [
+            "https://www.martinfowler.com/eaaCatalog/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using every pattern at once in a simple application. A CRUD with hexagonal architecture, CQRS and events everywhere has many classes per feature and no gain. Add structure when the problem shows up.",
+          "code": "WRONG: a 5-table CRUD with ports, adapters, command bus, query bus and events\n       -> 9 classes to add one field\n\nRIGHT: layers (controller, service, repository) until a real need appears"
+        }
+      ]
+    },
+    {
+      "subtitle": "API Gateway",
+      "formerLevel": "essencial",
+      "description": "One entry point for many services.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the mobile app has to know the addresses of twelve services, and every service re-implements authentication, rate limiting and CORS.\n\n**Concept:** an API gateway is the single entry point: it routes each request to the right service and handles cross-cutting concerns in one place — authentication, rate limiting, TLS, CORS, logging. Examples: Spring Cloud Gateway, Kong, and the API gateways of the cloud providers.\n\n**How it works:** routes match on path, host or headers and forward to internal service addresses, which clients never see.",
+          "code": "# application.yml (Spring Cloud Gateway)\nspring:\n  cloud:\n    gateway:\n      routes:\n        - id: user-service\n          uri: http://user-service:8080\n          predicates:\n            - Path=/users/**",
+          "interview_question": "What is the role of an API Gateway in a microservices architecture?",
+          "references": [
+            "https://spring.io/projects/spring-cloud-gateway",
+            "https://microservices.io/patterns/apigateway.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Business logic in the gateway. Every rule change redeploys the entry point of the whole system, and the rules leave the service that owns them. The gateway routes and handles cross-cutting concerns; rules stay in the services.",
+          "code": "WRONG: a gateway filter that calculates discounts\n       -> changing a discount redeploys the entry point of every service\n\nRIGHT: gateway = routing, auth, rate limiting, TLS\n       discount rules = inside the pricing service"
+        }
+      ]
+    },
+    {
+      "subtitle": "CQRS",
+      "formerLevel": "essencial",
+      "description": "Separate models for writing and reading.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the same model serves writes (validated, normalized) and complex read screens (joins over six tables, aggregations), and gets worse at both.\n\n**Concept:** CQRS (Command Query Responsibility Segregation) separates the write model — commands that change state and enforce the rules — from the read model — queries shaped for what each screen needs. Separate databases are optional: you can start with one database and two models.\n\n**How it works:** with separate stores, the read model is updated from the write side (often through events), so reads may lag a little behind writes.",
+          "code": "// Write side: a command, validated and applied by the domain\npublic record CreateUserCommand(String name, String email) {}\n\n// Read side: a view shaped for the screen\npublic record UserSummary(Long id, String name, long orderCount) {}\n\npublic interface UserQueries {\n    List<UserSummary> findByName(String name);\n}",
+          "interview_question": "How can CQRS improve the scalability of a system?",
+          "references": [
+            "https://martinfowler.com/bliki/CQRS.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Separate read databases from day one in a simple CRUD. The read side lags behind, and users see \"I saved it, but the list does not show it\" — a consistency problem created by the design, not by any real need.",
+          "code": "WRONG: simple CRUD + separate read database updated by events\n       user saves -> list reloads -> the new item is not there yet\n\nRIGHT: one database and plain queries; add a separate read model\n       when the reads really need it"
+        }
+      ]
+    },
+    {
+      "subtitle": "Clean Architecture",
+      "formerLevel": "essencial",
+      "description": "The domain at the center, frameworks at the edge.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the business rules depend on Spring, JPA and a payment SDK. Upgrading a framework or switching providers means rewriting rules, and testing a rule needs everything running.\n\n**Concept:** Clean Architecture organizes code in concentric circles: entities (business rules) at the center, use cases around them, interface adapters (controllers, repository implementations) next, and frameworks and drivers at the edge. The dependency rule: source code dependencies point only inward. The domain defines interfaces, and the outer layers implement them.\n\n**How it works:** the use case depends on an interface it owns; a JPA adapter implements it. The rule can be tested with an in-memory implementation, without Spring or a database.",
+          "code": "// Domain: plain Java\npublic class Order {\n    private OrderStatus status;\n    public void pay() {\n        if (status != OrderStatus.CREATED) throw new IllegalStateException(\"Order cannot be paid\");\n        status = OrderStatus.PAID;\n    }\n}\n\npublic interface OrderStore { Order find(Long id); void save(Order order); }   // owned by the domain\n\npublic class PayOrder {                                // use case\n    private final OrderStore orders;\n    public PayOrder(OrderStore orders) { this.orders = orders; }\n    public void execute(Long id) {\n        Order order = orders.find(id);\n        order.pay();\n        orders.save(order);\n    }\n}\n\n// Infrastructure: implements the domain's interface with JPA\n@Repository\nclass JpaOrderStore implements OrderStore { ... }",
+          "interview_question": "Why does Clean Architecture emphasize independence from frameworks?",
+          "references": [
+            "https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Clean architecture in folder names only. A `domain` package that imports Spring and JPA still depends on the frameworks — the dependency rule is broken.",
+          "code": "// WRONG\npackage com.shop.domain;\nimport org.springframework.stereotype.Service;\nimport jakarta.persistence.Entity;\n\n// RIGHT: no framework imports in the domain;\n// adapters in other packages import the domain, never the reverse"
+        }
+      ]
+    },
+    {
+      "subtitle": "Resilience Between Services",
+      "formerSubtitle": "Resiliência entre Serviços",
+      "formerLevel": "avancado",
+      "description": "Timeouts, retries with backoff, circuit breakers and bulkheads.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the shipping service gets slow, checkout waits for it, checkout's threads run out, and now checkout is down too — a cascading failure.\n\n**Concept:** every remote call needs a timeout; without one, threads wait on a slow service until the pool is exhausted. Retries use exponential backoff with jitter and a limit on attempts, and only on idempotent operations. A circuit breaker stops calling a failing service and returns a fallback. A bulkhead isolates resources (separate pools per dependency), so one slow integration cannot consume everything.\n\n**How it works:** combine them around each dependency, and decide the fallback with the business: a flat shipping rate is better than no checkout.",
+          "code": "Without protection:\n  checkout -> shipping (slow, 30s) -> checkout threads exhausted -> checkout down\n\nWith protection:\n  checkout -> [timeout 2s] -> [retry 2x, backoff 100ms/200ms + jitter]\n           -> [circuit breaker: opens at 50% errors over 20 calls]\n           -> fallback: flat shipping rate + \"estimated\" notice",
+          "interview_question": "How do you prevent cascading failures between services?",
+          "references": [
+            "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/",
+            "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Retrying at every layer. If the gateway, the service and its client each retry three times, one failing call becomes 27 calls to a service that is already struggling — a retry storm. Retry in one place, close to the call.",
+          "code": "WRONG: gateway (3 tries) -> checkout (3 tries) -> shipping client (3 tries)\n       = up to 27 calls to an overloaded shipping service\n\nRIGHT: retry only in the shipping client; other layers fail fast"
+        }
+      ]
+    },
+    {
+      "subtitle": "Hexagonal Architecture (Ports and Adapters)",
+      "formerSubtitle": "Arquitetura Hexagonal (Ports and Adapters)",
+      "formerLevel": "avancado",
+      "description": "The domain isolated from frameworks and infrastructure.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** business rules call JPA, Kafka and an HTTP client directly; testing one rule needs a database, a broker and a mock server.\n\n**Concept:** the domain defines ports — interfaces for what it needs, such as saving orders or charging payments — and adapters implement them with JPA, Kafka or HTTP clients. Controllers and listeners are input adapters. The core depends on neither Spring nor the database, so it can be tested with in-memory implementations, and switching the payment provider means writing one new adapter. It is the same idea as Clean Architecture, described with \"inside and outside\" instead of circles.\n\n**How it works:** name ports after what the domain needs, not after the technology that implements them.",
+          "code": "// Output port (domain)\npublic interface OrderRepositoryPort {\n    Order save(Order order);\n}\n\n// Use case (domain, no framework dependency)\npublic class CompleteOrder {\n    private final OrderRepositoryPort orders;\n    public CompleteOrder(OrderRepositoryPort orders) { this.orders = orders; }\n    public Order execute(Order o) { o.complete(); return orders.save(o); }\n}\n\n// Adapter (infrastructure)\n@Repository\nclass OrderJpaAdapter implements OrderRepositoryPort {\n    private final OrderJpaRepository jpa;\n    public Order save(Order o) { return jpa.save(OrderEntity.from(o)).toDomain(); }\n}",
+          "interview_question": "How does hexagonal architecture make testing and switching technology easier?",
+          "references": [
+            "https://alistair.cockburn.us/hexagonal-architecture/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A port that leaks infrastructure types. If it returns `Page<OrderEntity>`, the domain depends on Spring Data and JPA again, and the isolation is gone. Ports speak domain types.",
+          "code": "// WRONG\npublic interface OrderRepositoryPort {\n    Page<OrderEntity> findAll(Pageable pageable);     // Spring Data + JPA types in the domain\n}\n\n// RIGHT\npublic interface OrderRepositoryPort {\n    List<Order> findRecent(int limit);\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Modular Monolith",
+      "formerSubtitle": "Monolito Modular",
+      "formerLevel": "avancado",
+      "description": "Clear boundaries without the cost of a distributed system.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the team wants the independence of microservices, but not the network, the eventual consistency, the distributed tracing and twenty deploy pipelines.\n\n**Concept:** a modular monolith organizes the code into modules by domain with explicit boundaries — packages, internal APIs and events between modules — and is deployed as one unit. If a module later needs to scale or evolve independently, extracting it is much easier. Spring Modulith verifies those boundaries in tests.\n\n**How it works:** each module exposes a small public API (a service or events) and keeps everything else internal.",
+          "code": "com.shop\n ├── orders     (public API: OrderService, event OrderCompleted)\n ├── payments   (listens to OrderCompleted; never touches the orders tables)\n ├── stock\n └── catalog\n\n@Test\nvoid verifiesModules() {\n    ApplicationModules.of(ShopApplication.class).verify();   // fails if a module uses another's internals\n}",
+          "interview_question": "Why do many teams start with a modular monolith instead of microservices?",
+          "references": [
+            "https://docs.spring.io/spring-modulith/reference/",
+            "https://martinfowler.com/bliki/MonolithFirst.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "JPA relationships between modules. A `@ManyToOne` from `Payment` to the orders module's `Order` entity ties the two modules at the database level, and they can never be separated. Reference other modules by id.",
+          "code": "// WRONG: payments depends on the orders module's entity\n@Entity class Payment {\n    @ManyToOne Order order;\n}\n\n// RIGHT: only the id crosses the boundary\n@Entity class Payment {\n    Long orderId;\n}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Architecture Decision Records (ADR)",
+      "formerSubtitle": "Decisões Arquiteturais (ADR)",
+      "formerLevel": "avancado",
+      "description": "Recording why each choice was made.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** six months later, nobody remembers why the team chose Kafka over RabbitMQ, and the same discussion starts again — or the decision is undone without knowing its reasons.\n\n**Concept:** an Architecture Decision Record is a short document, versioned with the code, that records an important decision: context, options considered, decision and consequences. It keeps the reasoning available long after the people in the meeting have moved on.\n\n**How it works:** number the files, keep them in the repository (`docs/adr/`), and review them in pull requests like code.",
+          "code": "# ADR 007: Use PostgreSQL as the main database\n\n## Status\nAccepted — 2024-05-10\n\n## Context\nOrders need transactions and reports with joins; the team knows SQL well.\n\n## Decision\nManaged PostgreSQL 16 (RDS), with JSONB for variable product attributes.\n\n## Consequences\n+ ACID transactions and a mature ecosystem\n- Write scaling is vertical; revisit above 5k orders/s",
+          "interview_question": "What is an ADR, and why keep them?",
+          "references": [
+            "https://adr.github.io/",
+            "https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Editing an accepted ADR when the decision changes. The history of why things changed is lost. Write a new ADR that supersedes the old one, and mark the old one as superseded.",
+          "code": "# WRONG: ADR 007 rewritten to say \"MongoDB\"\n\n# RIGHT\n# ADR 007 — Status: Superseded by ADR 015\n# ADR 015: Move product catalog to MongoDB\n## Context: catalog attributes vary per category; ADR 007 still holds for orders"
+        }
+      ]
+    }
+  ]
+}

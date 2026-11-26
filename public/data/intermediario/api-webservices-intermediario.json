@@ -1,0 +1,155 @@
+{
+  "title": "APIs & Web Services",
+  "description": "Beyond the basics: SOAP, GraphQL, WebSockets, versioning, idempotency and HTTP caching.",
+  "version": "HTTP/1.1, OpenAPI 3.1",
+  "resumo": [
+    "SOAP: XML and a WSDL contract; generate the client. GraphQL: the client picks fields; errors come in `errors`.",
+    "WebSocket: two-way, real time; with several instances, use a shared broker.",
+    "Additive changes are compatible if clients ignore unknown fields; breaking changes need a new version.",
+    "Idempotency-Key: reserve it before processing; the client reuses the same key on every retry.",
+    "ETag + If-None-Match → 304; If-Match → 412 on concurrent updates.",
+    "Personal data is `Cache-Control: private` (or `no-store`), never `public`."
+  ],
+  "subsections": [
+    {
+      "subtitle": "SOAP",
+      "formerLevel": "essencial",
+      "description": "XML messages with a formal contract.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** banks, government services and older enterprise systems integrate through strict contracts. That is where you will meet SOAP.\n\n**Concept:** SOAP is a protocol: XML messages inside an Envelope with a Header and a Body, usually sent with HTTP POST. The contract is a WSDL file that lists the operations and data types, and tools generate client code from it. Standards such as WS-Security sign and encrypt at the message level.\n\n**How it works:** compared with REST, SOAP is more verbose and everything is POST, but the contract is formal and machine-checked. In Java you generate classes from the WSDL (for example with Apache CXF or the JAX-WS Maven plugin) and call the service like a normal method.",
+          "code": "<soap:Envelope xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope\">\n  <soap:Header/>\n  <soap:Body>\n    <getUser xmlns=\"http://example.com/users\">\n      <id>1</id>\n    </getUser>\n  </soap:Body>\n</soap:Envelope>",
+          "interview_question": "When would you use SOAP instead of REST?",
+          "references": [
+            "https://www.w3.org/TR/soap/",
+            "https://cxf.apache.org/docs/index.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Building the SOAP XML by hand with string concatenation. It breaks on characters such as `&` or `<` in the data and on any namespace change. Generate the client from the WSDL.",
+          "code": "// WRONG: hand-built XML\nString body = \"<soap:Envelope ...><soap:Body><getUser><name>\" + name + \"</name></getUser></soap:Body></soap:Envelope>\";\n\n// RIGHT: a client generated from the WSDL, called like a method\nUserService port = new UserService_Service().getUserServicePort();\nUser user = port.getUser(1);"
+        }
+      ]
+    },
+    {
+      "subtitle": "GraphQL",
+      "formerLevel": "essencial",
+      "description": "The client asks for exactly the fields it needs.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a mobile screen needs a user's name and the totals of their last three orders. `GET /users/1` returns 30 fields (over-fetching), and the orders need another call (under-fetching).\n\n**Concept:** GraphQL exposes one endpoint (usually `POST /graphql`) and a typed schema. The client writes a query with exactly the fields it wants, including nested data, and gets it in one request. Queries read and mutations write; on the server, resolvers fetch each field.\n\n**How it works:** the schema is the contract and the documentation. Money fields should be a String or a custom decimal scalar, never `Float`.",
+          "code": "type User  { id: ID!  name: String!  orders(last: Int): [Order!]! }\ntype Order { id: ID!  total: String! }      # money as String, not Float\ntype Query { user(id: ID!): User }\n\nquery {\n  user(id: 1) {\n    name\n    orders(last: 3) { total }\n  }\n}\n\n-> {\"data\": {\"user\": {\"name\": \"Ana\", \"orders\": [{\"total\": \"59.90\"}, {\"total\": \"12.00\"}, {\"total\": \"30.50\"}]}}}",
+          "interview_question": "What problems of REST does GraphQL solve, and what does it cost?",
+          "references": [
+            "https://graphql.org/learn/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Checking only the HTTP status. GraphQL usually answers 200 even when part of the query failed, and puts the problem in an `errors` array. Clients must check `errors`.",
+          "code": "HTTP/1.1 200 OK\n{\"data\": {\"user\": null},\n \"errors\": [{\"message\": \"User 99 not found\", \"path\": [\"user\"]}]}\n\n// RIGHT: the client checks \"errors\", not only the status code"
+        }
+      ]
+    },
+    {
+      "subtitle": "WebSockets",
+      "formerLevel": "essencial",
+      "description": "A persistent, two-way connection for real time.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a chat or live order tracking built with polling: the client asks every two seconds \"anything new?\". Most answers are \"no\", requests are wasted, and updates still arrive late.\n\n**Concept:** a WebSocket starts as an HTTP request with an `Upgrade` header and then becomes a persistent, bidirectional connection: both sides can send messages at any time (`ws://`, or `wss://` with TLS). When only the server needs to push, Server-Sent Events over plain HTTP are a simpler alternative.\n\n**How it works:** in Spring, `spring-boot-starter-websocket` with STOMP gives you topics: clients subscribe to `/topic/orders/42`, and the server pushes to it with `SimpMessagingTemplate`.",
+          "code": "@Configuration\n@EnableWebSocketMessageBroker\npublic class WebSocketConfig implements WebSocketMessageBrokerConfigurer {\n    public void registerStompEndpoints(StompEndpointRegistry registry) {\n        registry.addEndpoint(\"/ws\");                 // clients connect to ws(s)://host/ws\n    }\n    public void configureMessageBroker(MessageBrokerRegistry registry) {\n        registry.enableSimpleBroker(\"/topic\");       // in-memory broker\n    }\n}\n\n@Service\nclass OrderTracker {\n    private final SimpMessagingTemplate messages;\n    OrderTracker(SimpMessagingTemplate messages) { this.messages = messages; }\n\n    void statusChanged(Long orderId, String status) {\n        messages.convertAndSend(\"/topic/orders/\" + orderId, status);   // push to subscribers\n    }\n}",
+          "interview_question": "When would you use WebSockets instead of HTTP polling?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API",
+            "https://docs.spring.io/spring-framework/reference/web/websocket/stomp.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "The in-memory broker with several instances. The event is published on instance B while the customer's socket is on instance A, so nothing arrives. Use a shared broker (such as RabbitMQ) that relays messages between instances.",
+          "code": "// WRONG with several instances behind a load balancer\nregistry.enableSimpleBroker(\"/topic\");\n\n// RIGHT: a shared broker relays messages to every instance\nregistry.enableStompBrokerRelay(\"/topic\").setRelayHost(\"rabbitmq\").setRelayPort(61613);"
+        }
+      ]
+    },
+    {
+      "subtitle": "REST Maturity and Versioning",
+      "formerSubtitle": "Maturidade REST e Versionamento",
+      "formerLevel": "avancado",
+      "description": "Evolving an API without breaking its clients.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a field is renamed in the response, and the mobile app — which users update whenever they feel like it — starts crashing.\n\n**Concept:** additive changes (a new optional field, a new endpoint) are compatible as long as clients ignore fields they do not know. Removing or renaming fields, or changing a type, needs a new version: in the URL (`/v2`, the most explicit) or in a header or media type. The Richardson Maturity Model describes the path from RPC over HTTP to resources, proper verbs and hypermedia (HATEOAS).\n\n**How it works:** announce deprecation with the `Deprecation` and `Sunset` headers, and keep the old version until clients have moved.",
+          "code": "GET /v1/orders/123 -> { \"id\": 123, \"total\": 99.90 }\nGET /v2/orders/123 -> { \"id\": 123, \"total\": { \"amount\": 99.90, \"currency\": \"BRL\" } }\n\n# Versioning by header\nGET /orders/123\nAccept: application/vnd.shop.v2+json\n\n# Deprecation announced to the client\nDeprecation: true\nSunset: Wed, 31 Dec 2025 23:59:59 GMT",
+          "interview_question": "How do you add fields without breaking existing clients?",
+          "references": [
+            "https://martinfowler.com/articles/richardsonMaturityModel.html",
+            "https://www.rfc-editor.org/rfc/rfc8594"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Clients that fail on unknown fields. A plain Jackson `ObjectMapper` rejects them by default, so the API's compatible change breaks your own client. Configure clients to ignore unknown fields (Spring Boot's `ObjectMapper` already does).",
+          "code": "// WRONG: a plain ObjectMapper in a client\nnew ObjectMapper().readValue(json, OrderResponse.class);\n// UnrecognizedPropertyException: Unrecognized field \"discount\"\n\n// RIGHT\nnew ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);"
+        }
+      ]
+    },
+    {
+      "subtitle": "Idempotency in Critical Operations",
+      "formerSubtitle": "Idempotência em Operações Críticas",
+      "formerLevel": "avancado",
+      "description": "Preventing double charges on retries.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the payment request times out, the client retries, and the customer is charged twice.\n\n**Concept:** the client sends a unique `Idempotency-Key` per operation. The server reserves the key before processing (an `INSERT` with a unique constraint): only the request that reserved it runs the charge. If the same key arrives again — a retry after a timeout, or a concurrent duplicate — the server returns the original response, with the same status, or 409 while the first one is still running. Keys expire after a while.\n\n**How it works:** reserving before processing is what makes it safe under concurrency; checking and saving afterwards would let two simultaneous requests both charge.",
+          "code": "@PostMapping(\"/payments\")\nResponseEntity<PaymentResponse> pay(@RequestHeader(\"Idempotency-Key\") String key,\n                                    @Valid @RequestBody PaymentRequest req) {\n    // 1. Reserve the key before charging: INSERT with UNIQUE(key)\n    if (!idempotency.reserve(key)) {\n        return idempotency.savedResponse(key)\n            .map(resp -> ResponseEntity.status(HttpStatus.CREATED).body(resp))     // same status\n            .orElseGet(() -> ResponseEntity.status(HttpStatus.CONFLICT).build());  // still running\n    }\n    // 2. Only the request that reserved the key processes it\n    PaymentResponse resp = service.pay(req);\n    idempotency.complete(key, resp);\n    return ResponseEntity.status(HttpStatus.CREATED).body(resp);\n}",
+          "interview_question": "How do you make a payment POST safe against repeated requests?",
+          "references": [
+            "https://datatracker.ietf.org/doc/draft-ietf-httpapi-idempotency-key-header/",
+            "https://docs.stripe.com/api/idempotent_requests"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A client that generates a new key on every attempt. Each retry looks like a new operation, so the protection does nothing. Generate the key once per operation and reuse it on every retry.",
+          "code": "// WRONG: a new key per attempt\nretry(() -> payments.pay(request, UUID.randomUUID().toString()));\n\n// RIGHT: one key per operation, reused by every retry\nString key = UUID.randomUUID().toString();\nretry(() -> payments.pay(request, key));"
+        }
+      ]
+    },
+    {
+      "subtitle": "HTTP Caching and ETags",
+      "formerSubtitle": "Cache HTTP e ETags",
+      "formerLevel": "avancado",
+      "description": "Less traffic with conditional requests.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the app downloads the full product catalog on every screen, even when nothing changed.\n\n**Concept:** `Cache-Control` says how long clients and CDNs may reuse a response. An `ETag` identifies the version of a resource: the client sends `If-None-Match`, and if nothing changed it gets `304 Not Modified` with no body. On writes, `If-Match` with the ETag gives optimistic concurrency control: if another client changed the resource first, the API answers `412 Precondition Failed`.\n\n**How it works:** Spring's `ShallowEtagHeaderFilter` computes ETags from the response body; for real savings on the server, compute them from a version column.",
+          "code": "GET /products/42\n-> 200 OK\n   ETag: \"v7\"\n   Cache-Control: max-age=60\n\nGET /products/42\nIf-None-Match: \"v7\"\n-> 304 Not Modified\n\nPUT /products/42\nIf-Match: \"v6\"\n-> 412 Precondition Failed    # someone already updated it to v7",
+          "interview_question": "How do ETags reduce traffic and prevent lost updates?",
+          "references": [
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Caching",
+            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`Cache-Control: public` on personal data. A CDN or shared proxy can store one user's response and serve it to another. Personal responses are `private` — or `no-store` for sensitive data.",
+          "code": "# WRONG: a shared cache may serve Ana's orders to Bruno\nGET /me/orders\nCache-Control: public, max-age=300\n\n# RIGHT\nCache-Control: private, max-age=60     # only the user's own browser may cache it\nCache-Control: no-store                # for sensitive data"
+        }
+      ]
+    }
+  ]
+}

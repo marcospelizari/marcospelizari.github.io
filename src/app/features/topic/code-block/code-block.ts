@@ -27,7 +27,7 @@ import { detectLanguage } from '../../../core/utils/content.utils';
           <span class="material-symbols-outlined text-[16px]" [class]="copied() ? 'text-[#4fdbc8]' : 'text-[#4cd7f6]'">
             {{ copied() ? 'check' : 'content_copy' }}
           </span>
-          <span aria-live="polite">{{ copied() ? 'Copiado!' : 'Copiar' }}</span>
+          <span aria-live="polite">{{ copied() ? 'Copied!' : 'Copy' }}</span>
         </button>
       </div>
       <pre class="p-space-lg overflow-x-auto font-mono text-code-block text-[#dfe2f1]"><code [innerHTML]="highlighted()"></code></pre>

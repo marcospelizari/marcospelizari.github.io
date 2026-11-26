@@ -1,0 +1,108 @@
+{
+  "title": "Automated Testing",
+  "description": "Faster, more realistic tests: slices, real infrastructure, contracts and stable suites.",
+  "version": "JUnit 5, Spring Boot 3.4+",
+  "resumo": [
+    "Slices load one layer: `@WebMvcTest` with `@MockitoBean` dependencies, `@DataJpaTest` for repositories.",
+    "Testcontainers runs the real database in Docker; share one container across test classes.",
+    "Contract tests (Pact) catch breaking API changes in the producer's CI; match by type, only the fields you use.",
+    "Flaky tests: inject a `Clock`, use Awaitility instead of sleep, isolate state — quarantine and fix, never auto-rerun."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Spring Test Slices",
+      "formerSubtitle": "Testes de Slice no Spring",
+      "formerLevel": "essencial",
+      "description": "@WebMvcTest and @DataJpaTest: only what the test needs.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** every test starts the whole application, and the suite takes minutes for checks that only need one layer.\n\n**Concept:** `@SpringBootTest` starts the whole application — complete, but slow. Slices load only one layer: `@WebMvcTest` loads controllers, filters and JSON serialization, with services replaced by mocks (`@MockitoBean`); `@DataJpaTest` loads repositories and a database to test queries.\n\n**How it works:** slices make the suite faster and each test more focused on what it checks.",
+          "code": "@WebMvcTest(OrderController.class)\nclass OrderControllerTest {\n    @Autowired MockMvc mvc;\n    @MockitoBean OrderService service;\n\n    @Test\n    void returns404WhenOrderDoesNotExist() throws Exception {\n        when(service.find(42L)).thenThrow(new OrderNotFoundException(42L));\n\n        mvc.perform(get(\"/orders/42\"))\n           .andExpect(status().isNotFound());\n    }\n}",
+          "interview_question": "What is the difference between @SpringBootTest and @WebMvcTest?",
+          "references": [
+            "https://docs.spring.io/spring-boot/reference/testing/spring-boot-applications.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A `@WebMvcTest` without mocking the controller's dependencies. The slice does not create services, so the context fails to start. Declare each dependency with `@MockitoBean`.",
+          "code": "// WRONG\n@WebMvcTest(OrderController.class)\nclass OrderControllerTest {\n    @Autowired MockMvc mvc;\n}\n// No qualifying bean of type 'OrderService' available\n\n// RIGHT\n@MockitoBean OrderService service;"
+        }
+      ]
+    },
+    {
+      "subtitle": "Testcontainers and Real Integration",
+      "formerSubtitle": "Testcontainers e Integração Real",
+      "formerLevel": "avancado",
+      "description": "Real databases and brokers in disposable containers.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the tests pass with H2, and production fails: PostgreSQL types, functions, JSONB and locking behave differently.\n\n**Concept:** H2 is not PostgreSQL, and a green test against H2 can fail in production. Testcontainers starts the same version of the database or broker in Docker during the test and throws it away afterwards. Since Spring Boot 3.1, `@ServiceConnection` wires the connection automatically. Mocks are still right for unit tests of business rules.\n\n**How it works:** Testcontainers 2.x moved each module to its own package (for PostgreSQL, `org.testcontainers.postgresql.PostgreSQLContainer`, without the `<?>`).",
+          "code": "@SpringBootTest\n@Testcontainers\nclass OrderRepositoryIT {\n\n    @Container\n    @ServiceConnection\n    static PostgreSQLContainer postgres = new PostgreSQLContainer(\"postgres:16-alpine\");\n\n    @Autowired OrderRepository repository;\n\n    @Test\n    void findsPaidOrders() {\n        repository.save(new Order(OrderStatus.PAID));\n        assertThat(repository.findByStatus(OrderStatus.PAID)).hasSize(1);\n    }\n}",
+          "interview_question": "When should you prefer Testcontainers to mocks or an in-memory database?",
+          "references": [
+            "https://java.testcontainers.org/",
+            "https://docs.spring.io/spring-boot/reference/testing/testcontainers.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A new container for every test class. Each one starts a fresh PostgreSQL, and the suite spends most of its time waiting for databases to boot. Share one container across the test classes.",
+          "code": "// WRONG: @Container in each of 40 test classes -> 40 database startups\n\n// RIGHT: one container for the whole run, in a base class\nabstract class IntegrationTest {\n    @ServiceConnection\n    static final PostgreSQLContainer postgres = new PostgreSQLContainer(\"postgres:16-alpine\");\n    static { postgres.start(); }\n}\n\nclass OrderRepositoryIT extends IntegrationTest { ... }"
+        }
+      ]
+    },
+    {
+      "subtitle": "Contract Tests",
+      "formerSubtitle": "Testes de Contrato",
+      "formerLevel": "avancado",
+      "description": "Catching breaking changes between producer and consumer.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the stock team removes a field from its API; checkout, which used it, breaks in production. Each team's own tests were green.\n\n**Concept:** in consumer-driven contract tests (Pact), the consumer describes the requests it makes and the responses it expects; that contract is published, and the producer verifies it in its own CI. If the producer removes a field the consumer uses, the producer's build fails before deploying. It is faster and more stable than end-to-end tests with every service running. Spring Cloud Contract follows the same idea, with the contract written by the producer.\n\n**How it works:** match on types and shapes (`stringType`, `integerType`), not exact values, so the contract describes what the consumer really depends on.",
+          "code": "// Consumer (Pact JVM + JUnit 5)\n@Pact(consumer = \"checkout\", provider = \"stock\")\nV4Pact stockAvailable(PactDslWithProvider builder) {\n    return builder\n        .given(\"product BOOK-01 in stock\")\n        .uponReceiving(\"a stock query\")\n            .path(\"/stock/BOOK-01\").method(\"GET\")\n        .willRespondWith()\n            .status(200)\n            .body(new PactDslJsonBody().stringType(\"sku\", \"BOOK-01\").integerType(\"quantity\", 10))\n        .toPact(V4Pact.class);\n}",
+          "interview_question": "How do contract tests prevent broken deploys between teams?",
+          "references": [
+            "https://docs.pact.io/",
+            "https://spring.io/projects/spring-cloud-contract"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A contract with exact values and every field of the response. The producer can no longer change anything — even fields the consumer ignores — and teams start skipping the verification. Include only the fields you use, matched by type.",
+          "code": "// WRONG: exact values, every field\n.body(\"{\\\"sku\\\":\\\"BOOK-01\\\",\\\"quantity\\\":10,\\\"warehouse\\\":\\\"SP-2\\\",\\\"updatedAt\\\":\\\"2024-05-10T10:00:00Z\\\"}\")\n\n// RIGHT: only what checkout reads, by type\n.body(new PactDslJsonBody().stringType(\"sku\").integerType(\"quantity\"))"
+        }
+      ]
+    },
+    {
+      "subtitle": "Flaky Tests",
+      "formerSubtitle": "Testes Instáveis (Flaky)",
+      "formerLevel": "avancado",
+      "description": "Finding and removing random failures.",
+      "category": "boas-praticas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** the build fails, someone clicks \"re-run\", and it passes. After a few weeks, nobody trusts a red build any more.\n\n**Concept:** typical causes: depending on the current time or time zone (use an injectable `Clock`), test order and state shared between tests, `Thread.sleep` to wait for something asynchronous (use Awaitility), fixed ports, and random data without a seed. Flaky tests destroy trust in CI; quarantine them, fix the cause, and do not just add retries.\n\n**How it works:** a `Clock` parameter makes time a normal input: production passes the system clock, tests pass a fixed one.",
+          "code": "// Controlled time: the service receives a Clock\nClock fixed = Clock.fixed(Instant.parse(\"2024-05-10T10:00:00Z\"), ZoneOffset.UTC);\nvar service = new CouponService(fixed);\n\n// Asynchronous wait without sleep\nawait().atMost(Duration.ofSeconds(5))\n       .untilAsserted(() -> assertThat(fakeEmail.sent()).hasSize(1));",
+          "interview_question": "What are common causes of flaky tests, and how do you fix them?",
+          "references": [
+            "https://github.com/awaitility/awaitility",
+            "https://martinfowler.com/articles/nonDeterminism.html"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Making CI green with automatic reruns. The failure is hidden, the real cause — often a real concurrency bug — stays, and the suite gets slower.",
+          "code": "<!-- WRONG: hides flaky tests -->\n<configuration>\n  <rerunFailingTestsCount>3</rerunFailingTestsCount>\n</configuration>\n\n// RIGHT: quarantine and fix\n@Tag(\"quarantine\")   // excluded from the PR gate, tracked in a ticket until fixed\n@Test void sendsEmailAfterPayment() { ... }"
+        }
+      ]
+    }
+  ]
+}

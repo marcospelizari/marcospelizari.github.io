@@ -1,149 +1,198 @@
 {
-  "title": "Segurança de Aplicações",
-  "description": "Dependências de terceiros (3PP), CVEs, injeção de SQL e proteção de dados em aplicações Java.",
-  "version": "Java 21, Spring Boot 3.x, Maven 3.9",
+  "title": "Application Security",
+  "description": "The security every developer handles daily: dependencies, queries, data exposure, validation and secrets.",
+  "version": "Java 21, Spring Boot 3, Maven 3.9",
   "resumo": [
-    "3PP = componente de terceiros; CVE = falha pública conhecida; CVSS = gravidade de 0 a 10.",
-    "A maioria das CVEs vem de dependências transitivas: `mvn dependency:tree -Dincludes=...` mostra quem traz.",
-    "Corrigir: primeiro subir o parent ou BOM; senão, sobrescrever a versão. Rode os testes e cite a CVE no PR.",
-    "Scanners no CI (Dependency-Check, Dependabot, Trivy) em todo PR e em execução agendada.",
-    "SQL sempre parametrizado; respostas por DTO; logs sem dados pessoais; erro genérico para o cliente.",
-    "Segredo commitado é segredo vazado: troque (rotacione) primeiro, limpe o histórico depois."
+    "3PP = third-party component; CVE = a known public flaw; CVSS = severity from 0 to 10.",
+    "Most CVEs come from transitive dependencies — they ship with your JAR. `mvn dependency:tree -Dincludes=...` shows who brings them.",
+    "Fix: upgrade the parent or BOM first; otherwise override the version. Run the tests and cite the CVE in the PR.",
+    "Scanners in CI (Dependency-Check, Dependabot, Trivy) on every PR and on a schedule.",
+    "SQL always parameterized; responses as DTOs; logs without personal data; generic errors to the client.",
+    "Validate every input on the server, with allowlists.",
+    "A committed secret is a leaked secret: rotate it first, clean the history after."
   ],
   "subsections": [
     {
-      "subtitle": "CVE, CVSS e Dependências de Terceiros (3PP)",
-      "description": "O vocabulário básico de vulnerabilidades em bibliotecas.",
+      "subtitle": "CVE, CVSS and Third-Party Dependencies (3PP)",
+      "formerSubtitle": "CVE, CVSS e Dependências de Terceiros (3PP)",
+      "description": "The basic vocabulary of vulnerabilities in libraries.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "3PP (third-party product) é qualquer componente que você não escreveu: bibliotecas Maven, imagens base de container, ferramentas. Uma CVE (Common Vulnerabilities and Exposures) é o identificador público de uma falha conhecida, no formato CVE-ano-número, e fica registrada em bases como a NVD. O CVSS dá a gravidade de 0 a 10: baixa (0,1–3,9), média (4,0–6,9), alta (7,0–8,9) e crítica (9,0–10,0). A nota sozinha não decide tudo: importa também se a parte vulnerável da biblioteca é usada pela sua aplicação e se existe exploração conhecida. Um caso famoso é o Log4Shell (CVE-2021-44228), no Log4j 2, com nota 10.",
-          "code": "Exemplo de alerta de um scanner:\n\nDependência: com.fasterxml.jackson.core:jackson-databind:2.13.0\nCVE:         CVE-2022-42003\nCVSS:        7.5 (Alta)\nCorrigido em: 2.13.4.1\nCaminho:     minha-api -> spring-boot-starter-web -> spring-boot-starter-json -> jackson-databind\n\nPerguntas a responder:\n1. Qual versão corrige a falha?\n2. A dependência é direta ou transitiva?\n3. A atualização quebra algo (major, minor ou patch)?",
-          "interview_question": "O que é uma CVE e como o CVSS ajuda a priorizar a correção?",
+          "title": "Explanation",
+          "explanation": "**Problem:** your application ships with about a hundred libraries you did not write. When a flaw in one of them becomes public — like Log4Shell — attackers start scanning for it within hours.\n\n**Concept:** 3PP (third-party product) is any component you did not write: Maven libraries, container base images, tools. A CVE (Common Vulnerabilities and Exposures) is the public id of a known flaw, in the form CVE-year-number, listed in databases such as the NVD. CVSS scores severity from 0 to 10: low (0.1–3.9), medium (4.0–6.9), high (7.0–8.9) and critical (9.0–10.0). Log4Shell (CVE-2021-44228) in Log4j 2 scored 10.\n\n**How it works:** the score alone does not decide: what also matters is whether your application uses the vulnerable part, and whether the flaw is being exploited in the wild.",
+          "code": "Example scanner alert:\n\nDependency:  com.fasterxml.jackson.core:jackson-databind:2.13.0\nCVE:         CVE-2022-42003\nCVSS:        7.5 (High)\nFixed in:    2.13.4.1\nPath:        my-api -> spring-boot-starter-web -> spring-boot-starter-json -> jackson-databind\n\nQuestions to answer:\n1. Which version fixes it?\n2. Is the dependency direct or transitive?\n3. Does the upgrade break anything (major, minor or patch)?",
+          "interview_question": "What is a CVE, and how does CVSS help prioritize a fix?",
           "references": [
             "https://www.cve.org/About/Overview",
             "https://nvd.nist.gov/vuln-metrics/cvss"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Ignoring an alert because the library is \"only transitive\". It is inside the JAR you deploy, and reachable through your endpoints just like your own code. Triage it like any other dependency.",
+          "code": "WRONG: \"jackson-databind is not in our pom.xml, so it is not our problem\"\n       -> it is in the JAR, and every JSON request goes through it\n\nRIGHT: transitive dependencies ship with the application — triage and fix them"
         }
       ]
     },
     {
-      "subtitle": "Dependências Transitivas e mvn dependency:tree",
-      "description": "Descobrir de onde vem uma biblioteca vulnerável.",
+      "subtitle": "Transitive Dependencies and mvn dependency:tree",
+      "formerSubtitle": "Dependências Transitivas e mvn dependency:tree",
+      "description": "Finding out where a vulnerable library comes from.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Uma dependência direta é a que está no seu pom.xml. Uma transitiva vem junto com outra: o spring-boot-starter-web traz o Jackson, o Tomcat e várias outras. A maioria das CVEs aparece em transitivas, então o primeiro passo é ver a árvore. O comando mvn dependency:tree mostra quem traz cada biblioteca, e o filtro -Dincludes mostra só o caminho até a que interessa. O Maven escolhe a versão mais próxima da raiz da árvore quando há conflito (nearest wins), o que explica por que uma versão antiga pode continuar no build.",
-          "code": "# Árvore completa\nmvn dependency:tree\n\n# Só o caminho até uma biblioteca\nmvn dependency:tree -Dincludes=com.fasterxml.jackson.core:jackson-databind\n\n# Saída\n[INFO] com.loja:minha-api:jar:1.0.0\n[INFO] \\- org.springframework.boot:spring-boot-starter-web:jar:3.3.4:compile\n[INFO]    \\- org.springframework.boot:spring-boot-starter-json:jar:3.3.4:compile\n[INFO]       \\- com.fasterxml.jackson.core:jackson-databind:jar:2.17.2:compile\n\n# Versões novas disponíveis para as dependências do projeto\nmvn versions:display-dependency-updates",
-          "interview_question": "Qual a diferença entre dependência direta e transitiva, e como você descobre de onde vem uma biblioteca?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the scanner reports a CVE in a library that does not appear anywhere in your `pom.xml`.\n\n**Concept:** a direct dependency is one declared in your `pom.xml`. A transitive one comes with another: `spring-boot-starter-web` brings Jackson, Tomcat and many more. Most CVEs are in transitive dependencies. When two paths ask for different versions of the same library, Maven picks the one closest to the root of the tree (\"nearest wins\") — which explains why an old version can stay in the build.\n\n**How it works:** `mvn dependency:tree` shows who brings each library, and `-Dincludes` filters the tree to the path you care about.",
+          "code": "# Full tree\nmvn dependency:tree\n\n# Only the path to one library\nmvn dependency:tree -Dincludes=com.fasterxml.jackson.core:jackson-databind\n\n# Output\n[INFO] com.shop:my-api:jar:1.0.0\n[INFO] \\- org.springframework.boot:spring-boot-starter-web:jar:3.3.4:compile\n[INFO]    \\- org.springframework.boot:spring-boot-starter-json:jar:3.3.4:compile\n[INFO]       \\- com.fasterxml.jackson.core:jackson-databind:jar:2.17.2:compile\n\n# Newer versions available for the project's dependencies\nmvn versions:display-dependency-updates",
+          "interview_question": "What is the difference between a direct and a transitive dependency, and how do you find out where a library comes from?",
           "references": [
             "https://maven.apache.org/plugins/maven-dependency-plugin/tree-mojo.html",
             "https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Removing a vulnerable library with an `<exclusion>` without checking who needs it. The build passes, but the code that uses it fails at runtime with `NoClassDefFoundError`. Upgrade it instead, and run the tests.",
+          "code": "<!-- WRONG: the library disappears, but something still uses it -->\n<exclusion>\n  <groupId>org.yaml</groupId>\n  <artifactId>snakeyaml</artifactId>\n</exclusion>\n<!-- at startup: java.lang.NoClassDefFoundError: org/yaml/snakeyaml/LoaderOptions -->\n\n<!-- RIGHT: keep it, at a fixed version (see \"Fixing a Vulnerable Dependency\") -->"
         }
       ]
     },
     {
-      "subtitle": "Corrigindo uma Dependência Vulnerável",
-      "description": "Atualizar a versão sem quebrar o projeto.",
+      "subtitle": "Fixing a Vulnerable Dependency",
+      "formerSubtitle": "Corrigindo uma Dependência Vulnerável",
+      "description": "Upgrading without breaking the project.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A melhor correção é atualizar quem traz a biblioteca, por exemplo subir a versão do Spring Boot, porque ele testou as versões em conjunto. Quando isso não é possível, force a versão corrigida: em projetos Spring Boot, sobrescreva a propriedade de versão (como jackson-bom.version) ou declare a biblioteca no dependencyManagement. Prefira atualizações patch (2.17.1 para 2.17.2), que só corrigem falhas; minor e major podem mudar comportamento e exigem ler as release notes. Depois, confirme a versão nova com dependency:tree, rode todos os testes e explique no Pull Request qual CVE foi corrigida.",
-          "code": "<!-- Opção 1: subir o parent (preferida) -->\n<parent>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-parent</artifactId>\n  <version>3.3.5</version>\n</parent>\n\n<!-- Opção 2: sobrescrever a propriedade usada pelo BOM do Spring Boot -->\n<properties>\n  <jackson-bom.version>2.17.3</jackson-bom.version>\n</properties>\n\n<!-- Opção 3: fixar a versão de uma transitiva -->\n<dependencyManagement>\n  <dependencies>\n    <dependency>\n      <groupId>org.yaml</groupId>\n      <artifactId>snakeyaml</artifactId>\n      <version>2.2</version>\n    </dependency>\n  </dependencies>\n</dependencyManagement>",
-          "interview_question": "Um scanner apontou uma CVE em uma dependência transitiva. Quais passos você segue para corrigir?",
+          "title": "Explanation",
+          "explanation": "**Problem:** you know which library is vulnerable and which version fixes it. Now you need to upgrade it without breaking anything.\n\n**Concept:** the best fix is upgrading whatever brings the library — for example the Spring Boot version — because it tested its versions together. When that is not possible, force the fixed version: in Spring Boot projects, override the version property (such as `jackson-bom.version`) or declare the library in `dependencyManagement`. Prefer patch upgrades (2.17.1 → 2.17.2), which only fix bugs; minor and major upgrades can change behavior.\n\n**How it works:** afterwards, confirm the new version with `dependency:tree`, run all the tests, and say in the pull request which CVE it fixes.",
+          "code": "<!-- Option 1: upgrade the parent (preferred) -->\n<parent>\n  <groupId>org.springframework.boot</groupId>\n  <artifactId>spring-boot-starter-parent</artifactId>\n  <version>3.3.5</version>\n</parent>\n\n<!-- Option 2: override the property used by Spring Boot's BOM -->\n<properties>\n  <jackson-bom.version>2.17.3</jackson-bom.version>\n</properties>\n\n<!-- Option 3: pin a transitive dependency -->\n<dependencyManagement>\n  <dependencies>\n    <dependency>\n      <groupId>org.yaml</groupId>\n      <artifactId>snakeyaml</artifactId>\n      <version>2.2</version>\n    </dependency>\n  </dependencies>\n</dependencyManagement>",
+          "interview_question": "A scanner reported a CVE in a transitive dependency. Which steps do you follow to fix it?",
           "references": [
             "https://docs.spring.io/spring-boot/maven-plugin/using.html",
             "https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#dependency-management"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Jumping a major version to fix a CVE without reading the release notes. The CVE is gone, but an API changed and the application fails at runtime. Look for a patch release first; if only a major version fixes it, plan it as its own task.",
+          "code": "WRONG: snakeyaml 1.33 -> 2.2 \"to fix the CVE\", merged after a green build\n       -> production: NoSuchMethodError in the YAML config loader\n\nRIGHT: read the release notes / migration guide, run every test level,\n       and check the libraries that use it support the new major"
         }
       ]
     },
     {
-      "subtitle": "Scanners de Dependências",
-      "description": "Ferramentas que encontram CVEs automaticamente.",
+      "subtitle": "Dependency Scanners",
+      "formerSubtitle": "Scanners de Dependências",
+      "description": "Tools that find CVEs automatically.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Scanners comparam as bibliotecas do projeto com bases de CVEs. O OWASP Dependency-Check roda como plugin Maven e pode falhar o build acima de uma nota CVSS. O Dependabot (GitHub) e o Renovate abrem Pull Requests com a versão corrigida. O Trivy escaneia imagens de container, incluindo pacotes do sistema operacional. Rodar o scan no CI em todo Pull Request impede que uma versão vulnerável entre, e um scan agendado pega CVEs novas em código que não mudou.",
-          "code": "<!-- pom.xml: falha o build com CVSS 7 ou maior -->\n<plugin>\n  <groupId>org.owasp</groupId>\n  <artifactId>dependency-check-maven</artifactId>\n  <version>12.1.0</version>\n  <configuration>\n    <failBuildOnCVSS>7</failBuildOnCVSS>\n  </configuration>\n</plugin>\n\n# Executar\nmvn org.owasp:dependency-check-maven:check\n\n# .github/dependabot.yml\nversion: 2\nupdates:\n  - package-ecosystem: maven\n    directory: /\n    schedule:\n      interval: weekly",
-          "interview_question": "Como você garante que o projeto não usa bibliotecas com vulnerabilidades conhecidas?",
+          "title": "Explanation",
+          "explanation": "**Problem:** nobody can track CVEs for a hundred libraries by hand.\n\n**Concept:** scanners compare the project's libraries with CVE databases. OWASP Dependency-Check runs as a Maven plugin and can fail the build above a CVSS score. Dependabot (GitHub) and Renovate open pull requests with the fixed version. Trivy scans container images, including operating-system packages.\n\n**How it works:** scanning every pull request stops a vulnerable version from coming in, and a scheduled scan catches new CVEs in code that did not change.",
+          "code": "<!-- pom.xml: fail the build at CVSS 7 or higher -->\n<plugin>\n  <groupId>org.owasp</groupId>\n  <artifactId>dependency-check-maven</artifactId>\n  <version>12.1.0</version>\n  <configuration>\n    <failBuildOnCVSS>7</failBuildOnCVSS>\n  </configuration>\n</plugin>\n\n# Run\nmvn org.owasp:dependency-check-maven:check\n\n# .github/dependabot.yml\nversion: 2\nupdates:\n  - package-ecosystem: maven\n    directory: /\n    schedule:\n      interval: weekly",
+          "interview_question": "How do you make sure the project does not use libraries with known vulnerabilities?",
           "references": [
             "https://dependency-check.github.io/DependencyCheck/dependency-check-maven/",
             "https://docs.github.com/en/code-security/dependabot",
             "https://trivy.dev/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Scanning only when code changes. A CVE published today affects the version you released last month, and nobody pushes to that repository. Add a scheduled run.",
+          "code": "# WRONG: scans only on push and PR\non: [push, pull_request]\n\n# RIGHT: also on a schedule\non:\n  push:\n  pull_request:\n  schedule:\n    - cron: '0 6 * * 1'     # every Monday, even if nobody pushed"
         }
       ]
     },
     {
-      "subtitle": "Injeção de SQL",
-      "description": "Nunca montar consultas concatenando entrada do usuário.",
+      "subtitle": "SQL Injection",
+      "formerSubtitle": "Injeção de SQL",
+      "description": "Never build queries from user input.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Injeção de SQL acontece quando texto vindo do usuário vira parte do comando SQL. Com nome = \"' OR '1'='1\", a consulta concatenada devolve todos os clientes. A defesa é separar o comando dos dados: PreparedStatement com ?, parâmetros nomeados no JPA (:nome) ou métodos derivados do Spring Data, que já são parametrizados. Cuidado com consultas nativas (@Query com nativeQuery) e com ORDER BY dinâmico: nome de coluna não pode ser parâmetro, então valide contra uma lista de valores permitidos.",
-          "code": "// ERRADO: o texto do usuário vira SQL\nString sql = \"SELECT * FROM cliente WHERE nome = '\" + nome + \"'\";\nstatement.executeQuery(sql);\n\n// CERTO: JDBC com parâmetro\nPreparedStatement ps = conn.prepareStatement(\"SELECT * FROM cliente WHERE nome = ?\");\nps.setString(1, nome);\n\n// CERTO: Spring Data JPA\n@Query(\"SELECT c FROM Cliente c WHERE c.nome = :nome\")\nList<Cliente> buscarPorNome(@Param(\"nome\") String nome);\n\n// ORDER BY dinâmico: só colunas permitidas\nprivate static final Set<String> ORDENACAO = Set.of(\"nome\", \"criadoEm\");\nif (!ORDENACAO.contains(campo)) {\n    throw new IllegalArgumentException(\"Ordenação inválida\");\n}",
-          "interview_question": "O que é injeção de SQL e como evitá-la com JDBC e com Spring Data JPA?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a search by name builds the SQL by concatenating what the user typed. With `' OR '1'='1`, the query returns every customer.\n\n**Concept:** SQL injection happens when user input becomes part of the SQL command. The defense is to keep the command and the data apart: `PreparedStatement` with `?`, named parameters in JPA (`:name`), or Spring Data derived methods, which are already parameterized.\n\n**How it works:** watch native queries and dynamic `ORDER BY`: a column name cannot be a parameter, so check it against a list of allowed values.",
+          "code": "// WRONG: user input becomes SQL\nString sql = \"SELECT * FROM customer WHERE name = '\" + name + \"'\";\nstatement.executeQuery(sql);\n\n// RIGHT: JDBC with a parameter\nPreparedStatement ps = conn.prepareStatement(\"SELECT * FROM customer WHERE name = ?\");\nps.setString(1, name);\n\n// RIGHT: Spring Data JPA\n@Query(\"SELECT c FROM Customer c WHERE c.name = :name\")\nList<Customer> findByName(@Param(\"name\") String name);\n\n// Dynamic ORDER BY: allowed columns only\nprivate static final Set<String> SORTABLE = Set.of(\"name\", \"createdAt\");\nif (!SORTABLE.contains(field)) {\n    throw new IllegalArgumentException(\"Invalid sort field\");\n}",
+          "interview_question": "What is SQL injection, and how do you prevent it with JDBC and Spring Data JPA?",
           "references": [
             "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Concatenating a `LIKE` search into the query to add the `%` wildcards. The wildcards belong in the parameter value, not in the SQL text.",
+          "code": "// WRONG\nem.createQuery(\"SELECT p FROM Product p WHERE p.name LIKE '%\" + term + \"%'\");\n\n// RIGHT\nem.createQuery(\"SELECT p FROM Product p WHERE p.name LIKE :term\", Product.class)\n  .setParameter(\"term\", \"%\" + term + \"%\");"
         }
       ]
     },
     {
-      "subtitle": "Exposição de Dados Sensíveis",
-      "description": "Dados que não deveriam sair da aplicação.",
+      "subtitle": "Sensitive Data Exposure",
+      "formerSubtitle": "Exposição de Dados Sensíveis",
+      "description": "Data that should never leave the application.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Vazamento de dados raramente vem de um ataque sofisticado. Os casos mais comuns são: a API devolve a entidade inteira, com campos como senha ou CPF; logs registram o objeto completo da requisição; mensagens de erro mostram stack trace, nomes de tabelas ou a consulta SQL. As defesas são responder sempre com DTOs que contêm só o necessário, mascarar dados pessoais nos logs e devolver erros genéricos ao cliente, deixando o detalhe só no log interno.",
-          "code": "// DTO com só os campos públicos\npublic record ClienteResponse(Long id, String nome) {\n    static ClienteResponse from(Cliente c) {\n        return new ClienteResponse(c.getId(), c.getNome());\n    }\n}\n\n// Log sem dados pessoais\nlog.info(\"Cliente atualizado id={}\", cliente.getId());\n// evite: log.info(\"Cliente atualizado {}\", cliente);\n\n# application.properties: não mostrar detalhes internos no erro\nserver.error.include-stacktrace=never\nserver.error.include-message=never",
-          "interview_question": "Cite formas comuns de uma API expor dados sensíveis sem querer e como evitá-las.",
+          "title": "Explanation",
+          "explanation": "**Problem:** data leaks rarely come from a sophisticated attack. Usually the API returns too much, a log records too much, or an error message shows too much.\n\n**Concept:** the common cases: the API returns the whole entity, with fields like the password hash or a tax id; logs record the full request object; error messages show stack traces, table names or SQL. The defenses: respond with DTOs containing only what is needed, mask personal data in logs, and return generic errors to the client while the details stay in the internal log.\n\n**How it works:** check every new field in a response DTO and every new log line in code review.",
+          "code": "// A DTO with only the public fields\npublic record CustomerResponse(Long id, String name) {\n    static CustomerResponse from(Customer c) {\n        return new CustomerResponse(c.getId(), c.getName());\n    }\n}\n\n// Logs without personal data\nlog.info(\"Customer updated id={}\", customer.getId());\n// avoid: log.info(\"Customer updated {}\", customer);\n\n# application.properties: no internal details in error responses\nserver.error.include-stacktrace=never\nserver.error.include-message=never",
+          "interview_question": "Name common ways an API exposes sensitive data by accident, and how to avoid them.",
           "references": [
             "https://owasp.org/API-Security/editions/2023/en/0xa3-broken-object-property-level-authorization/",
             "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Logging a record or object that holds a password. A record's `toString()` prints every component, so the password ends up in the logs. Log only the fields you need, or override `toString`.",
+          "code": "// WRONG\npublic record LoginRequest(String email, String password) {}\nlog.info(\"Login attempt {}\", request);\n// LoginRequest[email=ana@example.com, password=hunter2]\n\n// RIGHT\nlog.info(\"Login attempt email={}\", request.email());"
         }
       ]
     },
     {
-      "subtitle": "Validação de Entrada",
-      "description": "Toda entrada externa é suspeita até ser validada.",
+      "subtitle": "Input Validation",
+      "formerSubtitle": "Validação de Entrada",
+      "description": "All external input is suspect until validated.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Validar entrada reduz falhas de segurança e bugs ao mesmo tempo. Com Bean Validation, as regras ficam no DTO e o Spring rejeita a requisição com 400 antes de chegar ao serviço. Valide tamanho, formato e faixa de valores; prefira listas de valores permitidos a listas de proibidos. A validação no front-end é só conveniência: a API precisa validar de novo, porque qualquer pessoa pode chamá-la diretamente.",
-          "code": "public record NovoClienteRequest(\n    @NotBlank @Size(max = 100) String nome,\n    @Email @NotBlank String email,\n    @Min(18) @Max(120) int idade\n) {}\n\n@PostMapping(\"/clientes\")\nResponseEntity<ClienteResponse> criar(@Valid @RequestBody NovoClienteRequest req) {\n    return ResponseEntity.status(HttpStatus.CREATED).body(service.criar(req));\n}",
-          "interview_question": "Por que a API precisa validar dados mesmo que o front-end já valide?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the API trusts what arrives. A negative quantity, a 10 MB name or an age of 300 goes straight to the database or breaks a rule.\n\n**Concept:** validating input reduces security flaws and bugs at the same time. With Bean Validation, the rules live in the DTO and Spring rejects the request with 400 before it reaches the service. Validate size, format and range, and prefer allowlists (what is accepted) to denylists (what is blocked).\n\n**How it works:** validation in the frontend is only a convenience: the API must validate again, because anyone can call it directly.",
+          "code": "public record NewCustomerRequest(\n    @NotBlank @Size(max = 100) String name,\n    @Email @NotBlank String email,\n    @Min(18) @Max(120) int age\n) {}\n\n@PostMapping(\"/customers\")\nResponseEntity<CustomerResponse> create(@Valid @RequestBody NewCustomerRequest req) {\n    return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));\n}",
+          "interview_question": "Why must the API validate data even if the frontend already does?",
           "references": [
             "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
             "https://docs.spring.io/spring-boot/reference/io/validation.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A denylist: rejecting input that contains \"dangerous\" words. Attackers find variations faster than you add them, and real users get blocked. Define what is valid and reject everything else.",
+          "code": "// WRONG: blocking known-bad words\nif (name.contains(\"<script>\") || name.toUpperCase().contains(\"DROP\")) reject();\n// \"<ScRiPt>\", \"DR/**/OP\" ... and a customer called \"Drop Shipping Ltd\" is blocked\n\n// RIGHT: an allowlist of what is valid\n@Pattern(regexp = \"[\\\\p{L} .'-]{1,100}\") String name"
         }
       ]
     },
     {
-      "subtitle": "Segredos Fora do Código",
-      "description": "Senhas e tokens nunca vão para o repositório.",
+      "subtitle": "Secrets Out of the Code",
+      "formerSubtitle": "Segredos Fora do Código",
+      "description": "Passwords and tokens never go into the repository.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Senhas de banco, chaves de API e tokens ficam em variáveis de ambiente, Secrets do Kubernetes ou cofres como o Vault, nunca no código nem no application.properties versionado. Um segredo que foi commitado deve ser considerado vazado, mesmo que o commit seja apagado depois: o histórico do Git guarda tudo. A correção é trocar o segredo (rotacionar) e só então limpar o histórico. Ferramentas como gitleaks e o secret scanning do GitHub encontram segredos antes do push.",
-          "code": "# application.properties: só a referência\nspring.datasource.password=${DB_PASSWORD}\n\n# Execução local\nexport DB_PASSWORD='senha-local'\n./mvnw spring-boot:run\n\n# Procurar segredos no repositório\ngitleaks detect --source .",
-          "interview_question": "Você percebeu que uma senha foi commitada. O que faz?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a database password in `application.properties` is visible to everyone with access to the repository — and stays in its history forever.\n\n**Concept:** database passwords, API keys and tokens live in environment variables, Kubernetes Secrets or a vault such as HashiCorp Vault — never in code or in a versioned properties file. Tools like gitleaks and GitHub secret scanning find secrets before or after a push.\n\n**How it works:** the properties file only references the variable, and each environment provides the value.",
+          "code": "# application.properties: only the reference\nspring.datasource.password=${DB_PASSWORD}\n\n# Running locally\nexport DB_PASSWORD='local-password'\n./mvnw spring-boot:run\n\n# Search the repository for secrets\ngitleaks detect --source .",
+          "interview_question": "You notice a password was committed. What do you do?",
           "references": [
             "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
             "https://github.com/gitleaks/gitleaks"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Deleting the secret in a new commit and considering it solved. It is still in the history, and every clone and fork already has it. A committed secret is a leaked secret: rotate it first, then clean the history if needed.",
+          "code": "git commit -m \"add db config\"                 # password inside\ngit rm config.yml && git commit -m \"remove secret\"\n# still visible: git log -p shows it; clones and forks already have it\n\n# RIGHT\n# 1. rotate the password now (the old one is compromised)\n# 2. then, if required, rewrite the history (git filter-repo)"
         }
       ]
     }

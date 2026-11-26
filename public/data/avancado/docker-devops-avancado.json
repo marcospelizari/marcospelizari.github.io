@@ -1,143 +1,140 @@
 {
-  "title": "Docker e DevOps — Avançado",
-  "description": "Imagens otimizadas, Kubernetes em produção, estratégias de release e infraestrutura como código.",
-  "version": "Docker 26.x, Kubernetes 1.31",
+  "title": "Docker & DevOps",
+  "description": "Running containers in production: resources, release strategies, GitOps, Terraform and secrets.",
+  "version": "Docker 26+, Kubernetes 1.31+",
   "resumo": [
-    "Em produção, containers precisam ser pequenos, seguros e previsíveis: multi-stage builds, imagens enxutas, usuário não root e scan de vulnerabilidades fazem parte do pipeline.",
-    "No Kubernetes, Deployments, Services, ConfigMaps e Secrets separam execução de configuração; probes e limites de recursos permitem que a plataforma detecte e isole problemas.",
-    "Estratégias de release como rolling update, blue/green e canary reduzem o risco de cada deploy, e GitOps torna o estado do cluster auditável a partir do Git.",
-    "Infraestrutura como código e observabilidade fecham o ciclo: ambientes reprodutíveis e métricas que dizem se o deploy foi bem-sucedido."
+    "Requests are reserved, limits are ceilings: memory over the limit is OOMKilled, CPU over it is throttled.",
+    "The HPA needs CPU requests — without them it shows `<unknown>` and never scales.",
+    "Rolling update by default; blue/green for instant rollback; canary to validate with real traffic. Schema changes must work with both versions.",
+    "GitOps: the cluster follows Git; fix incidents in Git, or `selfHeal` reverts you.",
+    "Terraform state in a remote, locked, encrypted backend — never in Git.",
+    "Secrets from a vault via External Secrets; pods read env vars at startup — restart after rotation."
   ],
   "subsections": [
     {
-      "subtitle": "Multi-stage Builds e Imagens Enxutas",
-      "description": "Menos tamanho, menos superfície de ataque.",
+      "subtitle": "Kubernetes: Deployment, Service and Configuration",
+      "formerSubtitle": "Kubernetes: Deployment, Service e Configuração",
+      "description": "Covered in the Kubernetes topic.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O primeiro estágio tem JDK e Maven para compilar; o estágio final copia apenas o JAR para uma imagem só com JRE (ou distroless), reduzindo centenas de megabytes e removendo ferramentas que um atacante poderia usar. Copiar o pom.xml e baixar dependências antes do código-fonte aproveita o cache de camadas: dependências só são baixadas de novo quando o pom muda.",
-          "code": "FROM maven:3.9-eclipse-temurin-21 AS build\nWORKDIR /workspace\nCOPY pom.xml .\nRUN mvn -q dependency:go-offline\nCOPY src src\nRUN mvn -q -DskipTests package\n\nFROM eclipse-temurin:21-jre-alpine\nWORKDIR /app\nRUN addgroup -S app && adduser -S app -G app\nCOPY --from=build /workspace/target/*.jar app.jar\nUSER app\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-XX:MaxRAMPercentage=75\", \"-jar\", \"app.jar\"]",
-          "interview_question": "Quais benefícios práticos do multi-stage build?",
-          "references": [
-            "https://docs.docker.com/build/building/multi-stage/"
-          ]
+          "title": "Explanation",
+          "explanation": "Deployments, Services, ConfigMaps and Secrets are taught in **Kubernetes & kubectl** (Essentials), and readiness, liveness and startup probes in **Kubernetes & kubectl → Intermediate** (Probes and Graceful Shutdown)."
         }
       ]
     },
     {
-      "subtitle": "Segurança de Imagens",
-      "description": "Scan de vulnerabilidades e cadeia de suprimentos.",
-      "category": "boas-praticas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Escaneie imagens no CI com ferramentas como Trivy ou Grype e falhe o pipeline em vulnerabilidades críticas; fixe versões de imagens base e atualize-as regularmente; rode como não root com sistema de arquivos somente leitura quando possível; e assine as imagens (Cosign) para garantir que o cluster só execute artefatos produzidos pelo seu pipeline. Nunca passe segredos como ARG ou ENV no Dockerfile.",
-          "code": "trivy image --severity CRITICAL,HIGH --exit-code 1 ghcr.io/loja/api:1.4.0\n\ncosign sign ghcr.io/loja/api@sha256:3f9a...\n\n# Fixe QUEM assinou: um regexp '.*' aceitaria qualquer identidade\ncosign verify \\\n  --certificate-identity https://github.com/loja/api/.github/workflows/release.yml@refs/heads/main \\\n  --certificate-oidc-issuer https://token.actions.githubusercontent.com \\\n  ghcr.io/loja/api@sha256:3f9a...",
-          "interview_question": "Como garantir que uma imagem enviada para produção é segura?",
-          "references": [
-            "https://github.com/aquasecurity/trivy",
-            "https://docs.sigstore.dev/cosign/signing/overview/"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Kubernetes: Deployment, Service e Configuração",
-      "description": "Os objetos básicos de uma aplicação.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Readiness indica se o pod pode receber tráfego: enquanto falha, ele sai do Service (útil no startup e em dependências indisponíveis). Liveness indica se o processo travou: ao falhar, o kubelet reinicia o container — não a vincule a dependências externas, ou uma queda do banco reinicia todos os pods. Startup probes protegem aplicações de inicialização lenta. O Spring Boot expõe ambas em /actuator/health/readiness e /liveness.",
-          "code": "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api-pedidos\nspec:\n  replicas: 3\n  selector:\n    matchLabels: { app: api-pedidos }\n  template:\n    metadata:\n      labels: { app: api-pedidos }\n    spec:\n      containers:\n        - name: api\n          image: ghcr.io/loja/api:1.4.0\n          ports: [{ containerPort: 8080 }]\n          envFrom:\n            - configMapRef: { name: api-config }\n            - secretRef: { name: api-secrets }\n          readinessProbe:\n            httpGet: { path: /actuator/health/readiness, port: 8080 }\n          livenessProbe:\n            httpGet: { path: /actuator/health/liveness, port: 8080 }\n            initialDelaySeconds: 30",
-          "interview_question": "Diferença entre readiness e liveness probe?",
-          "references": [
-            "https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Recursos e Autoescalonamento",
-      "description": "Requests, limits e HPA.",
+      "subtitle": "Resources and Autoscaling",
+      "formerSubtitle": "Recursos e Autoescalonamento",
+      "description": "Requests, limits and the HorizontalPodAutoscaler.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Requests é o que o scheduler reserva para o pod (garantido); limits é o teto. Exceder o limite de memória mata o container (OOMKilled); exceder o de CPU causa throttling (lentidão). Para Java, alinhe o heap ao limite com MaxRAMPercentage. O HorizontalPodAutoscaler adiciona ou remove réplicas com base em CPU ou métricas customizadas, o que exige aplicações stateless.",
-          "code": "resources:\n  requests: { cpu: \"250m\", memory: \"512Mi\" }\n  limits:   { memory: \"768Mi\" }\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: api-pedidos\nspec:\n  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api-pedidos }\n  minReplicas: 3\n  maxReplicas: 10\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target: { type: Utilization, averageUtilization: 70 }",
-          "interview_question": "Qual a diferença entre requests e limits no Kubernetes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** one pod uses all the memory of its node and the neighbors are evicted; at peak there are not enough replicas, and at night far too many.\n\n**Concept:** requests are what the scheduler reserves for the pod (guaranteed); limits are the ceiling. Exceeding the memory limit kills the container (`OOMKilled`); exceeding the CPU limit causes throttling (slowness). For Java, align the heap with the limit using `MaxRAMPercentage`. The HorizontalPodAutoscaler adds or removes replicas based on CPU or custom metrics, which requires stateless applications.\n\n**How it works:** set memory requests and limits; for CPU, set a request and think twice about a limit, because throttling shows up as unexplained latency.",
+          "code": "resources:\n  requests: { cpu: \"250m\", memory: \"512Mi\" }\n  limits:   { memory: \"768Mi\" }\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: api-orders\nspec:\n  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: api-orders }\n  minReplicas: 3\n  maxReplicas: 10\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target: { type: Utilization, averageUtilization: 70 }",
+          "interview_question": "What is the difference between requests and limits in Kubernetes?",
           "references": [
             "https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
             "https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An HPA on CPU without CPU requests. Utilization is a percentage of the request, so with no request the HPA cannot compute it and never scales.",
+          "code": "kubectl get hpa\n# NAME         TARGETS         MINPODS   MAXPODS   REPLICAS\n# api-orders   <unknown>/70%   3         10        3\n\nkubectl describe hpa api-orders\n# failed to get cpu utilization: missing request for cpu\n\n# RIGHT\nresources:\n  requests: { cpu: \"250m\" }"
         }
       ]
     },
     {
-      "subtitle": "Estratégias de Release",
-      "description": "Rolling update, blue/green e canary.",
+      "subtitle": "Release Strategies",
+      "formerSubtitle": "Estratégias de Release",
+      "description": "Rolling update, blue/green and canary.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Rolling update (padrão do Deployment) troca pods gradualmente, sem duplicar infraestrutura. Blue/green mantém duas versões completas e alterna todo o tráfego de uma vez — rollback instantâneo, mas custo dobrado durante a troca. Canary envia uma fração pequena do tráfego (ex.: 5%) para a nova versão e aumenta conforme métricas de erro e latência; é preferível quando você quer validar com usuários reais e limitar o impacto de um bug.",
-          "code": "# Rolling update controlado\nstrategy:\n  type: RollingUpdate\n  rollingUpdate:\n    maxUnavailable: 0   # nunca reduz a capacidade\n    maxSurge: 1         # sobe um pod novo por vez\n\n# Canary com Argo Rollouts (resumo)\nsteps:\n  - setWeight: 5\n  - pause: { duration: 10m }\n  - setWeight: 50\n  - pause: { duration: 10m }",
-          "interview_question": "Quando escolher canary em vez de blue/green?",
+          "title": "Explanation",
+          "explanation": "**Problem:** every deploy is all-or-nothing: if the new version has a bug, every user hits it at once.\n\n**Concept:** a rolling update (the Deployment default) replaces pods gradually without duplicating infrastructure. Blue/green keeps two complete versions and switches all traffic at once — instant rollback, but double the cost during the switch. A canary sends a small share of traffic (say 5%) to the new version and increases it as error and latency metrics stay healthy — the choice when you want to validate with real users and limit the impact of a bug.\n\n**How it works:** with `maxUnavailable: 0`, a rolling update never reduces capacity; Argo Rollouts and Flagger automate canaries on Kubernetes.",
+          "code": "# Controlled rolling update\nstrategy:\n  type: RollingUpdate\n  rollingUpdate:\n    maxUnavailable: 0   # never below the desired capacity\n    maxSurge: 1         # one new pod at a time\n\n# Canary with Argo Rollouts (summary)\nsteps:\n  - setWeight: 5\n  - pause: { duration: 10m }\n  - setWeight: 50\n  - pause: { duration: 10m }",
+          "interview_question": "When would you choose a canary over blue/green?",
           "references": [
             "https://martinfowler.com/bliki/CanaryRelease.html",
             "https://martinfowler.com/bliki/BlueGreenDeployment.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Blue/green or canary with a database change that the old version cannot handle. During the switch both versions run against the same database, and rolling back to blue breaks it. Make schema changes backward compatible first (expand/contract).",
+          "code": "WRONG: green drops the column \"email\" that blue still reads\n       -> switch to green OK... rollback to blue -> errors everywhere\n\nRIGHT: deploy 1 adds the new column (both versions work)\n       deploy 2 switches the code\n       deploy 3 removes the old column"
         }
       ]
     },
     {
-      "subtitle": "GitOps com Argo CD",
-      "description": "O Git como fonte da verdade do cluster.",
+      "subtitle": "GitOps with Argo CD",
+      "formerSubtitle": "GitOps com Argo CD",
+      "description": "Git as the source of truth for the cluster.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Em GitOps, o estado desejado do cluster fica versionado em um repositório; um agente dentro do cluster (Argo CD ou Flux) compara continuamente o Git com o cluster e sincroniza as diferenças. O pipeline de CI só atualiza a tag da imagem no repositório de configuração. Ganha-se auditoria (cada deploy é um commit), rollback por git revert e menos credenciais do cluster expostas no CI.",
-          "code": "apiVersion: argoproj.io/v1alpha1\nkind: Application\nmetadata:\n  name: api-pedidos\n  namespace: argocd\nspec:\n  project: default\n  source:\n    repoURL: https://github.com/loja/infra-config.git\n    path: apps/api-pedidos/overlays/producao\n    targetRevision: main\n  destination:\n    server: https://kubernetes.default.svc\n    namespace: pedidos\n  syncPolicy:\n    automated: { prune: true, selfHeal: true }",
-          "interview_question": "O que é GitOps e qual a vantagem sobre aplicar manifests pelo pipeline?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the pipeline runs `kubectl apply` with cluster-admin credentials, nobody knows what is really running, and manual changes pile up.\n\n**Concept:** in GitOps, the desired state of the cluster is versioned in a repository, and an agent inside the cluster (Argo CD or Flux) continuously compares Git with the cluster and syncs the differences. CI only updates the image tag in the configuration repository. You get an audit trail (each deploy is a commit), rollback with `git revert`, and fewer cluster credentials exposed to CI.\n\n**How it works:** `selfHeal` reverts manual changes in the cluster; `prune` deletes resources removed from Git.",
+          "code": "apiVersion: argoproj.io/v1alpha1\nkind: Application\nmetadata:\n  name: api-orders\n  namespace: argocd\nspec:\n  project: default\n  source:\n    repoURL: https://github.com/shop/infra-config.git\n    path: apps/api-orders/overlays/production\n    targetRevision: main\n  destination:\n    server: https://kubernetes.default.svc\n    namespace: orders\n  syncPolicy:\n    automated: { prune: true, selfHeal: true }",
+          "interview_question": "What is GitOps, and what is its advantage over applying manifests from the pipeline?",
           "references": [
-            "https://argo-cd.readthedocs.io/en/stable/"
+            "https://argo-cd.readthedocs.io/en/stable/",
+            "https://opengitops.dev/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Fixing production with `kubectl edit` while `selfHeal` is on. Argo CD reverts the change within minutes, and the incident comes back. Change it in Git — even during an incident.",
+          "code": "# WRONG during an incident\nkubectl scale deploy/api-orders --replicas=10\n# a few minutes later Argo CD syncs back to 3 replicas\n\n# RIGHT: commit the change to the config repository (or pause auto-sync explicitly)"
         }
       ]
     },
     {
-      "subtitle": "Infraestrutura como Código com Terraform",
-      "description": "Ambientes reprodutíveis e revisáveis.",
+      "subtitle": "Infrastructure as Code with Terraform",
+      "formerSubtitle": "Infraestrutura como Código com Terraform",
+      "description": "State, locking and reusable modules.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Terraform descreve a infraestrutura de forma declarativa; terraform plan mostra o que vai mudar antes do apply, permitindo revisar mudanças de infra em Pull Requests. O state mapeia o código aos recursos reais: deve ficar em um backend remoto (S3, GCS) com lock para evitar applies simultâneos, e pode conter segredos, então precisa de acesso restrito e criptografia. Módulos reutilizáveis evitam copiar e colar entre ambientes.",
-          "code": "terraform {\n  backend \"s3\" {\n    bucket         = \"loja-terraform-state\"\n    key            = \"producao/api.tfstate\"\n    region         = \"us-east-1\"\n    use_lockfile   = true   # lock nativo no S3 (Terraform 1.11+; dynamodb_table está deprecado)\n    encrypt        = true\n  }\n}\n\nmodule \"banco\" {\n  source         = \"./modules/postgres\"\n  ambiente       = \"producao\"\n  instance_class = \"db.t4g.medium\"\n}",
-          "interview_question": "Por que o state do Terraform precisa de cuidado especial?",
+          "title": "Explanation",
+          "explanation": "**Problem:** two engineers run `terraform apply` at the same time, and the state file ends up corrupted.\n\n**Concept:** the state maps the code to the real resources. It must live in a remote backend (S3, GCS) with locking to prevent simultaneous applies, and it can contain secrets, so access must be restricted and encrypted. `terraform plan` shows what will change before `apply`, so infrastructure changes can be reviewed in pull requests. Modules avoid copy-paste between environments.\n\n**How it works:** run `plan` in CI on every pull request and `apply` only after approval.",
+          "code": "terraform {\n  backend \"s3\" {\n    bucket       = \"shop-terraform-state\"\n    key          = \"production/api.tfstate\"\n    region       = \"us-east-1\"\n    use_lockfile = true    # native S3 locking (Terraform 1.11+; dynamodb_table is deprecated)\n    encrypt      = true\n  }\n}\n\nmodule \"database\" {\n  source         = \"./modules/postgres\"\n  environment    = \"production\"\n  instance_class = \"db.t4g.medium\"\n}",
+          "interview_question": "Why does the Terraform state need special care?",
           "references": [
-            "https://developer.hashicorp.com/terraform/language/state"
+            "https://developer.hashicorp.com/terraform/language/state",
+            "https://developer.hashicorp.com/terraform/language/backend/s3"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Committing the state file to Git. It may hold database passwords and keys in plain text, and two people applying from their own copies overwrite each other's changes.",
+          "code": "# WRONG\ngit add terraform.tfstate\n\n# RIGHT: a remote backend with locking and encryption; ignore local state\n# .gitignore\n*.tfstate\n*.tfstate.*\n.terraform/"
         }
       ]
     },
     {
-      "subtitle": "Gestão de Segredos",
-      "description": "Credenciais fora do código e das imagens.",
+      "subtitle": "Secrets Management",
+      "formerSubtitle": "Gestão de Segredos",
+      "description": "Credentials outside the code and the images.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Secrets do Kubernetes são apenas codificados em Base64 e, por padrão, armazenados sem criptografia no etcd; também não devem ser versionados em texto puro no Git. Em produção, use um cofre (HashiCorp Vault, AWS Secrets Manager) integrado ao cluster via External Secrets Operator, habilite criptografia em repouso, restrinja acesso com RBAC e faça rotação periódica das credenciais.",
-          "code": "apiVersion: external-secrets.io/v1\nkind: ExternalSecret\nmetadata:\n  name: api-secrets\nspec:\n  refreshInterval: 1h\n  secretStoreRef: { name: aws-secrets-manager, kind: ClusterSecretStore }\n  target: { name: api-secrets }\n  data:\n    - secretKey: SPRING_DATASOURCE_PASSWORD\n      remoteRef: { key: producao/api, property: db_password }",
-          "interview_question": "Por que Secrets do Kubernetes sozinhos não são suficientes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** database passwords are in Kubernetes Secrets created by hand, nobody knows when they were last rotated, and anyone who can read the namespace can read them.\n\n**Concept:** Kubernetes Secrets are only Base64-encoded and, by default, stored unencrypted in etcd; they must not be versioned in plain text either. In production, use a vault (HashiCorp Vault, AWS Secrets Manager) integrated with the cluster through the External Secrets Operator, enable encryption at rest, restrict access with RBAC and rotate credentials regularly.\n\n**How it works:** the operator copies values from the vault into a regular Secret and refreshes it on a schedule; the application keeps reading environment variables.",
+          "code": "apiVersion: external-secrets.io/v1\nkind: ExternalSecret\nmetadata:\n  name: api-secrets\nspec:\n  refreshInterval: 1h\n  secretStoreRef: { name: aws-secrets-manager, kind: ClusterSecretStore }\n  target: { name: api-secrets }\n  data:\n    - secretKey: SPRING_DATASOURCE_PASSWORD\n      remoteRef: { key: production/api, property: db_password }",
+          "interview_question": "Why are Kubernetes Secrets alone not enough?",
           "references": [
             "https://kubernetes.io/docs/concepts/configuration/secret/",
             "https://external-secrets.io/latest/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Rotating the password in the vault and expecting the pods to pick it up. Environment variables are read at startup, so the pods keep the old password until they restart — and fail when the old one is revoked. Restart after the refresh (or mount the secret as a file the application rereads).",
+          "code": "# The vault now has the new password; the Secret was refreshed...\nkubectl exec api-orders-7d9f8 -- env | grep DATASOURCE_PASSWORD   # still the old value\n\n# RIGHT: roll the pods after the Secret changes\nkubectl rollout restart deploy/api-orders"
         }
       ]
     }

@@ -1,8 +1,9 @@
 import { Level, Topic, TopicGroup } from '../models/topic.model';
 
 export const LEVEL_LABELS: Record<Level, string> = {
-  essencial: 'Essencial',
-  avancado: 'Avançado',
+  essencial: 'Essentials',
+  intermediario: 'Intermediate',
+  avancado: 'Advanced',
 };
 
 export const TOPIC_GROUPS: TopicGroup[] = [
@@ -13,28 +14,28 @@ export const TOPIC_GROUPS: TopicGroup[] = [
     // Learning order: language -> OOP -> data -> framework -> API design
       {
         slug: 'fundamentos-java',
-        label: 'Fundamentos Java',
-        files: { essencial: 'essencial/fundamentos-java.json', avancado: 'avancado/fundamentos-java-avancado.json' },
+        label: 'Java Fundamentals',
+        files: { essencial: 'essencial/fundamentos-java.json', intermediario: 'intermediario/fundamentos-java-intermediario.json', avancado: 'avancado/fundamentos-java-avancado.json' },
       },
       {
         slug: 'orientacao-objetos',
-        label: 'Orientação a Objetos',
-        files: { essencial: 'essencial/orientacao-objetos.json', avancado: 'avancado/orientacao-objetos-avancado.json' },
+        label: 'Object-Oriented Programming',
+        files: { essencial: 'essencial/orientacao-objetos.json', intermediario: 'intermediario/orientacao-objetos-intermediario.json', avancado: 'avancado/orientacao-objetos-avancado.json' },
       },
       {
         slug: 'banco-dados',
-        label: 'Banco de Dados',
-        files: { essencial: 'essencial/banco-dados.json', avancado: 'avancado/banco-dados-avancado.json' },
+        label: 'Databases',
+        files: { essencial: 'essencial/banco-dados.json', intermediario: 'intermediario/banco-dados-intermediario.json', avancado: 'avancado/banco-dados-avancado.json' },
       },
       {
         slug: 'spring-boot',
         label: 'Spring Boot',
-        files: { essencial: 'essencial/spring-boot.json', avancado: 'avancado/spring-boot-avancado.json' },
+        files: { essencial: 'essencial/spring-boot.json', intermediario: 'intermediario/spring-boot-intermediario.json', avancado: 'avancado/spring-boot-avancado.json' },
       },
       {
         slug: 'api-webservices',
-        label: 'API & Web Services',
-        files: { essencial: 'essencial/api-webservices.json', avancado: 'avancado/api-webservices-avancado.json' },
+        label: 'APIs & Web Services',
+        files: { essencial: 'essencial/api-webservices.json', intermediario: 'intermediario/api-webservices-intermediario.json', avancado: 'avancado/api-webservices-avancado.json' },
       },
     ],
   },
@@ -45,64 +46,64 @@ export const TOPIC_GROUPS: TopicGroup[] = [
     topics: [
       {
         slug: 'controle-versao',
-        label: 'Controle de Versão (Git)',
-        files: { essencial: 'essencial/controle-versao.json', avancado: 'avancado/controle-versao-avancado.json' },
+        label: 'Version Control (Git)',
+        files: { essencial: 'essencial/controle-versao.json', intermediario: 'intermediario/controle-versao-intermediario.json', avancado: 'avancado/controle-versao-avancado.json' },
       },
       {
         slug: 'docker-devops',
         label: 'Docker & DevOps',
-        files: { essencial: 'essencial/docker-devops.json', avancado: 'avancado/docker-devops-avancado.json' },
+        files: { essencial: 'essencial/docker-devops.json', intermediario: 'intermediario/docker-devops-intermediario.json', avancado: 'avancado/docker-devops-avancado.json' },
       },
       {
         slug: 'kubernetes',
         label: 'Kubernetes & kubectl',
-        files: { essencial: 'essencial/kubernetes.json', avancado: 'avancado/kubernetes-avancado.json' },
+        files: { essencial: 'essencial/kubernetes.json', intermediario: 'intermediario/kubernetes-intermediario.json', avancado: 'avancado/kubernetes-avancado.json' },
       },
       {
         slug: 'ci-cd',
         label: 'CI/CD',
-        files: { essencial: 'essencial/ci-cd.json', avancado: 'avancado/ci-cd-avancado.json' },
+        files: { essencial: 'essencial/ci-cd.json', intermediario: 'intermediario/ci-cd-intermediario.json', avancado: 'avancado/ci-cd-avancado.json' },
       },
       {
         slug: 'observabilidade',
-        label: 'Observabilidade',
-        files: { avancado: 'avancado/observabilidade-avancado.json' },
+        label: 'Observability',
+        files: { intermediario: 'intermediario/observabilidade-intermediario.json', avancado: 'avancado/observabilidade-avancado.json' },
       },
     ],
   },
   {
-    label: 'Arquitetura',
+    label: 'Architecture',
     icon: 'account_tree',
     topics: [
       {
         slug: 'arquitetura-sistema',
-        label: 'Arquitetura de Sistemas',
-        files: { essencial: 'essencial/arquitetura-sistema.json', avancado: 'avancado/arquitetura-sistema-avancado.json' },
+        label: 'System Architecture',
+        files: { essencial: 'essencial/arquitetura-sistema.json', intermediario: 'intermediario/arquitetura-sistema-intermediario.json', avancado: 'avancado/arquitetura-sistema-avancado.json' },
       },
       {
         slug: 'performance-otimizacao',
-        label: 'Performance & Otimização',
+        label: 'Performance & Optimization',
         files: { avancado: 'avancado/performance-otimizacao.json' },
       },
     ],
   },
   {
-    label: 'Qualidade',
+    label: 'Quality',
     icon: 'verified',
     topics: [
       {
         slug: 'testes',
-        label: 'Testes Automatizados',
-        files: { essencial: 'essencial/testes.json', avancado: 'avancado/testes-avancado.json' },
+        label: 'Automated Testing',
+        files: { essencial: 'essencial/testes.json', intermediario: 'intermediario/testes-intermediario.json', avancado: 'avancado/testes-avancado.json' },
       },
       {
         slug: 'seguranca',
-        label: 'Segurança de Aplicações',
+        label: 'Application Security',
         files: { essencial: 'essencial/seguranca.json', avancado: 'avancado/seguranca-avancado.json' },
       },
       {
         slug: 'boas-praticas',
-        label: 'Boas Práticas & Clean Code',
+        label: 'Best Practices & Clean Code',
         files: { essencial: 'essencial/boas-praticas.json' },
       },
     ],
@@ -117,8 +118,9 @@ export function findTopic(slug: string): { group: TopicGroup; topic: Topic; next
   return { ...ALL_TOPICS[index], next: ALL_TOPICS[index + 1]?.topic };
 }
 
+/** The topic's lowest level that has content (levels are ordered as in LEVEL_LABELS). */
 export function firstLevel(topic: Topic): Level {
-  return topic.files.essencial ? 'essencial' : 'avancado';
+  return (Object.keys(LEVEL_LABELS) as Level[]).find((level) => topic.files[level])!;
 }
 
 /** Every topic/level pair that has a JSON file, in sidebar order. */

@@ -8,8 +8,8 @@
       <span class="material-symbols-outlined text-[18px] text-outline" aria-hidden="true">search</span>
       <input
         type="search"
-        placeholder="Buscar nesta página..."
-        aria-label="Buscar seções do tópico"
+        placeholder="Search this page..."
+        aria-label="Search topic sections"
         class="flex-1 min-w-0 bg-transparent text-body-sm text-on-surface placeholder:text-outline outline-none focus-visible:outline-none"
         [value]="search.query()"
         (input)="onSearch($event)"
@@ -24,10 +24,10 @@
       class="flex items-center gap-space-sm px-space-sm py-1.5 rounded-lg text-on-surface-variant text-body-sm hover:bg-surface-container-high hover:text-on-surface transition-colors"
     >
       <span class="material-symbols-outlined text-[18px]" aria-hidden="true">dashboard</span>
-      Início
+      Home
     </a>
 
-    <nav aria-label="Tópicos" class="flex flex-col gap-space-lg">
+    <nav aria-label="Topics" class="flex flex-col gap-space-lg">
       @for (group of groups; track group.label) {
         <div class="flex flex-col gap-space-xs">
           <div class="px-space-sm py-1 text-outline text-label-ui uppercase tracking-wider">{{ group.label }}</div>
@@ -41,7 +41,7 @@
               >
                 <span class="truncate">{{ topic.label }}</span>
                 @if (!topic.files.essencial) {
-                  <span class="font-mono text-label-kbd text-outline px-1.5 py-0.5 rounded bg-surface-container-low">AV</span>
+                  <span class="font-mono text-label-kbd text-outline px-1.5 py-0.5 rounded bg-surface-container-low">{{ topic.files.intermediario ? 'INT' : 'ADV' }}</span>
                 }
               </a>
             }

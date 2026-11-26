@@ -2,7 +2,7 @@
   @if (entry(); as entry) {
     <!-- Breadcrumb -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md pb-space-md border-b border-outline-variant/30">
-      <nav aria-label="Trilha" class="flex flex-wrap items-center gap-space-xs text-body-sm">
+      <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-space-xs text-body-sm">
         <span class="text-on-surface-variant flex items-center gap-1">
           <span class="material-symbols-outlined text-[16px] text-outline" aria-hidden="true">{{ entry.group.icon }}</span>
           {{ entry.group.label }}
@@ -33,7 +33,7 @@
         }
       </div>
 
-      <div class="flex items-center gap-1 p-1.5 rounded-xl bg-surface-container-low shadow-sm self-start lg:self-end" role="group" aria-label="Nível">
+      <div class="flex items-center gap-1 p-1.5 rounded-xl bg-surface-container-low shadow-sm self-start lg:self-end" role="group" aria-label="Level">
         @for (lvl of levels; track lvl[0]) {
           @if (entry.topic.files[lvl[0]]) {
             <a
@@ -45,29 +45,29 @@
                 : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'"
             >{{ lvl[1] }}</a>
           } @else {
-            <span class="px-space-md py-1.5 rounded-lg text-headline-sm text-outline/60 cursor-not-allowed" title="Sem conteúdo neste nível">{{ lvl[1] }}</span>
+            <span class="px-space-md py-1.5 rounded-lg text-headline-sm text-outline/60 cursor-not-allowed" title="No content at this level">{{ lvl[1] }}</span>
           }
         }
       </div>
     </div>
 
     @if (!file()) {
-      <p class="text-on-surface-variant">Este tópico não tem conteúdo no nível escolhido.</p>
+      <p class="text-on-surface-variant">This topic has no content at the selected level.</p>
     } @else if (content.isLoading()) {
       <div class="flex items-center gap-space-sm text-on-surface-variant" role="status">
         <span class="material-symbols-outlined animate-spin text-primary" aria-hidden="true">progress_activity</span>
-        Carregando conteúdo...
+        Loading content...
       </div>
     } @else if (content.error()) {
       <div class="p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center gap-space-md" role="alert">
         <span class="material-symbols-outlined text-error" aria-hidden="true">error</span>
-        <p class="flex-1">Erro ao carregar o tópico <code class="font-mono text-code-inline">data/{{ file() }}</code>.</p>
-        <button type="button" (click)="content.reload()" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm">Tentar novamente</button>
+        <p class="flex-1">Could not load the topic <code class="font-mono text-code-inline">data/{{ file() }}</code>.</p>
+        <button type="button" (click)="content.reload()" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm">Try again</button>
       </div>
     } @else if (content.hasValue()) {
       <!-- Filter pill bar -->
       <div class="flex items-center justify-between gap-space-md p-1.5 rounded-xl bg-surface-container-low shadow-sm">
-        <div class="flex items-center gap-1 overflow-x-auto" role="group" aria-label="Filtrar seções por tipo">
+        <div class="flex items-center gap-1 overflow-x-auto" role="group" aria-label="Filter sections by type">
           @for (filter of filters(); track filter.id) {
             <button
               type="button"
@@ -86,7 +86,7 @@
           }
         </div>
         <span class="hidden md:block px-space-sm text-outline font-mono text-code-inline whitespace-nowrap" aria-live="polite">
-          {{ sections().length }} de {{ filters()[0].count }} seções
+          {{ sections().length }} of {{ filters()[0].count }} sections
         </span>
       </div>
 
@@ -100,14 +100,14 @@
                   <span class="material-symbols-outlined" aria-hidden="true">menu_book</span>
                 </span>
                 <span class="flex-1 flex flex-col">
-                  <span class="text-headline-sm text-primary uppercase tracking-wide">Resumo</span>
-                  <span class="text-label-ui text-outline">{{ content.value().resumo!.length }} parágrafos · clique para expandir</span>
+                  <span class="text-headline-sm text-primary uppercase tracking-wide">Summary</span>
+                  <span class="text-label-ui text-outline">{{ content.value().resumo!.length }} points · click to expand</span>
                 </span>
                 <span class="material-symbols-outlined text-outline transition-transform group-open:rotate-180" aria-hidden="true">expand_more</span>
               </summary>
               <div class="flex flex-col gap-space-sm px-space-lg pb-space-lg sm:pl-[calc(var(--spacing-space-lg)+2.25rem+var(--spacing-space-md))]">
                 @for (paragraph of content.value().resumo; track $index) {
-                  <p class="text-body-lg text-on-surface">{{ paragraph }}</p>
+                  <app-rich-text [text]="paragraph" paragraphClass="text-body-lg text-on-surface" />
                 }
               </div>
             </details>
@@ -133,31 +133,34 @@
                       : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface hover:bg-surface-bright'"
                   >
                     <span class="material-symbols-outlined text-[16px]" aria-hidden="true">{{ studied ? 'check_circle' : 'radio_button_unchecked' }}</span>
-                    {{ studied ? 'Estudado' : 'Marcar como estudado' }}
+                    {{ studied ? 'Studied' : 'Mark as studied' }}
                   </button>
                 </div>
               </div>
 
               @for (example of item.subsection.examples; track $index) {
                 <article class="p-space-lg rounded-xl bg-surface-container-low flex flex-col gap-space-md shadow-md">
+                  @if (example.title !== 'Explanation') {
+                    <h3 class="text-headline-sm sm:text-headline-md text-on-surface">{{ example.title }}</h3>
+                  }
+                  <app-rich-text [text]="example.explanation" paragraphClass="text-body-md sm:text-body-lg text-on-surface-variant" />
+                  @if (example.code) {
+                    <app-code-block [code]="example.code" />
+                  }
                   @if (example.interview_question) {
-                    <div class="flex items-start gap-space-md">
+                    <div class="flex items-start gap-space-md pt-space-md border-t border-surface-container-highest">
                       <div class="w-10 h-10 rounded-lg bg-surface-container-high flex items-center justify-center text-primary flex-shrink-0">
                         <span class="material-symbols-outlined text-[22px]" aria-hidden="true">quiz</span>
                       </div>
                       <div class="flex flex-col gap-1">
-                        <span class="text-label-kbd font-mono uppercase text-secondary">Pergunta de entrevista</span>
+                        <span class="text-label-kbd font-mono uppercase text-secondary">Interview question</span>
                         <h3 class="text-headline-sm sm:text-headline-md text-on-surface">{{ example.interview_question }}</h3>
                       </div>
                     </div>
                   }
-                  <p class="text-body-md sm:text-body-lg text-on-surface-variant">{{ example.explanation }}</p>
-                  @if (example.code) {
-                    <app-code-block [code]="example.code" />
-                  }
                   @if (example.references?.length) {
                     <div class="flex flex-col gap-space-xs">
-                      <span class="text-label-ui text-outline">Referências</span>
+                      <span class="text-label-ui text-outline">References</span>
                       <ul class="flex flex-wrap gap-space-xs">
                         @for (ref of example.references; track ref) {
                           <li>
@@ -177,11 +180,11 @@
             <div class="p-space-lg rounded-xl bg-surface-container-low flex flex-col sm:flex-row sm:items-center gap-space-md">
               <span class="material-symbols-outlined text-outline" aria-hidden="true">search_off</span>
               <p class="flex-1 text-on-surface-variant">
-                Nenhuma seção encontrada
-                @if (search.query()) { para "{{ search.query() }}" }
-                com o filtro atual.
+                No sections found
+                @if (search.query()) { for "{{ search.query() }}" }
+                with the current filter.
               </p>
-              <button type="button" (click)="clearFilters()" class="h-9 px-space-md rounded-xl bg-surface-container-high text-on-surface text-headline-sm hover:bg-surface-bright">Limpar filtros</button>
+              <button type="button" (click)="clearFilters()" class="h-9 px-space-md rounded-xl bg-surface-container-high text-on-surface text-headline-sm hover:bg-surface-bright">Clear filters</button>
             </div>
           }
         </div>
@@ -191,17 +194,17 @@
           <div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-md flex flex-col gap-space-md">
             <div class="flex items-center gap-2 pb-space-xs border-b border-surface-container-highest text-headline-sm">
               <span class="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">toc</span>
-              Nesta Página
+              On This Page
             </div>
-            <nav aria-label="Nesta página" class="flex flex-col gap-1 text-body-sm">
+            <nav aria-label="On this page" class="flex flex-col gap-1 text-body-sm">
               @if (showResumo()) {
-                <button type="button" (click)="scrollTo('resumo')" class="text-left px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">Resumo</button>
+                <button type="button" (click)="scrollTo('resumo')" class="text-left px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">Summary</button>
               }
               @for (item of sections(); track item.index) {
                 <button type="button" (click)="scrollTo(sectionId(item.index))" class="text-left px-space-sm py-1.5 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-colors">
                   <span class="font-mono text-outline mr-1">{{ sectionNumber(item.index) }}</span>{{ item.subsection.subtitle }}
                   @if (progress.isStudied(key(item.subsection.subtitle))) {
-                    <span class="material-symbols-outlined text-[14px] text-secondary align-middle ml-1" aria-label="estudado">check_circle</span>
+                    <span class="material-symbols-outlined text-[14px] text-secondary align-middle ml-1" aria-label="studied">check_circle</span>
                   }
                 </button>
               }
@@ -210,7 +213,7 @@
           @if (entry.next; as next) {
             <a [routerLink]="['/', next.slug]" class="p-space-sm px-space-md rounded-lg bg-surface-container-low hover:bg-surface-container flex items-center justify-between transition-colors">
               <span class="flex flex-col">
-                <span class="text-outline text-label-kbd font-mono uppercase">Próximo Tema</span>
+                <span class="text-outline text-label-kbd font-mono uppercase">Next Topic</span>
                 <span class="text-headline-sm">{{ next.label }}</span>
               </span>
               <span class="material-symbols-outlined text-primary text-[20px]" aria-hidden="true">arrow_forward</span>
@@ -221,8 +224,8 @@
     }
   } @else {
     <div class="flex flex-col items-start gap-space-md py-space-xl">
-      <h1 class="text-headline-lg">Tópico não encontrado</h1>
-      <a routerLink="/" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm inline-flex items-center">Voltar ao início</a>
+      <h1 class="text-headline-lg">Topic not found</h1>
+      <a routerLink="/" class="h-9 px-space-md rounded-xl bg-primary text-on-primary text-headline-sm inline-flex items-center">Back to home</a>
     </div>
   }
 </div>

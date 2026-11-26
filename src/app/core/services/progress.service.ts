@@ -1,5 +1,7 @@
 import { Injectable, computed, effect, signal } from '@angular/core';
 import { SITE_CONFIG } from '../config/site.config';
+import { Subsection } from '../models/study-content.model';
+import { sectionKey } from '../utils/content.utils';
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -35,6 +37,30 @@ export class ProgressService {
   countStudied(keys: string[]): number {
     const studied = this.studied();
     return keys.filter((key) => key in studied).length;
+  }
+
+  /** Moves marks saved under a section's former subtitle and/or level to its current key. */
+  migrate(slug: string, level: string, subsections: Subsection[]): void {
+    const studied = this.studied();
+    const moves = subsections
+      .filter((s) => s.formerSubtitle || s.formerLevel)
+      .flatMap((s) => {
+        const to = sectionKey(slug, level, s.subtitle);
+        // A mark may sit under the old title, the old level, or both (if an earlier rename was already migrated).
+        const levels = new Set([s.formerLevel ?? level, level]);
+        const titles = new Set([s.formerSubtitle ?? s.subtitle, s.subtitle]);
+        return [...levels].flatMap((l) => [...titles].map((t) => [sectionKey(slug, l, t), to] as const));
+      })
+      .filter(([from, to]) => from !== to && from in studied);
+    if (!moves.length) return;
+    this.studied.update((current) => {
+      const next = { ...current };
+      for (const [from, to] of moves) {
+        next[to] ??= next[from];
+        delete next[from];
+      }
+      return next;
+    });
   }
 
   toggle(key: string): void {

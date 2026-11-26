@@ -30,6 +30,10 @@ export class HomePage {
       forkJoin(
         TOPIC_FILES.map((entry) =>
           this.http.get<StudyContent>(`data/${entry.file}`).pipe(
+            map((content) => {
+              this.progress.migrate(entry.topic.slug, entry.level, content.subsections);
+              return content;
+            }),
             map((content) => ({
               ...entry,
               keys: content.subsections.map((s) => sectionKey(entry.topic.slug, entry.level, s.subtitle)),

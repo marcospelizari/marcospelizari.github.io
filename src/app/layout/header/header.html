@@ -6,7 +6,7 @@
         class="lg:hidden p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg flex"
         [attr.aria-expanded]="menu.open()"
         aria-controls="sidebar"
-        [attr.aria-label]="menu.open() ? 'Fechar menu' : 'Abrir menu'"
+        [attr.aria-label]="menu.open() ? 'Close menu' : 'Open menu'"
         (click)="menu.toggle()"
       >
         <span class="material-symbols-outlined text-[22px]" aria-hidden="true">{{ menu.open() ? 'close' : 'menu' }}</span>
@@ -25,8 +25,8 @@
         <input
           #searchInput
           type="search"
-          placeholder="Buscar nesta página..."
-          aria-label="Buscar seções do tópico"
+          placeholder="Search this page..."
+          aria-label="Search topic sections"
           class="flex-1 min-w-0 bg-transparent text-body-sm text-on-surface placeholder:text-outline outline-none focus-visible:outline-none"
           [value]="search.query()"
           (input)="onSearch($event)"
@@ -43,8 +43,8 @@
         [href]="site.repoUrl"
         target="_blank"
         rel="noopener noreferrer"
-        aria-label="Repositório no GitHub"
-        title="Repositório no GitHub"
+        aria-label="GitHub repository"
+        title="GitHub repository"
         class="p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg flex"
       >
         <span class="material-symbols-outlined text-[20px]" aria-hidden="true">terminal</span>
@@ -52,8 +52,8 @@
       <button
         type="button"
         (click)="theme.toggle()"
-        [attr.aria-label]="theme.theme() === 'dark' ? 'Ativar tema claro' : 'Ativar tema escuro'"
-        [title]="theme.theme() === 'dark' ? 'Tema claro' : 'Tema escuro'"
+        [attr.aria-label]="theme.theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+        [title]="theme.theme() === 'dark' ? 'Light theme' : 'Dark theme'"
         class="p-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container rounded-lg flex"
       >
         <span class="material-symbols-outlined text-[20px] text-tertiary" aria-hidden="true">

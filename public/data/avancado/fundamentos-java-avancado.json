@@ -1,141 +1,105 @@
 {
-  "title": "Fundamentos de Java — Avançado",
-  "description": "Memória, concorrência e recursos modernos da JVM para entrevistas de nível pleno.",
+  "title": "Java Fundamentals",
+  "description": "How the JVM runs your code: memory, garbage collection, virtual threads and diagnostics.",
   "version": "Java 21",
   "resumo": [
-    "No nível avançado, a pergunta deixa de ser \"como escrever\" e passa a ser \"como a JVM executa\": memória, coleta de lixo e concorrência explicam latência, consumo de recursos e bugs difíceis de reproduzir.",
-    "O heap guarda objetos e é gerenciado pelo Garbage Collector; a stack guarda frames de cada thread. Coletores como G1 e ZGC equilibram throughput e pausas, e entender isso ajuda a diagnosticar OutOfMemoryError e picos de latência.",
-    "Concorrência exige visibilidade e atomicidade corretas: imutabilidade, coleções concorrentes, classes atômicas e executores evitam a maioria dos problemas. O Java 21 trouxe virtual threads, que tornam barato ter milhares de tarefas bloqueantes.",
-    "Recursos modernos — records, sealed types e pattern matching — permitem modelar domínios de forma segura e expressiva, enquanto Streams pedem atenção a custo e efeitos colaterais."
+    "Stack: one per thread (frames, locals). Heap: shared objects, managed by the GC. Metaspace: class metadata.",
+    "The container limit must fit heap + non-heap memory: use `MaxRAMPercentage`, not `-Xmx` = limit.",
+    "G1 is the default (only with ≥2 CPUs and ~1792 MB — set it explicitly in containers); ZGC for very low pauses.",
+    "Measure with GC logs before tuning; never `System.gc()`.",
+    "Virtual threads: cheap blocking, thread-per-request at scale; not for CPU-bound work; never pool them.",
+    "Diagnose with `jcmd` (thread and heap dumps) and JFR before restarting."
   ],
   "subsections": [
     {
-      "subtitle": "Memória da JVM: Heap, Stack e Metaspace",
-      "description": "Onde cada coisa vive em tempo de execução.",
+      "subtitle": "JVM Memory: Heap, Stack and Metaspace",
+      "formerSubtitle": "Memória da JVM: Heap, Stack e Metaspace",
+      "description": "Where everything lives at runtime.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Cada thread tem sua stack, com frames de métodos, variáveis locais e referências; recursão sem fim estoura a stack (StackOverflowError). Objetos ficam no heap, compartilhado entre threads; quando o GC não consegue liberar espaço suficiente ocorre OutOfMemoryError: Java heap space — geralmente vazamento (coleções estáticas crescendo, caches sem limite) ou heap pequeno. Metadados de classes ficam no Metaspace, fora do heap.",
-          "code": "// StackOverflowError: recursão sem caso base\nint fatorial(int n) { return n * fatorial(n - 1); }\n\n// Vazamento: coleção estática que só cresce\nclass CacheRuim {\n    static final Map<String, byte[]> DADOS = new HashMap<>();\n}\n\n// Diagnóstico: gerar heap dump ao estourar memória\n// java -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -jar app.jar",
-          "interview_question": "Qual a diferença entre StackOverflowError e OutOfMemoryError?",
+          "title": "Explanation",
+          "explanation": "**Problem:** production dies with `OutOfMemoryError` at 3 a.m., or a recursive method throws `StackOverflowError`. To fix either, you need to know where things live in memory.\n\n**Concept:** every thread has its own stack, with one frame per method call holding local variables and references; endless recursion overflows it (`StackOverflowError`). Objects live on the heap, shared by all threads and managed by the garbage collector; when it cannot free enough space you get `OutOfMemoryError: Java heap space` — usually a leak (a static collection that only grows, a cache without a limit) or a heap that is too small. Class metadata lives in Metaspace, outside the heap.\n\n**How it works:** in a container, the memory limit must hold the heap plus Metaspace, thread stacks, direct buffers and the JIT's code cache. A heap dump taken at the moment of failure shows what was filling the heap.",
+          "code": "// StackOverflowError: recursion without a base case\nint factorial(int n) { return n * factorial(n - 1); }\n\n// Leak: a static collection that only grows\nclass BadCache {\n    static final Map<String, byte[]> DATA = new HashMap<>();\n}\n\n// Diagnosis: write a heap dump when the heap runs out\n// java -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -jar app.jar",
+          "interview_question": "What is the difference between StackOverflowError and OutOfMemoryError?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/gctuning/introduction-garbage-collection-tuning.html"
+            "https://docs.oracle.com/en/java/javase/21/gctuning/introduction-garbage-collection-tuning.html",
+            "https://docs.oracle.com/en/java/javase/21/troubleshoot/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Setting the heap equal to the container limit. Metaspace, threads and buffers no longer fit, the kernel kills the container (`OOMKilled`, exit code 137), and there is no Java error in the logs. Leave room outside the heap.",
+          "code": "# WRONG\nresources.limits.memory: 1Gi\nJAVA_OPTS: -Xmx1g             # -> OOMKilled (exit 137), nothing in the Java logs\n\n# RIGHT\nJAVA_OPTS: -XX:MaxRAMPercentage=75"
         }
       ]
     },
     {
-      "subtitle": "Garbage Collection e Tuning",
-      "description": "G1, ZGC e o impacto das pausas.",
+      "subtitle": "Garbage Collection and Tuning",
+      "formerSubtitle": "Garbage Collection e Tuning",
+      "description": "G1, ZGC and the cost of pauses.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A JVM usa coleta geracional: a maioria dos objetos morre jovem, então a geração jovem é coletada com frequência e baixo custo, e os sobreviventes são promovidos. G1 (padrão) divide o heap em regiões e busca pausas previsíveis; ZGC mantém pausas abaixo de milissegundos mesmo em heaps grandes, ao custo de um pouco de throughput. Antes de ajustar flags, meça: logs de GC e métricas de pausa mostram se o problema é realmente o coletor. Em containers, a JVM só escolhe o G1 se enxergar pelo menos 2 CPUs e cerca de 1792 MB; abaixo disso usa o SerialGC sem avisar — defina o coletor explicitamente.",
-          "code": "# Heap fixo evita redimensionamentos; logs de GC para análise\njava -XX:+UseG1GC -Xms512m -Xmx512m -Xlog:gc*:file=gc.log -jar app.jar\n\n# Baixa latência com ZGC geracional (Java 21; do 23 em diante já é o padrão e a flag sobra)\njava -XX:+UseZGC -XX:+ZGenerational -Xmx4g -jar app.jar\n\n# Em containers, prefira percentual da memória do container\njava -XX:MaxRAMPercentage=75 -jar app.jar",
-          "interview_question": "Como o Garbage Collector pode impactar latência e throughput?",
+          "title": "Explanation",
+          "explanation": "**Problem:** latency spikes every few minutes, or throughput drops under load — and the cause may be the garbage collector.\n\n**Concept:** the JVM collects by generations: most objects die young, so the young generation is collected often and cheaply, and survivors are promoted. G1 (the default) splits the heap into regions and aims for predictable pauses. ZGC keeps pauses under a millisecond even on large heaps, at a small cost in throughput.\n\n**How it works:** measure before changing flags: GC logs and pause metrics show whether the collector is really the problem. In containers, the JVM only picks G1 if it sees at least 2 CPUs and about 1792 MB; below that it silently uses SerialGC, so set the collector explicitly.",
+          "code": "# Fixed heap avoids resizing; GC logs for analysis\njava -XX:+UseG1GC -Xms512m -Xmx512m -Xlog:gc*:file=gc.log -jar app.jar\n\n# Low latency with generational ZGC (Java 21; from 23 on it is the default mode)\njava -XX:+UseZGC -XX:+ZGenerational -Xmx4g -jar app.jar\n\n# In containers, size the heap as a share of the container memory\njava -XX:MaxRAMPercentage=75 -jar app.jar",
+          "interview_question": "How can the garbage collector affect latency and throughput?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/gctuning/garbage-first-g1-garbage-collector1.html"
+            "https://docs.oracle.com/en/java/javase/21/gctuning/garbage-first-g1-garbage-collector1.html",
+            "https://docs.oracle.com/en/java/javase/21/gctuning/z-garbage-collector.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Concorrência e Imutabilidade",
-      "description": "Condições de corrida, visibilidade e locks.",
-      "category": "conceitos",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Objetos imutáveis podem ser compartilhados entre threads sem nenhuma sincronização — é a opção padrão. Quando há estado mutável compartilhado, é preciso garantir atomicidade (a operação inteira acontece de uma vez) e visibilidade (outras threads enxergam a escrita). count++ não é atômico; use AtomicInteger, synchronized ou locks. volatile garante visibilidade, mas não atomicidade.",
-          "code": "// Condição de corrida\nclass Contador {\n    private int valor;\n    void incrementar() { valor++; } // ler, somar e gravar: 3 passos\n}\n\n// Correto e sem lock\nclass ContadorSeguro {\n    private final AtomicInteger valor = new AtomicInteger();\n    void incrementar() { valor.incrementAndGet(); }\n}\n\n// Estrutura concorrente pronta\nMap<String, Integer> visitas = new ConcurrentHashMap<>();\nvisitas.merge(\"/home\", 1, Integer::sum);",
-          "interview_question": "Quando você escolheria imutabilidade vs sincronização explícita?",
-          "references": [
-            "https://docs.oracle.com/javase/tutorial/essential/concurrency/index.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Executors e CompletableFuture",
-      "description": "Orquestrando tarefas assíncronas.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Em vez de criar threads manualmente, use um ExecutorService, que reaproveita threads e limita a concorrência. CompletableFuture compõe tarefas assíncronas: supplyAsync dispara, thenCombine junta resultados, exceptionally trata falhas e orTimeout evita esperas infinitas. Sempre informe o executor: o pool comum padrão é compartilhado e pequeno.",
-          "code": "ExecutorService pool = Executors.newFixedThreadPool(10);\n\nCompletableFuture<Cliente> cliente = CompletableFuture.supplyAsync(() -> clientes.buscar(id), pool);\nCompletableFuture<List<Pedido>> pedidos = CompletableFuture.supplyAsync(() -> pedidosApi.listar(id), pool);\n\nPainel painel = cliente\n    .thenCombine(pedidos, Painel::new)\n    .orTimeout(2, TimeUnit.SECONDS)\n    .exceptionally(ex -> Painel.vazio())\n    .join();",
-          "interview_question": "Como executar chamadas independentes em paralelo e combinar os resultados?",
-          "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/concurrent/CompletableFuture.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "Calling `System.gc()` to \"help\". It forces a full collection — usually a long pause — and the JVM is better at deciding when to collect. Leave it to the collector, and measure with GC logs.",
+          "code": "// WRONG\nSystem.gc();\n\n// RIGHT: measure first\njava -Xlog:gc*:file=gc.log -jar app.jar"
         }
       ]
     },
     {
       "subtitle": "Virtual Threads (Java 21)",
-      "description": "Milhares de tarefas bloqueantes com baixo custo.",
+      "description": "Thousands of blocking tasks at low cost.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Virtual threads são threads leves gerenciadas pela JVM e montadas sobre poucas threads do sistema operacional. Quando uma virtual thread bloqueia em I/O (HTTP, JDBC), ela é desmontada e a thread real atende outra tarefa. Isso permite o modelo simples \"uma thread por requisição\" com altíssima concorrência, sem programação reativa. Não aceleram código CPU-bound, e não devem ser colocadas em pools. No Spring Boot 3.2+, basta spring.threads.virtual.enabled=true.",
-          "code": "try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {\n    List<Future<String>> respostas = urls.stream()\n        .map(url -> executor.submit(() -> httpClient.get(url))) // cada chamada em uma virtual thread\n        .toList();\n}\n\nThread.ofVirtual().start(() -> System.out.println(\"rodando em virtual thread\"));",
-          "interview_question": "O que são virtual threads e quando elas ajudam?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a thread-per-request server with 200 platform threads stalls when 200 requests are waiting on slow calls; going reactive means rewriting the code.\n\n**Concept:** virtual threads are lightweight threads managed by the JVM and mounted on a few operating-system (carrier) threads. When a virtual thread blocks on I/O (HTTP, JDBC), it is unmounted and the carrier runs another task. That keeps the simple thread-per-request style with very high concurrency, without reactive programming. They do not speed up CPU-bound work.\n\n**How it works:** in Spring Boot 3.2+, `spring.threads.virtual.enabled=true` runs requests on virtual threads. On Java 21–23, blocking inside `synchronized` pins the carrier thread; Java 24 removed that limitation (JEP 491).",
+          "code": "try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {\n    List<Future<String>> responses = urls.stream()\n        .map(url -> executor.submit(() -> httpClient.get(url)))   // one virtual thread per call\n        .toList();\n}\n\nThread.ofVirtual().start(() -> System.out.println(\"running on a virtual thread\"));\n\n# Spring Boot 3.2+\nspring.threads.virtual.enabled=true",
+          "interview_question": "What are virtual threads, and when do they help?",
           "references": [
             "https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html",
-            "https://openjdk.org/jeps/444"
+            "https://openjdk.org/jeps/444",
+            "https://openjdk.org/jeps/491"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Streams: Performance e Armadilhas",
-      "description": "Quando Streams ajudam e quando atrapalham.",
-      "category": "boas-praticas",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Streams deixam o código declarativo, mas criam objetos intermediários; em laços críticos com coleções pequenas, um for simples pode ser mais rápido. parallelStream usa o ForkJoinPool comum: só compensa com muitos dados, operações CPU-bound e sem estado compartilhado. Nunca o use para I/O (bloqueia o pool comum de toda a aplicação) nem com efeitos colaterais, como adicionar em uma lista externa.",
-          "code": "// Errado: efeito colateral + paralelo = resultado imprevisível\nList<Integer> resultado = new ArrayList<>();\nnumeros.parallelStream().map(n -> n * 2).forEach(resultado::add);\n\n// Correto: coletar o resultado\nList<Integer> dobrados = numeros.stream().map(n -> n * 2).toList();\n\n// Agrupamento expressivo\nMap<StatusPedido, Long> porStatus = pedidos.stream()\n    .collect(Collectors.groupingBy(Pedido::status, Collectors.counting()));",
-          "interview_question": "Quando evitar parallel streams?",
-          "references": [
-            "https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/stream/package-summary.html"
-          ]
+          "title": "Common mistake",
+          "explanation": "Pooling virtual threads to limit load. A pool defeats their purpose, and the real limit you need is on the scarce resource — database connections, a rate-limited API. Use one virtual thread per task and a `Semaphore` around the resource.",
+          "code": "// WRONG: a fixed pool of virtual threads\nExecutors.newFixedThreadPool(50, Thread.ofVirtual().factory());\n\n// RIGHT: unlimited virtual threads, limited access to the database\nSemaphore dbPermits = new Semaphore(20);\nexecutor.submit(() -> {\n    dbPermits.acquire();\n    try { return query(); } finally { dbPermits.release(); }\n});"
         }
       ]
     },
     {
-      "subtitle": "Records, Sealed e Pattern Matching",
-      "description": "Modelagem de dados moderna no Java 21.",
-      "category": "pratica",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Uma sealed interface declara exatamente quais tipos a implementam; combinada com records e o pattern matching para switch (Java 21), o compilador verifica se todos os casos foram tratados — sem default, um novo tipo quebra a compilação em vez de cair silenciosamente em um caminho errado. Record patterns ainda desestruturam os componentes.",
-          "code": "sealed interface Pagamento permits Pix, Cartao, Boleto {}\nrecord Pix(String chave) implements Pagamento {}\nrecord Cartao(String numero, int parcelas) implements Pagamento {}\nrecord Boleto(LocalDate vencimento) implements Pagamento {}\n\nBigDecimal taxa(Pagamento p) {\n    return switch (p) {\n        case Pix pix -> BigDecimal.ZERO;\n        case Cartao(var numero, var parcelas) when parcelas > 1 -> new BigDecimal(\"0.05\");\n        case Cartao c -> new BigDecimal(\"0.03\");\n        case Boleto b -> new BigDecimal(\"2.50\");\n    };\n}",
-          "interview_question": "Como sealed interfaces e pattern matching tornam o switch mais seguro?",
-          "references": [
-            "https://openjdk.org/jeps/441",
-            "https://openjdk.org/jeps/440"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Diagnóstico da JVM",
-      "description": "Ferramentas para investigar produção.",
+      "subtitle": "JVM Diagnostics",
+      "formerSubtitle": "Diagnóstico da JVM",
+      "description": "The JDK's own tools for investigating production.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use as ferramentas do próprio JDK: jcmd lista processos e gera thread dumps e heap dumps; um thread dump mostra o que cada thread está fazendo — vários dumps seguidos revelam loops e deadlocks. Java Flight Recorder (JFR) grava eventos de CPU, alocação, GC e locks com baixo overhead, e o JDK Mission Control analisa as gravações.",
-          "code": "jcmd                                   # lista processos Java\njcmd <pid> Thread.print > threads.txt  # thread dump\njcmd <pid> GC.heap_dump /tmp/heap.hprof\njcmd <pid> JFR.start duration=60s filename=/tmp/app.jfr",
-          "interview_question": "Como investigar uma aplicação Java com CPU alta ou travada?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the application is at 100% CPU, or hangs, and restarting it destroys the evidence.\n\n**Concept:** the JDK ships the tools: `jcmd` lists Java processes and takes thread dumps and heap dumps. A thread dump shows what every thread is doing; several dumps a few seconds apart reveal loops, contention and deadlocks. Java Flight Recorder (JFR) records CPU, allocation, GC and lock events with low overhead, and JDK Mission Control analyzes the recordings.\n\n**How it works:** for high CPU or a hang, take three thread dumps five seconds apart, or a JFR recording, before restarting.",
+          "code": "jcmd                                    # list Java processes\njcmd <pid> Thread.print > threads.txt   # thread dump\njcmd <pid> GC.heap_dump /tmp/heap.hprof\njcmd <pid> JFR.start duration=60s filename=/tmp/app.jfr",
+          "interview_question": "How do you investigate a Java application with high CPU, or one that hangs?",
           "references": [
-            "https://docs.oracle.com/en/java/javase/21/troubleshoot/diagnostic-tools.html"
+            "https://docs.oracle.com/en/java/javase/21/troubleshoot/diagnostic-tools.html",
+            "https://docs.oracle.com/en/java/javase/21/docs/specs/man/jcmd.html"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Taking a heap dump of a large heap on a live instance at peak time. It pauses the JVM, the file is about the size of the heap, and it can fill the disk. Take it from an instance removed from the load balancer, to a volume with space — and for CPU or lock problems, prefer thread dumps or JFR, which are much lighter.",
+          "code": "# WRONG: a 16 GB heap dump on the pod's small disk, at peak\njcmd <pid> GC.heap_dump /tmp/heap.hprof    # long pause; the disk fills up\n\n# RIGHT: an instance out of rotation, a volume with space\njcmd <pid> GC.heap_dump /dumps/heap.hprof"
         }
       ]
     }

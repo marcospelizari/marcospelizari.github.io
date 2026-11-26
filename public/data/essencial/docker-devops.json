@@ -1,186 +1,193 @@
 {
-  "title": "Docker e DevOps",
-  "description": "Conceitos básicos e práticas modernas de containers e DevOps, com exemplos para aplicações Spring Boot.",
-  "version": "Docker 26.x, Kubernetes 1.31",
+  "title": "Docker & DevOps",
+  "description": "Containers, Compose and the DevOps practices around them.",
+  "version": "Docker 26+",
   "resumo": [
-    "Imagem é o pacote imutável (código + runtime); container é a imagem em execução.",
-    "Dockerfile: base enxuta com versão fixa (`eclipse-temurin:21-jre`), usuário não root e nenhum segredo.",
-    "Container é efêmero: dados do banco ficam em volume.",
-    "`docker compose up` sobe app + banco; os containers se encontram pelo nome do serviço (`db:5432`).",
-    "Depurar: `docker ps -a`, `docker logs`, `docker exec`, `docker inspect`.",
-    "DevOps: dev e ops juntos, com CI/CD, monitoramento e infraestrutura como código (Terraform).",
-    "Métricas: Actuator + Micrometer em `/actuator/prometheus`, coletadas pelo Prometheus."
+    "An image is the immutable package (code + runtime); a container is the image running.",
+    "Dockerfile: a small base with a fixed version (`eclipse-temurin:21-jre`), a non-root user, no secrets, dependencies before code.",
+    "Containers are ephemeral: database data goes in a volume.",
+    "`docker compose up` starts the app and its dependencies; containers find each other by service name (`db:5432`), never localhost.",
+    "Debugging: `docker ps -a`, `docker logs`, `docker exec`, `docker inspect`.",
+    "Never `latest`: pin versions so you can trace and roll back.",
+    "DevOps: the team that builds the software also runs it, with an automated CI/CD pipeline."
   ],
   "subsections": [
     {
-      "subtitle": "O que é Docker?",
-      "description": "Definição inicial de containers.",
+      "subtitle": "What Is Docker?",
+      "formerSubtitle": "O que é Docker?",
+      "description": "Packaging an application with everything it needs to run.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O Docker garante consistência entre ambientes ao empacotar a aplicação e suas dependências em imagens, replicando o mesmo ambiente de desenvolvimento para teste e produção, como uma app Spring Boot que roda igual em todas as etapas.",
-          "code": "docker run -d -p 8080:8080 spring-app\n# Executa container de uma app Spring Boot na porta 8080",
-          "interview_question": "Como o Docker garante consistência entre ambientes?",
+          "title": "Explanation",
+          "explanation": "**Problem:** \"it works on my machine\": the server has another Java version, a missing library or a different OS configuration, and the application fails only there.\n\n**Concept:** a container packages the application with its runtime and libraries, and runs isolated on any machine that has Docker. Unlike a virtual machine, it shares the host's kernel, so it starts in seconds and uses far less memory. An image is the template; a container is a running instance of it; a registry (Docker Hub, GitHub Container Registry) stores and distributes images.\n\n**How it works:** the same image runs on your laptop, in CI and in production, so the environment is the same everywhere.",
+          "code": "Virtual machine:  app | libs | guest OS | hypervisor | host OS | hardware\nContainer:        app | libs |          container runtime | host OS | hardware\n\ndocker run --rm -p 8080:80 nginx:1.27      # downloads the image and starts it\n# open http://localhost:8080 — the same nginx on any machine\n\ndocker run -d --name db -e POSTGRES_PASSWORD=secret -p 5432:5432 postgres:16\ndocker ps                                  # running containers",
+          "interview_question": "How does Docker ensure consistency between environments, and how is a container different from a virtual machine?",
           "references": [
+            "https://docs.docker.com/get-started/docker-overview/",
             "https://docs.docker.com/get-started/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Treating a container like a server you maintain by hand: opening a shell, installing packages, editing files. The changes are lost when the container is recreated. Change the Dockerfile, rebuild, and run the new image.",
+          "code": "# WRONG: fixing a running container by hand\ndocker exec -it api sh\napk add curl && vi /app/config.yml        # gone when the container is recreated\n\n# RIGHT: change the Dockerfile (or the config), rebuild, redeploy\ndocker build -t api:1.0.1 .\ndocker run -d api:1.0.1"
         }
       ]
     },
     {
-      "subtitle": "Imagem vs Container",
-      "description": "Diferença entre modelos e instâncias.",
+      "subtitle": "Images and Containers",
+      "formerSubtitle": "Imagem vs Container",
+      "description": "What you build, ship and run.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Criar uma imagem Docker para uma app Java envolve escrever um Dockerfile que copia o JAR e define a execução com uma imagem de JRE, como eclipse-temurin (a imagem oficial openjdk foi descontinuada), construindo com 'docker build' e rodando com 'docker run', permitindo deploy consistente.",
-          "code": "# Dockerfile para Spring Boot\nFROM eclipse-temurin:21-jre\nCOPY target/app.jar app.jar\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n\n# Comandos\ndocker build -t minha-app:1.0 .\ndocker run -d minha-app:1.0",
-          "interview_question": "Como criar uma imagem Docker para uma aplicação Java?",
+          "title": "Explanation",
+          "explanation": "**Problem:** it is easy to mix up the words: what exactly do you build, push to a registry and run?\n\n**Concept:** an image is a read-only template made of layers; each Dockerfile instruction adds one. It is identified by `name:tag` (and an immutable digest). A container is an image plus a thin writable layer and a running process. Many containers can run from one image, and removing a container deletes its writable layer.\n\n**How it works:** Dockerfile → `docker build` → image → `docker push` to a registry → `docker run` → container.",
+          "code": "# Dockerfile for a Spring Boot application\nFROM eclipse-temurin:21-jre\nCOPY target/app.jar app.jar\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]\n\ndocker build -t shop-api:1.4.0 .     # Dockerfile -> image\ndocker images                        # local images\ndocker run -d --name api shop-api:1.4.0   # image -> container\ndocker ps                            # running containers",
+          "interview_question": "What is the difference between an image and a container?",
           "references": [
-            "https://docs.docker.com/engine/reference/builder/"
+            "https://docs.docker.com/reference/dockerfile/",
+            "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-an-image/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using the `latest` tag. It moves: today's build and next month's use different bases, and you cannot tell which version is running or roll back to it. Pin versions.",
+          "code": "# WRONG\nFROM eclipse-temurin:latest\ndocker run shop-api:latest\n\n# RIGHT: fixed versions you can trace and roll back to\nFROM eclipse-temurin:21-jre\ndocker run shop-api:1.4.0"
         }
       ]
     },
     {
       "subtitle": "Docker Compose",
-      "description": "Orquestração de múltiplos containers.",
+      "description": "Running the application and its dependencies with one command.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Docker Compose ajuda no desenvolvimento local ao gerenciar uma app Spring Boot com um banco PostgreSQL em um único comando 'docker compose up', simulando um ambiente completo e facilitando testes de integração.",
-          "code": "# compose.yaml (a chave \"version\" é obsoleta)\nservices:\n  app:\n    image: minha-app:1.0\n    ports:\n      - \"8080:8080\"\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_USER: user\n      POSTGRES_PASSWORD: pass\n# Inicia com: docker compose up",
-          "interview_question": "Como o Docker Compose ajuda no desenvolvimento local de uma app Spring Boot?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the application needs PostgreSQL and Redis locally. That is three long `docker run` commands, in the right order, typed differently by every developer.\n\n**Concept:** a `compose.yaml` file describes the services, their configuration, networks and volumes. `docker compose up` starts everything, and the services reach each other by service name on a shared network.\n\n**How it works:** commit the file with the project, so anyone can start the full environment with one command. `docker compose down` stops and removes the containers.",
+          "code": "# compose.yaml\nservices:\n  app:\n    image: shop-api:1.4.0\n    ports:\n      - \"8080:8080\"\n    environment:\n      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/shop\n      SPRING_DATA_REDIS_HOST: cache\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_DB: shop\n      POSTGRES_PASSWORD: secret\n  cache:\n    image: redis:7\n\ndocker compose up -d       # start everything in the background\ndocker compose logs -f app\ndocker compose down",
+          "interview_question": "How does Docker Compose help with local development of a Spring Boot application?",
           "references": [
             "https://docs.docker.com/compose/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Using `localhost` to reach another container. Inside a container, `localhost` is the container itself, so the connection is refused. Use the service name.",
+          "code": "# WRONG: localhost is the app container itself -> Connection refused\nSPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/shop\n\n# RIGHT: the service name is the host name on the Compose network\nSPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/shop"
         }
       ]
     },
     {
       "subtitle": "DevOps",
-      "description": "Cultura e práticas para entrega contínua.",
+      "description": "One team responsible for building and running the software.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "A cultura DevOps melhora a colaboração ao alinhar Dev e Ops com automação e monitoramento, reduzindo silos e acelerando entregas, como em um time que deploya uma app Spring Boot sem conflitos.",
-          "code": "# Exemplo de pipeline CI/CD (pseudo-código)\nbuild: mvn clean package\ntest: mvn test\ndeploy: docker push minha-app",
-          "interview_question": "Como a cultura DevOps melhora a colaboração entre times?",
+          "title": "Explanation",
+          "explanation": "**Problem:** developers \"throw code over the wall\" to operations. Releases happen every few months, deploys are manual and painful, and when production breaks each side blames the other.\n\n**Concept:** DevOps is a culture plus a set of practices: the people who build the software also share responsibility for running it. The practices include CI/CD, infrastructure as code, monitoring, small and frequent releases, and blameless postmortems. The DORA metrics measure the result.\n\n**How it works:** work flows in a loop — plan, code, build, test, release, deploy, operate, monitor — and what you learn in production feeds the next plan.",
+          "code": "Before DevOps                              With DevOps\n- a release every 3 months                 - small changes, deployed daily\n- manual deploy with a 40-step runbook     - an automated pipeline, same steps every time\n- ops meets the app on go-live day         - the team that builds it also runs it\n- outage: who is to blame?                 - outage: blameless postmortem, fix the process",
+          "interview_question": "How does a DevOps culture improve collaboration between teams?",
           "references": [
-            "https://aws.amazon.com/devops/what-is-devops/"
+            "https://aws.amazon.com/devops/what-is-devops/",
+            "https://dora.dev/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Treating DevOps as a job title or a tool: creating a separate \"DevOps team\" that receives the code and deploys it. That is the same wall with a new name. The goal is shared responsibility, supported by automation.",
+          "code": "WRONG: Dev team -> \"DevOps team\" -> production\n       (the hand-off and the wall are still there)\n\nRIGHT: one team owns the service end to end,\n       with a shared platform (pipelines, clusters, templates) that makes it easy"
         }
       ]
     },
     {
       "subtitle": "CI/CD",
-      "description": "Integração e entrega contínuas.",
+      "description": "Covered in its own topic.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Continuous Delivery prepara o código para deploy manual após testes, enquanto Continuous Deployment automatiza até a produção, sendo CD ideal para apps Spring Boot que precisam de releases frequentes sem intervenção.",
-          "code": "# .github/workflows/ci.yml (GitHub Actions)\nname: CI\non: [push]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: mvn clean test",
-          "interview_question": "Qual a diferença entre Continuous Delivery e Continuous Deployment?",
-          "references": [
-            "https://docs.github.com/en/actions"
-          ]
+          "title": "Explanation",
+          "explanation": "CI/CD has its own topic: **DevOps & Infra → CI/CD**. It covers continuous integration, delivery vs deployment, pipelines in GitHub Actions, quality gates, secrets and promotion between environments."
         }
       ]
     },
     {
-      "subtitle": "Kubernetes (Básico)",
-      "description": "Orquestração de containers em produção.",
+      "subtitle": "Kubernetes (Basics)",
+      "formerSubtitle": "Kubernetes (Básico)",
+      "description": "Covered in its own topic.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Kubernetes e kubectl têm um tópico próprio, logo a seguir no menu (DevOps & Infra → Kubernetes & kubectl), do cluster e dos primeiros comandos até troubleshooting, Helm e RBAC."
+          "title": "Explanation",
+          "explanation": "Kubernetes and `kubectl` have their own topic, right after this one: **DevOps & Infra → Kubernetes & kubectl**. It goes from the cluster and the first commands to troubleshooting, Helm and RBAC."
         }
       ]
     },
     {
-      "subtitle": "Monitoramento e Logging",
-      "description": "Observabilidade em aplicações.",
-      "category": "ferramentas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Monitoramento é crítico em microserviços para rastrear métricas como latência, enquanto logging ajuda a diagnosticar erros, como falhas em uma app Spring Boot, garantindo visibilidade em sistemas distribuídos.",
-          "code": "# prometheus.yml\nscrape_configs:\n  - job_name: 'spring-app'\n    metrics_path: /actuator/prometheus\n    static_configs:\n      - targets: ['app:8080']\n\n# application.properties (+ dependência io.micrometer:micrometer-registry-prometheus)\nmanagement.endpoints.web.exposure.include=health,prometheus",
-          "interview_question": "Por que monitoramento é crítico em arquiteturas de microserviços?",
-          "references": [
-            "https://prometheus.io/docs/introduction/overview/"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Infraestrutura como Código (IaC)",
-      "description": "Automação de infraestrutura.",
-      "category": "ferramentas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "IaC melhora a implantação em cloud ao definir recursos como containers em código com Terraform, assegurando que ambientes sejam replicados consistentemente, como um cluster para uma app Spring Boot.",
-          "code": "# Terraform: task definition do ECS (Fargate)\nresource \"aws_ecs_task_definition\" \"app\" {\n  family                   = \"spring-app\"\n  requires_compatibilities = [\"FARGATE\"]\n  network_mode             = \"awsvpc\"\n  cpu                      = 512\n  memory                   = 1024\n  container_definitions = jsonencode([{\n    name      = \"app\"\n    image     = \"minha-app:1.4.0\"   # versão fixa, nunca latest\n    essential = true\n  }])\n}",
-          "interview_question": "Como o IaC melhora a implantação de aplicações em cloud?",
-          "references": [
-            "https://www.terraform.io/docs"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Volumes e Redes",
-      "description": "Persistência de dados e comunicação entre containers.",
+      "subtitle": "Volumes and Networks",
+      "formerSubtitle": "Volumes e Redes",
+      "description": "Keeping data and connecting containers.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Containers são efêmeros: ao remover o container, o que foi gravado em seu sistema de arquivos se perde. Volumes gerenciados pelo Docker guardam dados fora do ciclo de vida do container (ideal para bancos). Redes definidas pelo usuário permitem que containers se encontrem pelo nome do serviço — a aplicação acessa o banco em \"db:5432\", não em localhost. depends_on sozinho só ordena a inicialização; com healthcheck e condition: service_healthy a aplicação espera o banco aceitar conexões.",
-          "code": "# compose.yaml\nservices:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: secret\n    volumes:\n      - dados-pg:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U postgres\"]\n      interval: 5s\n      retries: 10\n  app:\n    image: minha-api:1.0\n    environment:\n      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres\n    depends_on:\n      db:\n        condition: service_healthy   # espera o banco ficar pronto\n\nvolumes:\n  dados-pg:",
-          "interview_question": "Como persistir dados de um banco rodando em container?",
+          "title": "Explanation",
+          "explanation": "**Problem:** you recreate the database container and every record is gone. And the application cannot find the database container.\n\n**Concept:** containers are ephemeral: whatever is written to a container's filesystem disappears when it is removed. Volumes managed by Docker keep data outside the container's life cycle, which is what a database needs. User-defined networks — Compose creates one automatically — let containers find each other by service name: the application connects to `db:5432`, not to localhost.\n\n**How it works:** `depends_on` only orders the startup; with a `healthcheck` and `condition: service_healthy`, the application waits until the database accepts connections.",
+          "code": "# compose.yaml\nservices:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: secret\n    volumes:\n      - pg-data:/var/lib/postgresql/data\n    healthcheck:\n      test: [\"CMD-SHELL\", \"pg_isready -U postgres\"]\n      interval: 5s\n      retries: 10\n  app:\n    image: shop-api:1.4.0\n    environment:\n      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/postgres\n    depends_on:\n      db:\n        condition: service_healthy   # waits until the database is ready\n\nvolumes:\n  pg-data:",
+          "interview_question": "How do you persist data from a database running in a container?",
           "references": [
             "https://docs.docker.com/engine/storage/volumes/",
             "https://docs.docker.com/compose/how-tos/networking/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "`docker compose down -v`. The `-v` also deletes the named volumes, so the local database is gone. Plain `down` removes the containers and keeps the data.",
+          "code": "# WRONG: also removes the volumes — the data is gone\ndocker compose down -v\n\n# RIGHT: remove the containers, keep the data\ndocker compose down"
         }
       ]
     },
     {
-      "subtitle": "Comandos Essenciais do Docker",
-      "description": "O dia a dia de build, execução e depuração.",
+      "subtitle": "Essential Docker Commands",
+      "formerSubtitle": "Comandos Essenciais do Docker",
+      "description": "Building, running and debugging containers day to day.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Primeiro docker ps -a para ver o status e o código de saída; depois docker logs para ver o erro da aplicação. docker exec abre um shell em um container em execução, e docker inspect mostra variáveis de ambiente, portas e volumes. Erros comuns: porta já em uso, variável de ambiente faltando e aplicação escutando em 127.0.0.1 em vez de 0.0.0.0 dentro do container.",
-          "code": "docker build -t minha-api:1.0 .\ndocker run -d --name api -p 8080:8080 minha-api:1.0\ndocker ps -a                       # status e código de saída\ndocker logs -f api                 # acompanha os logs\ndocker exec -it api sh             # shell dentro do container\ndocker inspect api                 # configuração completa\ndocker image prune                 # remove imagens não usadas",
-          "interview_question": "Quais comandos você usa para depurar um container que não sobe?",
+          "title": "Explanation",
+          "explanation": "**Problem:** a container does not start, or starts and stops right away. Where do you look?\n\n**Concept:** `docker ps -a` shows every container with its status and exit code; `docker logs` shows what the application printed; `docker exec` runs a command (such as a shell) inside a running container; `docker inspect` shows the full configuration — environment variables, ports, volumes.\n\n**How it works:** debug in that order: status and exit code, then logs, then inspect the configuration. Common causes: a port already in use, a missing environment variable, an application listening only on 127.0.0.1 inside the container.",
+          "code": "docker build -t shop-api:1.0 .\ndocker run -d --name api -p 8080:8080 shop-api:1.0\ndocker ps -a                    # status and exit code\ndocker logs -f api              # follow the logs\ndocker exec -it api sh          # a shell inside the container\ndocker inspect api              # full configuration\ndocker image prune              # remove unused images",
+          "interview_question": "Which commands do you use to debug a container that will not start?",
           "references": [
             "https://docs.docker.com/reference/cli/docker/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "An application that listens on `127.0.0.1` inside the container. The port is mapped, but connections from outside never reach it, because the container's localhost is not reachable from the host. Listen on all interfaces (`0.0.0.0`). Spring Boot does this by default; some dev servers do not.",
+          "code": "docker run -d -p 3000:3000 web\ncurl localhost:3000              # connection reset\ndocker logs web                  # \"Listening on 127.0.0.1:3000\"\n\n# RIGHT: listen on all interfaces inside the container\nHOST=0.0.0.0 npm start"
         }
       ]
     },
     {
-      "subtitle": "Boas Práticas de Dockerfile",
-      "description": "Imagens menores, rápidas e seguras.",
+      "subtitle": "Dockerfile Best Practices",
+      "formerSubtitle": "Boas Práticas de Dockerfile",
+      "description": "Smaller, faster and safer images.",
       "category": "boas-praticas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Use imagens base enxutas e com versão fixa (eclipse-temurin:21-jre, nunca latest); ordene as instruções da menos para a mais mutável para aproveitar o cache de camadas; use .dockerignore para não enviar target/ e .git ao build; rode como usuário não root; e não coloque segredos na imagem — eles ficam gravados nas camadas. Multi-stage builds separam a compilação da imagem final.",
+          "title": "Explanation",
+          "explanation": "**Problem:** images of 800 MB that take minutes to build, run as root and carry a password in one of their layers.\n\n**Concept:** use a small base image with a fixed version (`eclipse-temurin:21-jre`, never `latest`); order instructions from least to most frequently changed to reuse the layer cache; use `.dockerignore` to keep `target/` and `.git` out of the build; run as a non-root user; never put secrets in the image — every layer can be read. Multi-stage builds separate compiling from the final image.\n\n**How it works:** each instruction is a cached layer. When one changes, every layer after it is rebuilt — that is why dependencies go before the source code.",
           "code": "FROM eclipse-temurin:21-jre\nWORKDIR /app\nRUN useradd --system app\nCOPY target/app.jar app.jar\nUSER app\nEXPOSE 8080\nENTRYPOINT [\"java\", \"-jar\", \"app.jar\"]",
-          "interview_question": "Quais práticas tornam uma imagem Docker menor e mais segura?",
+          "interview_question": "Which practices make a Docker image smaller and more secure?",
           "references": [
             "https://docs.docker.com/build/building/best-practices/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Copying all the source before downloading dependencies. Any code change invalidates the cache, so every build downloads all dependencies again. Copy the `pom.xml` and resolve dependencies first, then the code.",
+          "code": "# WRONG: any code change re-downloads every dependency\nCOPY . .\nRUN mvn -q package\n\n# RIGHT: dependencies first (they change rarely), code last\nCOPY pom.xml .\nRUN mvn -q dependency:go-offline\nCOPY src src\nRUN mvn -q -DskipTests package"
         }
       ]
     }

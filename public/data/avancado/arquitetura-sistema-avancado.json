@@ -1,143 +1,104 @@
 {
-  "title": "Arquitetura de Sistemas — Avançado",
-  "description": "Resiliência, consistência distribuída, eventos e decisões arquiteturais.",
+  "title": "System Architecture",
+  "description": "Distributed systems in practice: sagas, events, bounded contexts and backends for frontends.",
   "resumo": [
-    "Em sistemas distribuídos, falhas são normais: a rede é lenta, serviços caem e mensagens se repetem. Arquitetura avançada é projetar para que essas falhas não virem incidentes.",
-    "Timeouts, retries com backoff, circuit breakers e bulkheads contêm falhas; filas e eventos desacoplam serviços; sagas e outbox mantêm a consistência sem transações distribuídas.",
-    "Modelar bem as fronteiras — com Domain-Driven Design e bounded contexts — evita o \"monólito distribuído\", em que serviços separados precisam ser implantados juntos.",
-    "Decisões arquiteturais têm trade-offs; registrá-las em ADRs e acompanhá-las com métricas e SLOs torna a arquitetura explícita e evolutiva."
+    "Sagas replace a distributed transaction with local steps and compensations — business actions, idempotent.",
+    "Kafka: durable, partitioned log; order only within a partition — key by aggregate id; consumers idempotent.",
+    "Bounded contexts: one model per context, each owning its data; no shared canonical model library.",
+    "BFF: one backend per client type, aggregating and formatting — business rules stay in the services."
   ],
   "subsections": [
     {
-      "subtitle": "Resiliência entre Serviços",
-      "description": "Timeouts, retry com backoff, circuit breaker e bulkhead.",
+      "subtitle": "Sagas and Eventual Consistency",
+      "formerSubtitle": "Sagas e Consistência Eventual",
+      "description": "Business transactions across several services.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Toda chamada remota precisa de timeout; sem ele, threads ficam presas esperando um serviço lento até esgotar o pool e derrubar quem chama. Retries usam backoff exponencial com jitter e limite de tentativas, só em operações idempotentes. O circuit breaker para de chamar um serviço que está falhando e retorna um fallback; o bulkhead isola recursos (pools separados por dependência) para que uma integração lenta não consuma tudo.",
-          "code": "Sem proteção:\n  checkout -> frete (lento 30s) -> threads do checkout esgotadas -> checkout fora do ar\n\nCom proteção:\n  checkout -> [timeout 2s] -> [retry 2x, backoff 100ms/200ms + jitter]\n           -> [circuit breaker: abre com 50% de erro em 20 chamadas]\n           -> fallback: frete fixo + aviso \"valor estimado\"",
-          "interview_question": "Como evitar efeito cascata em falhas entre serviços?",
+          "title": "Explanation",
+          "explanation": "**Problem:** an order touches three services with their own databases — orders, stock, payments. There is no single ACID transaction to roll everything back when the payment fails.\n\n**Concept:** a saga splits the flow into local transactions and, when a step fails, runs compensations for the steps already done (refund the payment, release the stock). In choreography, each service reacts to events — simple, but the flow is implicit. In orchestration, a coordinator drives the steps — more visible and easier to monitor.\n\n**How it works:** between steps the system is temporarily inconsistent (an order is \"pending\"), and the user interface must show that honestly.",
+          "code": "Orchestrated saga \"Place Order\":\n  1. Orders:   create order (PENDING)\n  2. Stock:    reserve items        -- compensation: release the reservation\n  3. Payments: charge the card      -- compensation: refund\n  4. Orders:   confirm (PAID)\n\nFailure at step 3 -> run the compensation of step 2 -> order CANCELLED",
+          "interview_question": "When would you apply the Saga pattern?",
           "references": [
-            "https://learn.microsoft.com/en-us/azure/architecture/patterns/circuit-breaker",
-            "https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/"
+            "https://microservices.io/patterns/data/saga.html",
+            "https://learn.microsoft.com/en-us/azure/architecture/reference-architectures/saga/saga"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A compensation that \"undoes\" the record instead of the effect. Deleting the payment row does not give the customer their money back — the card was charged. A compensation is a business action (a refund), and it must be idempotent, because it can run more than once.",
+          "code": "// WRONG: the charge still happened at the card provider\nvoid compensatePayment(Long orderId) { paymentRepository.deleteByOrderId(orderId); }\n\n// RIGHT: a real refund, safe to run twice\nvoid compensatePayment(Long orderId) {\n    Payment p = payments.findByOrderId(orderId);\n    if (p.isRefunded()) return;\n    gateway.refund(p.chargeId(), \"refund-\" + orderId);   // idempotency key\n    p.markRefunded();\n}"
         }
       ]
     },
     {
-      "subtitle": "Sagas e Consistência Eventual",
-      "description": "Transações de negócio entre vários serviços.",
-      "category": "conceitos",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Quando uma operação de negócio atravessa serviços com bancos próprios (pedido, pagamento, estoque) não há transação ACID única. A saga divide o fluxo em transações locais e, em caso de falha, executa compensações (estornar pagamento, liberar estoque). Na coreografia, cada serviço reage a eventos — simples, mas o fluxo fica implícito; na orquestração, um coordenador comanda os passos — mais visível e fácil de monitorar.",
-          "code": "Saga orquestrada \"Finalizar Pedido\":\n  1. Pedido:    criar pedido (PENDENTE)\n  2. Estoque:   reservar itens       -- compensação: liberar reserva\n  3. Pagamento: cobrar cartão        -- compensação: estornar\n  4. Pedido:    confirmar (PAGO)\n\nFalha no passo 3 -> executa compensação do passo 2 -> pedido CANCELADO",
-          "interview_question": "Quando aplicar o padrão Saga?",
-          "references": [
-            "https://microservices.io/patterns/data/saga.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Arquitetura Orientada a Eventos",
-      "description": "Kafka, filas e consumidores idempotentes.",
+      "subtitle": "Event-Driven Architecture",
+      "formerSubtitle": "Arquitetura Orientada a Eventos",
+      "description": "Kafka, queues and idempotent consumers.",
       "category": "pratica",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Em uma fila, cada mensagem é entregue a um consumidor e removida após o processamento — ideal para distribuir tarefas. No Kafka, eventos ficam em um log durável e particionado; vários grupos de consumidores leem o mesmo evento de forma independente e podem reprocessar o histórico. A ordem é garantida apenas dentro de uma partição (use a chave do agregado como chave da mensagem). Como a entrega é \"pelo menos uma vez\", consumidores precisam ser idempotentes.",
-          "code": "@Component\nclass EstoqueListener {\n    @Transactional\n    @KafkaListener(topics = \"pedidos.criados\", groupId = \"estoque\")\n    void aoCriarPedido(PedidoCriado evento) {\n        // INSERT com UNIQUE(evento_id) na mesma transação da reserva:\n        // uma reentrega concorrente falha na constraint em vez de reservar 2x\n        if (!processados.registrar(evento.eventoId())) return; // já processado\n        estoque.reservar(evento.itens());\n    }\n}",
-          "interview_question": "Qual a diferença entre uma fila (RabbitMQ) e um log de eventos (Kafka)?",
+          "title": "Explanation",
+          "explanation": "**Problem:** new services keep needing to react to \"order created\", and every time the orders service gets a new HTTP call to make.\n\n**Concept:** with a queue (RabbitMQ), each message goes to one consumer and is removed after processing — ideal for distributing work. With Kafka, events stay in a durable, partitioned log; several consumer groups read the same event independently and can replay history. Ordering is guaranteed only within a partition, so use the aggregate's id as the message key. Delivery is at-least-once, so consumers must be idempotent.\n\n**How it works:** the producer publishes facts (\"OrderCreated\"); each consumer decides what to do with them, and new consumers need no change to the producer.",
+          "code": "@Component\nclass StockListener {\n    @Transactional\n    @KafkaListener(topics = \"orders.created\", groupId = \"stock\")\n    void onOrderCreated(OrderCreated event) {\n        // INSERT with UNIQUE(event_id) in the same transaction as the reservation:\n        // a concurrent redelivery fails on the constraint instead of reserving twice\n        if (!processed.register(event.eventId())) return;\n        stock.reserve(event.items());\n    }\n}",
+          "interview_question": "What is the difference between a queue (RabbitMQ) and an event log (Kafka)?",
           "references": [
             "https://kafka.apache.org/documentation/#introduction",
             "https://docs.spring.io/spring-kafka/reference/"
           ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Publishing without a key (or with a random one). Events of the same order land on different partitions and can be processed out of order — \"OrderPaid\" before \"OrderCreated\". Use the order id as the key.",
+          "code": "// WRONG: no key -> events of one order spread over partitions\nkafka.send(\"orders\", event);\n\n// RIGHT: same order -> same partition -> in order\nkafka.send(\"orders\", order.id().toString(), event);"
         }
       ]
     },
     {
-      "subtitle": "Domain-Driven Design e Bounded Contexts",
-      "description": "Desenhando fronteiras de serviços e módulos.",
+      "subtitle": "Domain-Driven Design and Bounded Contexts",
+      "formerSubtitle": "Domain-Driven Design e Bounded Contexts",
+      "description": "Drawing the boundaries of services and modules.",
       "category": "conceitos",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "Divida por capacidades de negócio, não por camadas técnicas. Um bounded context é uma fronteira onde um modelo e uma linguagem são consistentes: \"Produto\" no catálogo (descrição, fotos) não é o mesmo \"Produto\" no estoque (quantidade, localização). Contextos se comunicam por contratos explícitos (APIs ou eventos), e cada um é dono dos seus dados. Fronteiras erradas geram o monólito distribuído: serviços que mudam e são implantados sempre juntos.",
-          "code": "Catálogo        -> Produto { sku, nome, descricao, fotos }\nEstoque         -> ItemEstoque { sku, quantidade, deposito }\nPedidos         -> ItemPedido { sku, quantidade, precoNoMomentoDaCompra }\n\nIntegração por eventos: Catálogo publica ProdutoCadastrado;\nEstoque consome e cria ItemEstoque com quantidade 0.",
-          "interview_question": "Como definir as fronteiras entre microserviços?",
+          "title": "Explanation",
+          "explanation": "**Problem:** every change touches four services, which always deploy together — the boundaries were drawn in the wrong place.\n\n**Concept:** split by business capability, not by technical layer. A bounded context is a boundary inside which one model and one language are consistent: \"Product\" in the catalog (description, photos) is not the same as \"Product\" in stock (quantity, warehouse). Contexts communicate through explicit contracts — APIs or events — and each one owns its data. Wrong boundaries produce the distributed monolith.\n\n**How it works:** listen to the language: when the same word means different things to different teams, there are probably two contexts.",
+          "code": "Catalog  -> Product   { sku, name, description, photos }\nStock    -> StockItem { sku, quantity, warehouse }\nOrders   -> OrderItem { sku, quantity, priceAtPurchase }\n\nIntegration by events: Catalog publishes ProductRegistered;\nStock consumes it and creates a StockItem with quantity 0.",
+          "interview_question": "How do you define the boundaries between microservices?",
           "references": [
-            "https://martinfowler.com/bliki/BoundedContext.html"
+            "https://martinfowler.com/bliki/BoundedContext.html",
+            "https://martinfowler.com/bliki/DomainDrivenDesign.html"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Arquitetura Hexagonal (Ports and Adapters)",
-      "description": "Domínio isolado de frameworks e infraestrutura.",
-      "category": "pratica",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "O domínio define portas (interfaces) para o que precisa — salvar pedidos, cobrar pagamentos — e adaptadores implementam essas portas com JPA, Kafka ou clientes HTTP. Controllers e listeners são adaptadores de entrada. O núcleo não depende de Spring nem de banco: pode ser testado com implementações em memória, e trocar o gateway de pagamento significa escrever um novo adaptador.",
-          "code": "// Porta de saída (domínio)\npublic interface PedidoRepositoryPort {\n    Pedido salvar(Pedido pedido);\n}\n\n// Caso de uso (domínio, sem dependência de framework)\npublic class FinalizarPedido {\n    private final PedidoRepositoryPort pedidos;\n    public FinalizarPedido(PedidoRepositoryPort pedidos) { this.pedidos = pedidos; }\n    public Pedido executar(Pedido p) { p.finalizar(); return pedidos.salvar(p); }\n}\n\n// Adaptador (infraestrutura)\n@Repository\nclass PedidoJpaAdapter implements PedidoRepositoryPort {\n    private final PedidoJpaRepository jpa;\n    public Pedido salvar(Pedido p) { return jpa.save(PedidoEntity.from(p)).toDomain(); }\n}",
-          "interview_question": "Como a arquitetura hexagonal facilita testes e troca de tecnologia?",
-          "references": [
-            "https://alistair.cockburn.us/hexagonal-architecture/"
-          ]
+          "title": "Common mistake",
+          "explanation": "One shared \"Product\" class for every service (a canonical model in a common library). Every change to it forces every service to update and redeploy together, and each one carries fields it does not use.",
+          "code": "// WRONG: shop-common.jar, used by every service\npublic class Product { sku; name; description; photos; quantity; warehouse; price; ... }\n\n// RIGHT: each context has its own model; they share only the sku"
         }
       ]
     },
     {
-      "subtitle": "API Gateway e BFF",
-      "description": "Ponto de entrada e APIs sob medida por cliente.",
+      "subtitle": "API Gateway and BFF",
+      "formerSubtitle": "API Gateway e BFF",
+      "description": "One entry point, and backends shaped for each client.",
       "category": "ferramentas",
       "examples": [
         {
-          "title": "Explicação",
-          "explanation": "O API Gateway concentra preocupações transversais — roteamento, autenticação, rate limiting, TLS — para todos os clientes. O BFF (Backend for Frontend) é um backend específico por tipo de cliente: o app mobile recebe respostas compactas e agregadas em uma chamada, enquanto a web recebe dados mais ricos, e cada time de front evolui seu BFF sem afetar os outros. Cuidado para não colocar regra de negócio no gateway ou no BFF.",
-          "code": "             ┌──────────────┐\napp mobile ──▶ BFF Mobile   ├──┐\n             └──────────────┘  │   ┌────────────┐   ┌──────────┐\n             ┌──────────────┐  ├──▶│ API Gateway├──▶│ pedidos  │\nsite web ────▶ BFF Web      ├──┘   │ auth, rate │   │ catálogo │\n             └──────────────┘      │ limit, TLS │   │ estoque  │\n                                   └────────────┘   └──────────┘",
-          "interview_question": "Qual a vantagem de BFF em apps mobile e web?",
+          "title": "Explanation",
+          "explanation": "**Problem:** the mobile app needs a compact response from four services in one call, while the web app wants richer data — and one generic API serves neither well.\n\n**Concept:** the API gateway handles cross-cutting concerns for every client — routing, authentication, rate limiting, TLS. A BFF (Backend for Frontend) is a backend for one type of client: the mobile app gets compact, aggregated responses in one call, the web gets richer data, and each frontend team evolves its own BFF without affecting the others.\n\n**How it works:** a BFF aggregates and shapes data; the business rules stay in the services behind it.",
+          "code": "             ┌──────────────┐\nmobile app ─▶ │ Mobile BFF   ├──┐\n             └──────────────┘  │   ┌────────────┐   ┌──────────┐\n             ┌──────────────┐  ├──▶│ API Gateway├──▶│ orders   │\nweb site ───▶ │ Web BFF      ├──┘   │ auth, rate │   │ catalog  │\n             └──────────────┘      │ limit, TLS │   │ stock    │\n                                   └────────────┘   └──────────┘",
+          "interview_question": "What is the advantage of a BFF for mobile and web apps?",
           "references": [
             "https://samnewman.io/patterns/architectural/bff/"
           ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Monolito Modular",
-      "description": "Fronteiras claras sem custo de sistema distribuído.",
-      "category": "boas-praticas",
-      "examples": [
+        },
         {
-          "title": "Explicação",
-          "explanation": "Microserviços trazem custos reais: rede, consistência eventual, observabilidade distribuída e deploy independente de muitos serviços. Um monolito modular organiza o código em módulos por domínio com fronteiras explícitas (pacotes, APIs internas e eventos entre módulos) e é implantado como uma unidade. Se um módulo precisar escalar ou evoluir de forma independente, extraí-lo depois é muito mais simples. O Spring Modulith ajuda a verificar essas fronteiras em testes.",
-          "code": "com.loja\n ├── pedidos     (API pública: PedidoService, evento PedidoFinalizado)\n ├── pagamentos  (escuta PedidoFinalizado; não acessa tabelas de pedidos)\n ├── estoque\n └── catalogo\n\n@Test\nvoid verificaModulos() {\n    ApplicationModules.of(LojaApplication.class).verify(); // falha se um módulo acessar internals de outro\n}",
-          "interview_question": "Por que muitas equipes começam com um monolito modular em vez de microserviços?",
-          "references": [
-            "https://docs.spring.io/spring-modulith/reference/",
-            "https://martinfowler.com/bliki/MonolithFirst.html"
-          ]
-        }
-      ]
-    },
-    {
-      "subtitle": "Decisões Arquiteturais (ADR)",
-      "description": "Registrando o porquê das escolhas.",
-      "category": "boas-praticas",
-      "examples": [
-        {
-          "title": "Explicação",
-          "explanation": "Um Architecture Decision Record é um documento curto e versionado junto ao código que registra uma decisão importante: contexto, opções consideradas, decisão e consequências. Meses depois, o time entende por que escolheu Kafka em vez de RabbitMQ ou PostgreSQL em vez de MongoDB, evitando rediscutir o mesmo assunto ou desfazer decisões sem conhecer seus motivos.",
-          "code": "# ADR 007: Usar PostgreSQL como banco principal\n\n## Status\nAceito — 2024-05-10\n\n## Contexto\nPedidos exigem transações e relatórios com joins; o time já domina SQL.\n\n## Decisão\nPostgreSQL 16 gerenciado (RDS), com JSONB para atributos variáveis de produtos.\n\n## Consequências\n+ Transações ACID e ecossistema maduro\n- Escala de escrita vertical; reavaliar acima de 5k pedidos/s",
-          "interview_question": "O que é um ADR e por que mantê-los?",
-          "references": [
-            "https://adr.github.io/"
-          ]
+          "title": "Common mistake",
+          "explanation": "Business rules in the BFFs. The discount rule is implemented in the mobile BFF and again in the web BFF, and after a few changes the two apps show different prices. Rules belong in the services; BFFs only aggregate and format.",
+          "code": "WRONG: Mobile BFF and Web BFF both calculate the discount\n       -> the same cart costs different amounts on each app\n\nRIGHT: the pricing service calculates; both BFFs just display its result"
         }
       ]
     }
-  ]
+  ],
+  "version": "Spring Boot 3, Kafka"
 }

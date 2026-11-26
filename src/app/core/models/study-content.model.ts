@@ -12,6 +12,10 @@ export type Category = 'conceitos' | 'pratica' | 'boas-praticas' | 'ferramentas'
 
 export interface Subsection {
   subtitle: string;
+  /** Previous subtitle; progress saved under it moves to the current one. */
+  formerSubtitle?: string;
+  /** Previous level (e.g. 'essencial') of a section that moved to another level. */
+  formerLevel?: string;
   description: string;
   category?: Category;
   examples: Example[];

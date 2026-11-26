@@ -1,0 +1,130 @@
+{
+  "title": "Version Control (Git)",
+  "description": "Team workflows and the Git tools for rewriting and investigating history.",
+  "version": "Git 2.43+",
+  "resumo": [
+    "Git Flow for planned releases; GitHub Flow or trunk-based for continuous delivery — keep branches short.",
+    "`rebase -i --autosquash` cleans your branch before the PR; push with `--force-with-lease`, never `--force`.",
+    "Cherry-pick hotfixes from main to the release branch with `-x` — and never leave a fix only on the release.",
+    "Reflog keeps 90 days (30 for unreachable commits) — check it before deleting and re-cloning.",
+    "`git bisect run` finds the bad commit automatically; exit 125 skips commits that do not build."
+  ],
+  "subsections": [
+    {
+      "subtitle": "Branching Strategies",
+      "formerSubtitle": "Estratégias de Branching",
+      "formerLevel": "essencial",
+      "description": "Git Flow, GitHub Flow and trunk-based development.",
+      "category": "conceitos",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** without an agreed branching model, everyone integrates differently: branches that live for months, releases that need a week of merging.\n\n**Concept:** Git Flow uses long-lived branches (main, develop, release, hotfix) and fits planned releases, but leads to big merges and late integration. GitHub Flow is simpler: main is always deployable, and short feature branches go in through pull requests. Trunk-based development goes further: everyone integrates into the trunk several times a day, with feature flags hiding unfinished work — the model that fits CI/CD best.\n\n**How it works:** most teams doing continuous delivery use GitHub Flow or trunk-based development. The key in all of them: keep branches short.",
+          "code": "# GitHub Flow\ngit switch -c feature/cancel-order\n# ... small commits ...\ngit push -u origin feature/cancel-order\n# open PR -> review -> CI green -> merge into main -> deploy\n\n# Git Flow (summary)\n# main <- release/1.4 <- develop <- feature/*\n# main <- hotfix/1.4.1",
+          "interview_question": "What is the difference between Git Flow, GitHub Flow and trunk-based development?",
+          "references": [
+            "https://docs.github.com/en/get-started/using-github/github-flow",
+            "https://trunkbaseddevelopment.com/"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A feature branch that lives for weeks. main keeps moving, and the final merge brings huge conflicts and bugs found too late. Merge small slices often, hiding unfinished parts behind a feature flag.",
+          "code": "# WRONG: a branch alive for 6 weeks\nmain      A---B---C---D---E---F---G---H\nfeature    \\---1---2---3---4---5---6      -> giant merge, conflicts, late bugs\n\n# RIGHT: small slices merged daily; unfinished parts behind a feature flag"
+        }
+      ]
+    },
+    {
+      "subtitle": "Interactive Rebase, Squash and Fixup",
+      "formerSubtitle": "Rebase Interativo, Squash e Fixup",
+      "formerLevel": "avancado",
+      "description": "A clean history before the pull request.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** your branch has twelve commits: \"wip\", \"fix\", \"fix again\", \"typo\". Reviewers have to read the history of your mistakes instead of the change.\n\n**Concept:** `git rebase -i` lets you reorder, edit, combine (squash or fixup) and drop local commits, turning a pile of \"WIP\" commits into a few coherent ones. `git commit --fixup=<hash>` marks a commit as a correction of an earlier one, and `--autosquash` folds it in automatically. Rebase rewrites hashes, so never do it on branches other people already use (such as main).\n\n**How it works:** on your own feature branch, after rewriting, push with `--force-with-lease`.",
+          "code": "git commit --fixup=a1b2c3d          # marks a fix for an earlier commit\ngit rebase -i --autosquash origin/main\n\n# In the editor:\n# pick   a1b2c3d feat: order cancellation\n# fixup  e4f5a6b fixup! feat: order cancellation\n# reword 9c8d7e6 test: cover cancellation\n\ngit push --force-with-lease",
+          "interview_question": "When should you avoid rebasing shared branches?",
+          "references": [
+            "https://git-scm.com/docs/git-rebase",
+            "https://git-scm.com/book/en/v2/Git-Tools-Rewriting-History"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Pushing a rewritten branch with plain `--force`. If a teammate pushed to your branch in the meantime, their commits are overwritten without warning. `--force-with-lease` refuses when the remote has commits you have not seen.",
+          "code": "# WRONG: silently discards anything pushed since your last fetch\ngit push --force\n\n# RIGHT\ngit push --force-with-lease"
+        }
+      ]
+    },
+    {
+      "subtitle": "Cherry-pick and Hotfixes",
+      "formerSubtitle": "Cherry-pick e Hotfix",
+      "formerLevel": "avancado",
+      "description": "Bringing one specific fix to another branch.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a bug fix is on main, but release 1.4 is in production and needs the fix now — without the unreleased features that are also on main.\n\n**Concept:** `git cherry-pick` applies one specific commit to another branch, creating a new commit with the same changes. It is the usual way to bring a hotfix from main to a release branch. `-x` records the origin in the message. Use it sparingly: frequent cherry-picks duplicate commits and cause repeated conflicts.\n\n**How it works:** in a conflict, resolve it, `git add`, then `git cherry-pick --continue`.",
+          "code": "git switch release/1.4\ngit cherry-pick -x 3f9a2b1            # bring the hotfix made on main\ngit cherry-pick a1b2c3d..f6e5d4c      # a range of commits\n# On conflict: resolve, git add, git cherry-pick --continue",
+          "interview_question": "When is cherry-pick a good solution?",
+          "references": [
+            "https://git-scm.com/docs/git-cherry-pick"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Fixing directly on the release branch and never bringing the fix back to main. The next release is cut from main — and the bug returns. Fix on main first and cherry-pick to the release, or merge the release branch back.",
+          "code": "# WRONG: the fix exists only on release/1.4\ngit switch release/1.4 && git commit -m \"fix: tax rounding\"\n# release 1.5 is cut from main -> the bug is back\n\n# RIGHT\ngit switch main && git commit -m \"fix: tax rounding\"\ngit switch release/1.4 && git cherry-pick -x <hash>"
+        }
+      ]
+    },
+    {
+      "subtitle": "Reflog: Recovering \"Lost\" Work",
+      "formerSubtitle": "Reflog: Recuperando o \"Perdido\"",
+      "formerLevel": "avancado",
+      "description": "Undoing a reset, a bad rebase or a deleted branch.",
+      "category": "pratica",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** a `git reset --hard` or a rebase went wrong, and the commits seem to be gone.\n\n**Concept:** the reflog records every move of `HEAD` in your local repository — commits, checkouts, resets, rebases. By default entries stay 90 days, and 30 days for commits that became unreachable (like the ones \"lost\" in a reset). Find the earlier state and go back to it, or create a branch from it. It also recovers a branch deleted before pushing.\n\n**How it works:** the reflog cannot help with changes that were never committed — commit early, even as WIP.",
+          "code": "git reflog\n# 3f9a2b1 HEAD@{0}: reset: moving to HEAD~3\n# c7d8e9f HEAD@{1}: commit: feat: sales report\n\ngit reset --hard HEAD@{1}                  # back to the earlier state\ngit switch -c recovered c7d8e9f            # or create a branch from it",
+          "interview_question": "How do you recover commits after an accidental git reset --hard?",
+          "references": [
+            "https://git-scm.com/docs/git-reflog"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "Deleting the folder and cloning again to \"fix\" a broken repository. The reflog is local: the fresh clone has none, and your unpushed commits are gone for good. Look at `git reflog` first.",
+          "code": "# WRONG\nrm -rf shop-api && git clone git@github.com:shop/api.git    # local commits lost\n\n# RIGHT\ngit reflog                      # find the good state\ngit reset --hard HEAD@{2}"
+        }
+      ]
+    },
+    {
+      "subtitle": "Git Bisect",
+      "formerLevel": "avancado",
+      "description": "A binary search for the commit that introduced a bug.",
+      "category": "ferramentas",
+      "examples": [
+        {
+          "title": "Explanation",
+          "explanation": "**Problem:** something that worked in version 1.3 is broken now, and there are 300 commits in between.\n\n**Concept:** `git bisect` runs a binary search over the history: you mark one good and one bad commit, and Git checks out the middle for you to test. In about log₂(N) steps — 9 for 300 commits — the culprit appears. With `git bisect run` and a test script, the whole search is automatic: exit code 0 means good, 1–127 means bad, and 125 means \"skip this commit\".\n\n**How it works:** finish with `git bisect reset` to return to where you started.",
+          "code": "git bisect start\ngit bisect bad                   # the current commit has the bug\ngit bisect good v1.3.0           # this version worked\n# test each step and mark it: git bisect good | git bisect bad\n\n# Automatic: the script exits 0 (good) or non-zero (bad)\ngit bisect run ./mvnw -q test -Dtest=CheckoutTest\ngit bisect reset",
+          "interview_question": "How do you quickly find the commit that broke a feature?",
+          "references": [
+            "https://git-scm.com/docs/git-bisect"
+          ]
+        },
+        {
+          "title": "Common mistake",
+          "explanation": "A bisect script that returns 1 when the project does not compile. Commits that simply do not build are marked bad, and bisect blames the wrong commit. Exit 125 to skip those.",
+          "code": "#!/bin/sh\n# bisect-test.sh\n./mvnw -q compile || exit 125           # does not build: skip this commit\n./mvnw -q test -Dtest=CheckoutTest      # 0 = good, 1 = bad\n\ngit bisect run ./bisect-test.sh"
+        }
+      ]
+    }
+  ]
+}
